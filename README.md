@@ -80,6 +80,38 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. This bot
    npm run dev
    ```
 
+## Docker Deployment
+
+You can also run the bot using Docker and Docker Compose:
+
+1. Make sure you have [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/install/) installed.
+
+2. Configure the bot by creating a `.env` file based on the provided `.env.example` file:
+   ```
+   cp .env.example .env
+   ```
+   Then edit the `.env` file with your actual values as described in the Setup section.
+
+3. Build and start the Docker container:
+   ```
+   docker-compose up -d
+   ```
+
+4. To register slash commands when using Docker:
+   ```
+   docker-compose exec discord-bot node dist/deploy-commands.js
+   ```
+
+5. View logs:
+   ```
+   docker-compose logs -f
+   ```
+
+6. Stop the bot:
+   ```
+   docker-compose down
+   ```
+
 ## Usage
 
 1. Start a planning poker session:

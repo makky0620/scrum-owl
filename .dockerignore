@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Node.js
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Build output
+# Note: We don't exclude dist here because we need it for the Docker build
+
+# Environment variables
+.env
+.env.*
+
+# IDE files
+.idea
+.vscode
+*.swp
+*.swo
+
+# Docker
+.docker
+docker-compose.override.yml
+*.env.docker
+
+# Logs
+logs
+*.log
+
+# Tests
+tests
+coverage
+.nyc_output
+
+# Misc
+.DS_Store

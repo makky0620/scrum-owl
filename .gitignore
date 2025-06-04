@@ -60,3 +60,8 @@ build/Release
 .vscode/
 *.swp
 *.swo
+
+# Docker
+.docker/
+docker-compose.override.yml
+*.env.docker
