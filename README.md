@@ -1,6 +1,6 @@
 # Scrum Master Discord Bot
 
-A Discord bot that facilitates Planning Poker sessions for agile teams. This bot allows team members to vote on story points for tasks and helps reach consensus on estimates.
+A Discord bot that facilitates Planning Poker sessions for agile teams. This bot allows team members to vote on story points for tasks and helps reach consensus on estimates. Built with TypeScript and discord.js.
 
 ## Features
 
@@ -13,6 +13,7 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. This bot
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (v16.9.0 or higher)
+- [TypeScript](https://www.typescriptlang.org/) (v4.0.0 or higher)
 - A [Discord account](https://discord.com/) and a server where you have permission to add bots
 - A [Discord application and bot](https://discord.com/developers/applications) set up in the Discord Developer Portal
 
@@ -59,14 +60,24 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. This bot
      - Add Reactions
    - Copy the generated URL and open it in your browser to invite the bot to your server
 
-6. Register the slash commands:
+6. Build the TypeScript code:
+   ```
+   npm run build
+   ```
+
+7. Register the slash commands:
    ```
    npm run deploy
    ```
 
-7. Start the bot:
+8. Start the bot:
    ```
    npm start
+   ```
+
+   Alternatively, you can run the bot in development mode:
+   ```
+   npm run dev
    ```
 
 ## Usage
@@ -83,6 +94,24 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. This bot
 4. The bot will indicate whether there is consensus among the team.
 
 5. Click "End Session" when you're done, or let it time out after 15 minutes.
+
+## Development
+
+### TypeScript
+
+This project is written in TypeScript. The source code is in the `src` directory and is compiled to JavaScript in the `dist` directory.
+
+- `src/index.ts`: The main entry point for the bot
+- `src/deploy-commands.ts`: Script to register slash commands with Discord
+- `src/command.ts`: Interface definition for commands
+- `src/commands/`: Directory containing all slash commands
+
+To add a new command:
+
+1. Create a new TypeScript file in the `src/commands` directory
+2. Implement the `Command` interface
+3. Export the command object
+4. Run `npm run deploy` to register the new command with Discord
 
 ## License
 

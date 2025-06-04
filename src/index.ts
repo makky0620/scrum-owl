@@ -1,8 +1,16 @@
 // Import required modules
-const { Client, GatewayIntentBits, Collection, Events, REST, Routes } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
+import { Client, GatewayIntentBits, Collection, Events, REST, Routes } from 'discord.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import 'dotenv/config';
+import { Command } from './command';
+
+// Extend the Client interface to include commands
+declare module 'discord.js' {
+  interface Client {
+    commands: Collection<string, Command>;
+  }
+}
 
 // Create a new client instance
 const client = new Client({
@@ -24,7 +32,7 @@ if (!fs.existsSync(commandsPath)) {
   fs.mkdirSync(commandsPath);
 }
 
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
@@ -39,7 +47,7 @@ for (const file of commandFiles) {
 
 // When the client is ready, run this code (only once)
 client.once(Events.ClientReady, () => {
-  console.log(`Logged in as ${client.user.tag}!`);
+  console.log(`Logged in as ${client.user?.tag}!`);
 });
 
 // Handle interactions (commands)
