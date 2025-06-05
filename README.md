@@ -9,6 +9,7 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. This bot
 - Hide votes until everyone has voted
 - Show results and check for consensus
 - End sessions manually or automatically after timeout
+- Randomly select a facilitator from a list of participants with a game-like animation
 
 ## Prerequisites
 
@@ -114,6 +115,8 @@ You can also run the bot using Docker and Docker Compose:
 
 ## Usage
 
+### Planning Poker
+
 1. Start a planning poker session:
    ```
    /poker description: [description of the item to estimate]
@@ -126,6 +129,21 @@ You can also run the bot using Docker and Docker Compose:
 4. The bot will indicate whether there is consensus among the team.
 
 5. Click "End Session" when you're done, or let it time out after 15 minutes.
+
+### Facilitator Selection
+
+1. Start a facilitator selection:
+   ```
+   /facilitator participants: [comma-separated list of participant names]
+   ```
+
+2. Click the "Start Selection" button to begin the random selection process.
+
+3. Watch the game-like animation as it randomly selects a facilitator.
+
+4. The selected facilitator will be highlighted in the final result.
+
+5. You can cancel the selection at any time, or let it time out after 5 minutes.
 
 ## Development
 
