@@ -11,6 +11,7 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. This bot
 - End sessions manually or automatically after timeout
 - Randomly select a facilitator from a list of participants with a game-like animation
 - Timer for pair programming sessions with start, pause, reset, and end controls
+- Calculate and analyze time between pull request creation and merge for Backlog repositories
 
 ## Prerequisites
 
@@ -163,6 +164,27 @@ You can also run the bot using Docker and Docker Compose:
 3. When the timer ends, a notification will be sent to the channel.
 
 4. Only the person who started the timer can control it.
+
+### PR Metrics
+
+1. Get metrics for pull requests in a repository:
+   ```
+   /prmetrics repository: [repository name] days: [number of days to look back]
+   ```
+   The `days` parameter is optional and defaults to 30 days.
+
+2. The bot will display:
+   - Average time between PR creation and merge
+   - Minimum and maximum time to merge
+   - Total number of PRs analyzed
+   - Details of the 5 most recent PRs with their merge times
+
+3. This command requires Backlog API configuration in the `.env` file:
+   ```
+   BACKLOG_HOST=your_backlog_host
+   BACKLOG_API_KEY=your_backlog_api_key
+   BACKLOG_PROJECT_KEY=your_backlog_project_key
+   ```
 
 ## Development
 
