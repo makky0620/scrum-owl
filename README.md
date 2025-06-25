@@ -149,17 +149,17 @@ You can also run the bot using Docker and Docker Compose:
 
 ### PR Metrics
 
-1. Get metrics for pull requests in a repository:
+1. Get metrics for pull requests in one or more repositories:
    ```
-   /prmetrics repository: [repository name] days: [number of days to look back]
+   /prmetrics repositories: [comma-separated repository names] days: [number of days to look back]
    ```
-   The `days` parameter is optional and defaults to 30 days.
+   The `days` parameter is optional and defaults to 7 days.
 
-2. The bot will display:
+2. The bot will display for each repository:
    - Average time between PR creation and merge
    - Minimum and maximum time to merge
    - Total number of PRs analyzed
-   - Details of the 5 most recent PRs with their merge times
+   - Details of all PRs with their merge times
 
 3. This command requires Backlog API configuration in the `.env` file:
    ```
