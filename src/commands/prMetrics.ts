@@ -6,6 +6,7 @@ import {
 import { Command } from '../command';
 import axios from 'axios';
 import 'dotenv/config';
+import dayjs from 'dayjs';
 
 // Backlog API configuration
 const BACKLOG_HOST = process.env.BACKLOG_HOST;
@@ -72,9 +73,8 @@ const command: Command = {
       }
 
       // Calculate the date range (now - days)
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
+      const endDate = dayjs();
+      const startDate = dayjs().subtract(days, 'day');
 
       // Get pull requests for the repository
       const prResponse = await axios.get(
@@ -85,9 +85,9 @@ const command: Command = {
 
       // Filter PRs created within the date range and that have been merged
       const mergedPRs = pullRequests.filter(pr => {
-        const createdDate = new Date(pr.created);
-        return createdDate >= startDate && 
-               createdDate <= endDate && 
+        const createdDate = dayjs(pr.created);
+        return ((createdDate.isAfter(startDate) || createdDate.isSame(startDate)) && 
+               (createdDate.isBefore(endDate) || createdDate.isSame(endDate))) && 
                pr.mergedAt !== null;
       });
 
@@ -98,10 +98,9 @@ const command: Command = {
 
       // Calculate time between creation and merge for each PR
       const prTimes = mergedPRs.map(pr => {
-        const createdDate = new Date(pr.created);
-        const mergedDate = new Date(pr.mergedAt!);
-        const timeToMergeMs = mergedDate.getTime() - createdDate.getTime();
-        const timeToMergeHours = timeToMergeMs / (1000 * 60 * 60);
+        const createdDate = dayjs(pr.created);
+        const mergedDate = dayjs(pr.mergedAt!);
+        const timeToMergeHours = mergedDate.diff(createdDate, 'hour', true);
 
         return {
           number: pr.number,
