@@ -131,14 +131,14 @@ const command: Command = {
         .setTimestamp()
         .setFooter({ text: `Project: ${BACKLOG_PROJECT_KEY}` });
 
-      // Add the 5 most recent PRs to the embed
-      const recentPRs = prTimes.sort((a, b) => b.number - a.number).slice(0, 5);
+      // Add all recent PRs to the embed
+      const recentPRs = prTimes.sort((a, b) => b.number - a.number);
       if (recentPRs.length > 0) {
         let recentPRsText = '';
         recentPRs.forEach(pr => {
-          recentPRsText += `#${pr.number}: ${pr.summary.substring(0, 30)}${pr.summary.length > 30 ? '...' : ''} - ${pr.timeToMergeHours.toFixed(2)} hours\n`;
+          recentPRsText += `#${pr.number}: ${pr.summary} - ${pr.timeToMergeHours.toFixed(2)} hours\n`;
         });
-        embed.addFields({ name: 'Recent PRs', value: recentPRsText });
+        embed.addFields({ name: 'All PRs', value: recentPRsText });
       }
 
       await interaction.editReply({ embeds: [embed] });

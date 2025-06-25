@@ -147,24 +147,6 @@ You can also run the bot using Docker and Docker Compose:
 
 5. You can cancel the selection at any time, or let it time out after 5 minutes.
 
-### Pair Programming Timer
-
-1. Start a pair programming timer:
-   ```
-   /pairtimer minutes: [duration in minutes]
-   ```
-   If you don't specify minutes, the default is 25 minutes (a standard Pomodoro session).
-
-2. Use the buttons to control the timer:
-   - **Start/Resume**: Start or resume the timer
-   - **Pause**: Pause the timer
-   - **Reset**: Reset the timer to the original duration
-   - **End**: End the timer session
-
-3. When the timer ends, a notification will be sent to the channel.
-
-4. Only the person who started the timer can control it.
-
 ### PR Metrics
 
 1. Get metrics for pull requests in a repository:
