@@ -75,3 +75,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // Login to Discord with your client's token
 client.login(process.env.DISCORD_TOKEN);
+
+// Export the client for use in other modules
+export { client };

@@ -12,6 +12,7 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. This bot
 - Randomly select a facilitator from a list of participants with a game-like animation
 - Timer for pair programming sessions with start, pause, reset, and end controls
 - Calculate and analyze time between pull request creation and merge for Backlog repositories
+- Set reminders for specific times and channels to notify team members
 
 ## Prerequisites
 
@@ -167,6 +168,84 @@ You can also run the bot using Docker and Docker Compose:
    BACKLOG_API_KEY=your_backlog_api_key
    BACKLOG_PROJECT_KEY=your_backlog_project_key
    ```
+
+### Reminder
+
+The reminder feature allows you to set both one-time and daily recurring reminders. All reminders are saved to a file and will persist even if the bot restarts.
+
+#### One-time Reminder
+
+1. Set a one-time reminder for a specific date and time:
+   ```
+   /reminder once channel: [text channel] message: [reminder message] date: [YYYY-MM-DD] time: [HH:MM]
+   ```
+   - `channel`: The text channel where the reminder will be sent
+   - `message`: The message to be sent when the reminder triggers
+   - `date`: The date for the reminder in YYYY-MM-DD format (e.g., 2023-12-31)
+   - `time`: The time for the reminder in 24-hour HH:MM format (e.g., 14:30)
+
+2. The bot will confirm that your one-time reminder has been set and will display:
+   - The channel where the reminder will be sent
+   - The date and time when the reminder will trigger
+   - The message that will be sent
+
+#### Daily Reminder
+
+1. Set a daily reminder that repeats at the same time every day:
+   ```
+   /reminder daily channel: [text channel] message: [reminder message] time: [HH:MM]
+   ```
+   - `channel`: The text channel where the reminder will be sent
+   - `message`: The message to be sent when the reminder triggers
+   - `time`: The time for the daily reminder in 24-hour HH:MM format (e.g., 14:30)
+
+2. The bot will confirm that your daily reminder has been set and will display:
+   - The channel where the reminder will be sent
+   - The time when the reminder will trigger each day
+   - The first occurrence date and time
+   - The message that will be sent
+
+#### List Reminders
+
+1. List all active reminders:
+   ```
+   /reminder list
+   ```
+
+2. The bot will display all active reminders with:
+   - The reminder type (one-time or daily)
+   - The channel where the reminder will be sent
+   - The date and time when the reminder will trigger
+   - The message that will be sent
+
+#### Delete Reminder
+
+1. Delete a specific reminder:
+   ```
+   /reminder delete index: [reminder index]
+   ```
+   - `index`: The index of the reminder to delete (as shown in the list)
+
+2. The bot will confirm that the reminder has been deleted and will display the details of the deleted reminder.
+
+#### Add Content to Reminder
+
+1. Add content items to an existing reminder:
+   ```
+   /reminder add-content index: [reminder index] content: [content item]
+   ```
+   - `index`: The index of the reminder to add content to (as shown in the list)
+   - `content`: The content item to add to the reminder
+
+2. The bot will confirm that the content has been added and will display:
+   - The channel where the reminder will be sent
+   - The date and time when the reminder will trigger
+   - The message (title) of the reminder
+   - All content items, including the newly added one
+
+3. You can add multiple content items by using this command multiple times with the same reminder index.
+
+When a reminder's time arrives, the bot will automatically send the reminder message to the designated channel, including all content items. Daily reminders will continue to trigger every day at the specified time.
 
 ## Development
 
