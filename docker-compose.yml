@@ -11,6 +11,7 @@ services:
       - .env
     volumes:
       - ./logs:/app/logs
+      - ./data:/app/data
     environment:
       - NODE_ENV=production
     networks:
