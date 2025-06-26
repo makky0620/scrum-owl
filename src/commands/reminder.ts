@@ -6,9 +6,9 @@ import {
   EmbedBuilder
 } from 'discord.js';
 import { Command } from '../command';
-import dayjs from 'dayjs';
 import * as fs from 'fs';
 import * as path from 'path';
+import dayjs from '../utils/dayjs';
 
 // Interface for reminder data
 interface Reminder {

@@ -6,7 +6,7 @@ import {
 import { Command } from '../command';
 import axios from 'axios';
 import 'dotenv/config';
-import dayjs from 'dayjs';
+import dayjs from '../utils/dayjs';
 
 // Backlog API configuration
 const BACKLOG_HOST = process.env.BACKLOG_HOST;
