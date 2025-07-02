@@ -7,6 +7,7 @@ import {
   ComponentType,
   ChatInputCommandInteraction,
   ButtonInteraction,
+  MessageFlags,
 } from 'discord.js';
 import { Command } from '../command';
 
@@ -35,7 +36,7 @@ const command: Command = {
     if (participants.length === 0) {
       await interaction.reply({
         content: 'Please provide at least one participant name.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }

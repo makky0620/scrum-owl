@@ -4,6 +4,7 @@ import {
   ChannelType,
   TextChannel,
   EmbedBuilder,
+  MessageFlags,
 } from 'discord.js';
 import { Command } from '../command';
 import * as fs from 'fs';
@@ -242,7 +243,7 @@ class ReminderCommand implements Command {
         await this.handleAddContent(interaction);
         break;
       default:
-        await interaction.reply({ content: 'Unknown subcommand.', ephemeral: true });
+        await interaction.reply({ content: 'Unknown subcommand.', flags: MessageFlags.Ephemeral });
     }
   }
 
@@ -257,7 +258,7 @@ class ReminderCommand implements Command {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       await interaction.reply({
         content: 'Invalid date format. Please use YYYY-MM-DD (e.g., 2023-12-31).',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -266,7 +267,7 @@ class ReminderCommand implements Command {
     if (!/^\d{2}:\d{2}$/.test(timeStr)) {
       await interaction.reply({
         content: 'Invalid time format. Please use HH:MM (e.g., 14:30).',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -279,7 +280,7 @@ class ReminderCommand implements Command {
     if (reminderTime <= new Date()) {
       await interaction.reply({
         content: 'Cannot set a reminder for a time in the past.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -323,7 +324,7 @@ class ReminderCommand implements Command {
     if (!/^\d{2}:\d{2}$/.test(timeStr)) {
       await interaction.reply({
         content: 'Invalid time format. Please use HH:MM (e.g., 14:30).',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }
@@ -374,7 +375,7 @@ class ReminderCommand implements Command {
   // Handle listing reminders
   async handleListReminders(interaction: ChatInputCommandInteraction) {
     if (reminders.length === 0) {
-      await interaction.reply({ content: 'No active reminders.', ephemeral: true });
+      await interaction.reply({ content: 'No active reminders.', flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -412,7 +413,10 @@ class ReminderCommand implements Command {
     const index = interaction.options.getInteger('index', true) - 1;
 
     if (index < 0 || index >= reminders.length) {
-      await interaction.reply({ content: 'Invalid reminder index.', ephemeral: true });
+      await interaction.reply({
+        content: 'Invalid reminder index.',
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
 
@@ -443,7 +447,10 @@ class ReminderCommand implements Command {
     const content = interaction.options.getString('content', true);
 
     if (index < 0 || index >= reminders.length) {
-      await interaction.reply({ content: 'Invalid reminder index.', ephemeral: true });
+      await interaction.reply({
+        content: 'Invalid reminder index.',
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
 

@@ -8,6 +8,7 @@ import {
   ChatInputCommandInteraction,
   ButtonInteraction,
   Message,
+  MessageFlags,
 } from 'discord.js';
 import { Command } from '../command';
 
@@ -126,14 +127,14 @@ const command: Command = {
 
         // Acknowledge the interaction
         if (!i.replied) {
-          await i.reply({ content: `You voted: ${value}`, ephemeral: true });
+          await i.reply({ content: `You voted: ${value}`, flags: MessageFlags.Ephemeral });
         }
       }
 
       // Handle show results button
       else if (customId === 'show_results') {
         if (votes.size === 0) {
-          await i.reply({ content: 'No votes have been cast yet!', ephemeral: true });
+          await i.reply({ content: 'No votes have been cast yet!', flags: MessageFlags.Ephemeral });
           return;
         }
 
