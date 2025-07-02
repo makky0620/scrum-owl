@@ -10,7 +10,8 @@
     "dev": "ts-node src/index.ts",
     "deploy": "ts-node src/deploy-commands.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "lint": "eslint ."
   },
   "keywords": [
     "discord",
@@ -22,15 +23,20 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "discord.js": "^14.11.0",
-    "dotenv": "^16.0.3",
     "axios": "^1.6.0",
-    "dayjs": "^1.11.10"
+    "dayjs": "^1.11.10",
+    "discord.js": "^14.11.0",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.30.1",
     "@types/node": "^18.16.0",
+    "eslint": "^9.30.1",
+    "eslint-config-prettier": "^10.1.5",
+    "globals": "^16.3.0",
     "prettier": "^3.1.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "typescript-eslint": "^8.35.1"
   }
 }
