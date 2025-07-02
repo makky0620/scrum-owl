@@ -65,3 +65,6 @@ build/Release
 .docker/
 docker-compose.override.yml
 *.env.docker
+
+# data
+data/
