@@ -7,8 +7,6 @@ import {
   ComponentType,
   ChatInputCommandInteraction,
   ButtonInteraction,
-  MessageComponentInteraction,
-  User,
   Message,
 } from 'discord.js';
 import { Command } from '../command';
@@ -144,7 +142,7 @@ const command: Command = {
         let consensus = true;
         let firstValue: string | null = null;
 
-        for (const [userId, vote] of votes.entries()) {
+        for (const vote of votes.values()) {
           if (!results[vote.value]) {
             results[vote.value] = [];
           }
@@ -167,7 +165,7 @@ const command: Command = {
         let totalPoints = 0;
         let numericVotes = 0;
 
-        for (const [userId, vote] of votes.entries()) {
+        for (const vote of votes.values()) {
           if (vote.value !== '?' && !isNaN(parseInt(vote.value))) {
             totalPoints += parseInt(vote.value);
             numericVotes++;
@@ -220,7 +218,7 @@ const command: Command = {
       }
     });
 
-    collector.on('end', async (collected) => {
+    collector.on('end', async () => {
       if (!collector.ended) {
         embed.setColor('#FF0000');
         embed.spliceFields(0, 1, { name: 'Status', value: 'Session timed out', inline: false });

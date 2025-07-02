@@ -7,7 +7,6 @@ import {
   ComponentType,
   ChatInputCommandInteraction,
   ButtonInteraction,
-  User,
 } from 'discord.js';
 import { Command } from '../command';
 
@@ -170,7 +169,7 @@ const command: Command = {
       }
     });
 
-    collector.on('end', async (collected) => {
+    collector.on('end', async () => {
       if (!collector.ended) {
         // If the collector timed out
         const timeoutEmbed = new EmbedBuilder()

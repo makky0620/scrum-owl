@@ -1,5 +1,5 @@
 // Import required modules
-import { Client, GatewayIntentBits, Collection, Events, REST, Routes } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import 'dotenv/config';
