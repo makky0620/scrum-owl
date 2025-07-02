@@ -1,8 +1,4 @@
-import { 
-  SlashCommandBuilder, 
-  EmbedBuilder,
-  ChatInputCommandInteraction
-} from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { Command } from '../command';
 import axios from 'axios';
 import 'dotenv/config';
@@ -43,18 +39,25 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName('prmetrics')
     .setDescription('Calculate time between PR creation and merge for repositories')
-    .addStringOption(option =>
-      option.setName('repositories')
+    .addStringOption((option) =>
+      option
+        .setName('repositories')
         .setDescription('Names of repositories to analyze (comma-separated)')
-        .setRequired(true))
-    .addIntegerOption(option =>
-      option.setName('days')
+        .setRequired(true),
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName('days')
         .setDescription('Number of days to look back (default: 7)')
-        .setRequired(false)) as SlashCommandBuilder,
+        .setRequired(false),
+    ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
     const repositoriesInput = interaction.options.getString('repositories', true);
-    const repositoryNames = repositoriesInput.split(',').map(repo => repo.trim()).filter(repo => repo.length > 0);
+    const repositoryNames = repositoriesInput
+      .split(',')
+      .map((repo) => repo.trim())
+      .filter((repo) => repo.length > 0);
     const days = interaction.options.getInteger('days') || 7;
 
     if (repositoryNames.length === 0) {
@@ -67,7 +70,7 @@ const command: Command = {
     try {
       // First, get all repositories
       const reposResponse = await axios.get(
-        `https://${BACKLOG_HOST}/api/v2/projects/${BACKLOG_PROJECT_KEY}/git/repositories?apiKey=${BACKLOG_API_KEY}`
+        `https://${BACKLOG_HOST}/api/v2/projects/${BACKLOG_PROJECT_KEY}/git/repositories?apiKey=${BACKLOG_API_KEY}`,
       );
       const repos = reposResponse.data;
 
@@ -86,7 +89,9 @@ const command: Command = {
           const errorEmbed = new EmbedBuilder()
             .setColor('#FF0000')
             .setTitle(`Repository Not Found: ${repositoryName}`)
-            .setDescription(`Repository "${repositoryName}" not found in project ${BACKLOG_PROJECT_KEY}.`)
+            .setDescription(
+              `Repository "${repositoryName}" not found in project ${BACKLOG_PROJECT_KEY}.`,
+            )
             .setTimestamp();
 
           embeds.push(errorEmbed);
@@ -95,17 +100,19 @@ const command: Command = {
 
         // Get pull requests for the repository
         const prResponse = await axios.get(
-          `https://${BACKLOG_HOST}/api/v2/projects/${BACKLOG_PROJECT_KEY}/git/repositories/${targetRepo.id}/pullRequests?apiKey=${BACKLOG_API_KEY}&sort=created&order=desc`
+          `https://${BACKLOG_HOST}/api/v2/projects/${BACKLOG_PROJECT_KEY}/git/repositories/${targetRepo.id}/pullRequests?apiKey=${BACKLOG_API_KEY}&sort=created&order=desc`,
         );
 
         const pullRequests: PullRequest[] = prResponse.data;
 
         // Filter PRs created within the date range and that have been merged
-        const mergedPRs = pullRequests.filter(pr => {
+        const mergedPRs = pullRequests.filter((pr) => {
           const createdDate = dayjs(pr.created);
-          return ((createdDate.isAfter(startDate) || createdDate.isSame(startDate)) && 
-                 (createdDate.isBefore(endDate) || createdDate.isSame(endDate))) && 
-                 pr.mergedAt !== null;
+          return (
+            (createdDate.isAfter(startDate) || createdDate.isSame(startDate)) &&
+            (createdDate.isBefore(endDate) || createdDate.isSame(endDate)) &&
+            pr.mergedAt !== null
+          );
         });
 
         if (mergedPRs.length === 0) {
@@ -121,7 +128,7 @@ const command: Command = {
         }
 
         // Calculate time between creation and merge for each PR
-        const prTimes = mergedPRs.map(pr => {
+        const prTimes = mergedPRs.map((pr) => {
           const createdDate = dayjs(pr.created);
           const mergedDate = dayjs(pr.mergedAt!);
           const timeToMergeHours = mergedDate.diff(createdDate, 'hour', true);
@@ -129,7 +136,7 @@ const command: Command = {
           return {
             number: pr.number,
             summary: pr.summary,
-            timeToMergeHours
+            timeToMergeHours,
           };
         });
 
@@ -138,8 +145,8 @@ const command: Command = {
         const averageHours = totalHours / prTimes.length;
 
         // Find min and max times
-        const minTime = Math.min(...prTimes.map(pr => pr.timeToMergeHours));
-        const maxTime = Math.max(...prTimes.map(pr => pr.timeToMergeHours));
+        const minTime = Math.min(...prTimes.map((pr) => pr.timeToMergeHours));
+        const maxTime = Math.max(...prTimes.map((pr) => pr.timeToMergeHours));
 
         // Create an embed with the results
         const embed = new EmbedBuilder()
@@ -147,10 +154,14 @@ const command: Command = {
           .setTitle(`PR Metrics for ${repositoryName}`)
           .setDescription(`Analysis of ${mergedPRs.length} merged PRs in the last ${days} days`)
           .addFields(
-            { name: 'Average Time to Merge', value: `${averageHours.toFixed(2)} hours`, inline: true },
+            {
+              name: 'Average Time to Merge',
+              value: `${averageHours.toFixed(2)} hours`,
+              inline: true,
+            },
             { name: 'Minimum Time', value: `${minTime.toFixed(2)} hours`, inline: true },
             { name: 'Maximum Time', value: `${maxTime.toFixed(2)} hours`, inline: true },
-            { name: 'Total PRs Analyzed', value: `${mergedPRs.length}`, inline: true }
+            { name: 'Total PRs Analyzed', value: `${mergedPRs.length}`, inline: true },
           )
           .setTimestamp()
           .setFooter({ text: `Project: ${BACKLOG_PROJECT_KEY}` });
@@ -159,7 +170,7 @@ const command: Command = {
         const recentPRs = prTimes.sort((a, b) => b.number - a.number);
         if (recentPRs.length > 0) {
           let recentPRsText = '';
-          recentPRs.forEach(pr => {
+          recentPRs.forEach((pr) => {
             recentPRsText += `#${pr.number}: ${pr.summary} - ${pr.timeToMergeHours.toFixed(2)} hours\n`;
           });
           embed.addFields({ name: 'All PRs', value: recentPRsText });
@@ -172,7 +183,9 @@ const command: Command = {
       await interaction.editReply({ embeds });
     } catch (error) {
       console.error('Error fetching PR metrics:', error);
-      await interaction.editReply('An error occurred while fetching PR metrics. Please check the logs for details.');
+      await interaction.editReply(
+        'An error occurred while fetching PR metrics. Please check the logs for details.',
+      );
     }
   },
 };

@@ -24,12 +24,14 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. This bot
 ## Setup
 
 1. Clone this repository:
+
    ```
    git clone <repository-url>
    cd scrum-master
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    ```
@@ -65,21 +67,25 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. This bot
    - Copy the generated URL and open it in your browser to invite the bot to your server
 
 6. Build the TypeScript code:
+
    ```
    npm run build
    ```
 
 7. Register the slash commands:
+
    ```
    npm run deploy
    ```
 
 8. Start the bot:
+
    ```
    npm start
    ```
 
    Alternatively, you can run the bot in development mode:
+
    ```
    npm run dev
    ```
@@ -91,22 +97,27 @@ You can also run the bot using Docker and Docker Compose:
 1. Make sure you have [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/install/) installed.
 
 2. Configure the bot by creating a `.env` file based on the provided `.env.example` file:
+
    ```
    cp .env.example .env
    ```
+
    Then edit the `.env` file with your actual values as described in the Setup section.
 
 3. Build and start the Docker container:
+
    ```
    docker-compose up -d
    ```
 
 4. To register slash commands when using Docker:
+
    ```
    docker-compose exec discord-bot node dist/deploy-commands.js
    ```
 
 5. View logs:
+
    ```
    docker-compose logs -f
    ```
@@ -121,6 +132,7 @@ You can also run the bot using Docker and Docker Compose:
 ### Planning Poker
 
 1. Start a planning poker session:
+
    ```
    /poker description: [description of the item to estimate]
    ```
@@ -136,6 +148,7 @@ You can also run the bot using Docker and Docker Compose:
 ### Facilitator Selection
 
 1. Start a facilitator selection:
+
    ```
    /facilitator participants: [comma-separated list of participant names]
    ```
@@ -151,9 +164,11 @@ You can also run the bot using Docker and Docker Compose:
 ### PR Metrics
 
 1. Get metrics for pull requests in one or more repositories:
+
    ```
    /prmetrics repositories: [comma-separated repository names] days: [number of days to look back]
    ```
+
    The `days` parameter is optional and defaults to 7 days.
 
 2. The bot will display for each repository:
@@ -176,9 +191,11 @@ The reminder feature allows you to set both one-time and daily recurring reminde
 #### One-time Reminder
 
 1. Set a one-time reminder for a specific date and time:
+
    ```
    /reminder once channel: [text channel] message: [reminder message] date: [YYYY-MM-DD] time: [HH:MM]
    ```
+
    - `channel`: The text channel where the reminder will be sent
    - `message`: The message to be sent when the reminder triggers
    - `date`: The date for the reminder in YYYY-MM-DD format (e.g., 2023-12-31)
@@ -192,9 +209,11 @@ The reminder feature allows you to set both one-time and daily recurring reminde
 #### Daily Reminder
 
 1. Set a daily reminder that repeats at the same time every day:
+
    ```
    /reminder daily channel: [text channel] message: [reminder message] time: [HH:MM]
    ```
+
    - `channel`: The text channel where the reminder will be sent
    - `message`: The message to be sent when the reminder triggers
    - `time`: The time for the daily reminder in 24-hour HH:MM format (e.g., 14:30)
@@ -208,6 +227,7 @@ The reminder feature allows you to set both one-time and daily recurring reminde
 #### List Reminders
 
 1. List all active reminders:
+
    ```
    /reminder list
    ```
@@ -221,9 +241,11 @@ The reminder feature allows you to set both one-time and daily recurring reminde
 #### Delete Reminder
 
 1. Delete a specific reminder:
+
    ```
    /reminder delete index: [reminder index]
    ```
+
    - `index`: The index of the reminder to delete (as shown in the list)
 
 2. The bot will confirm that the reminder has been deleted and will display the details of the deleted reminder.
@@ -231,9 +253,11 @@ The reminder feature allows you to set both one-time and daily recurring reminde
 #### Add Content to Reminder
 
 1. Add content items to an existing reminder:
+
    ```
    /reminder add-content index: [reminder index] content: [content item]
    ```
+
    - `index`: The index of the reminder to add content to (as shown in the list)
    - `content`: The content item to add to the reminder
 

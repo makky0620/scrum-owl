@@ -1,15 +1,15 @@
-import { 
-  SlashCommandBuilder, 
-  ActionRowBuilder, 
-  ButtonBuilder, 
-  ButtonStyle, 
-  EmbedBuilder, 
+import {
+  SlashCommandBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
   ComponentType,
   ChatInputCommandInteraction,
   ButtonInteraction,
   MessageComponentInteraction,
   User,
-  Message
+  Message,
 } from 'discord.js';
 import { Command } from '../command';
 
@@ -26,10 +26,12 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName('poker')
     .setDescription('Start a planning poker session')
-    .addStringOption(option =>
-      option.setName('description')
+    .addStringOption((option) =>
+      option
+        .setName('description')
         .setDescription('Description of the item being estimated')
-        .setRequired(true)) as SlashCommandBuilder,
+        .setRequired(true),
+    ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
     const description = interaction.options.getString('description', true);
@@ -41,7 +43,7 @@ const command: Command = {
       .setDescription(`**Item:** ${description}`)
       .addFields(
         { name: 'Status', value: 'Voting in progress...', inline: false },
-        { name: 'Participants', value: 'No votes yet', inline: false }
+        { name: 'Participants', value: 'No votes yet', inline: false },
       )
       .setTimestamp()
       .setFooter({ text: 'Vote by clicking on a point value below' });
@@ -61,7 +63,7 @@ const command: Command = {
         new ButtonBuilder()
           .setCustomId(`vote_${pointValues[i]}`)
           .setLabel(pointValues[i])
-          .setStyle(ButtonStyle.Primary)
+          .setStyle(ButtonStyle.Primary),
       );
     }
 
@@ -71,26 +73,25 @@ const command: Command = {
     }
 
     // Add a "Show Results" button
-    const controlRow = new ActionRowBuilder<ButtonBuilder>()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('show_results')
-          .setLabel('Show Results')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId('end_session')
-          .setLabel('End Session')
-          .setStyle(ButtonStyle.Danger)
-      );
+    const controlRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId('show_results')
+        .setLabel('Show Results')
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId('end_session')
+        .setLabel('End Session')
+        .setStyle(ButtonStyle.Danger),
+    );
 
     rows.push(controlRow);
 
     // Send the initial message with the embed and buttons
-    const message = await interaction.reply({
+    const message = (await interaction.reply({
       embeds: [embed],
       components: rows,
-      fetchReply: true
-    }) as Message;
+      fetchReply: true,
+    })) as Message;
 
     // Store votes
     const votes = new Map<string, Vote>();
@@ -98,7 +99,7 @@ const command: Command = {
     // Create a collector for button interactions
     const collector = message.createMessageComponentCollector({
       componentType: ComponentType.Button,
-      time: 15 * 60 * 1000 // 15 minutes
+      time: 15 * 60 * 1000, // 15 minutes
     });
 
     collector.on('collect', async (i: ButtonInteraction) => {
@@ -111,14 +112,18 @@ const command: Command = {
 
         // Update the participants field
         const participants = Array.from(votes.values())
-          .map(vote => `${vote.user}: ${vote.value === '?' ? '?' : '🎴'}`)
+          .map((vote) => `${vote.user}: ${vote.value === '?' ? '?' : '🎴'}`)
           .join('\n');
 
-        embed.spliceFields(1, 1, { name: 'Participants', value: participants || 'No votes yet', inline: false });
+        embed.spliceFields(1, 1, {
+          name: 'Participants',
+          value: participants || 'No votes yet',
+          inline: false,
+        });
 
         await i.update({
           embeds: [embed],
-          components: rows
+          components: rows,
         });
 
         // Acknowledge the interaction
@@ -176,21 +181,29 @@ const command: Command = {
         }
 
         // Update the embed
-        embed.spliceFields(0, 1, { 
-          name: 'Results', 
-          value: resultsText, 
-          inline: false 
+        embed.spliceFields(0, 1, {
+          name: 'Results',
+          value: resultsText,
+          inline: false,
         });
 
         if (consensus && firstValue !== '?') {
-          embed.addFields({ name: 'Consensus', value: `The team agrees on ${firstValue} points!`, inline: false });
+          embed.addFields({
+            name: 'Consensus',
+            value: `The team agrees on ${firstValue} points!`,
+            inline: false,
+          });
         } else {
-          embed.addFields({ name: 'Consensus', value: 'The team does not agree. Consider discussing and voting again.', inline: false });
+          embed.addFields({
+            name: 'Consensus',
+            value: 'The team does not agree. Consider discussing and voting again.',
+            inline: false,
+          });
         }
 
         await i.update({
           embeds: [embed],
-          components: rows
+          components: rows,
         });
       }
 
@@ -202,19 +215,19 @@ const command: Command = {
 
         await i.update({
           embeds: [embed],
-          components: [] // Remove all buttons
+          components: [], // Remove all buttons
         });
       }
     });
 
-    collector.on('end', async collected => {
+    collector.on('end', async (collected) => {
       if (!collector.ended) {
         embed.setColor('#FF0000');
         embed.spliceFields(0, 1, { name: 'Status', value: 'Session timed out', inline: false });
 
         await interaction.editReply({
           embeds: [embed],
-          components: [] // Remove all buttons
+          components: [], // Remove all buttons
         });
       }
     });

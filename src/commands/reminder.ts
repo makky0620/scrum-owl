@@ -1,9 +1,9 @@
-import { 
-  SlashCommandBuilder, 
+import {
+  SlashCommandBuilder,
   ChatInputCommandInteraction,
   ChannelType,
   TextChannel,
-  EmbedBuilder
+  EmbedBuilder,
 } from 'discord.js';
 import { Command } from '../command';
 import * as fs from 'fs';
@@ -35,9 +35,9 @@ if (!fs.existsSync(dataDir)) {
 // Function to save reminders to file
 function saveReminders(reminders: Reminder[]) {
   // Convert Date objects to strings for JSON serialization
-  const remindersToSave = reminders.map(reminder => ({
+  const remindersToSave = reminders.map((reminder) => ({
     ...reminder,
-    time: reminder.time.toISOString()
+    time: reminder.time.toISOString(),
   }));
 
   try {
@@ -58,7 +58,7 @@ function loadReminders(): Reminder[] {
       // Convert string dates back to Date objects
       return parsedReminders.map((reminder: any) => ({
         ...reminder,
-        time: new Date(reminder.time)
+        time: new Date(reminder.time),
       }));
     }
   } catch (error) {
@@ -113,7 +113,7 @@ async function checkReminders() {
   for (const reminder of triggeredReminders) {
     try {
       const client = (await import('../index')).client;
-      const channel = await client.channels.fetch(reminder.channelId) as TextChannel;
+      const channel = (await client.channels.fetch(reminder.channelId)) as TextChannel;
 
       if (channel && channel.isTextBased()) {
         const embed = new EmbedBuilder()
@@ -123,12 +123,11 @@ async function checkReminders() {
 
         // Add content items if they exist
         if (reminder.content && reminder.content.length > 0) {
-          const contentText = reminder.content.map(item => `• ${item}`).join('\n');
+          const contentText = reminder.content.map((item) => `• ${item}`).join('\n');
           embed.addFields({ name: 'Content', value: contentText });
         }
 
-        embed.setTimestamp()
-          .setFooter({ text: `Reminder set by <@${reminder.userId}>` });
+        embed.setTimestamp().setFooter({ text: `Reminder set by <@${reminder.userId}>` });
 
         await channel.send({ embeds: [embed] });
       }
@@ -143,68 +142,85 @@ class ReminderCommand implements Command {
   data = new SlashCommandBuilder()
     .setName('reminder')
     .setDescription('Set a reminder')
-    .addSubcommand(subcommand =>
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('once')
         .setDescription('Set a one-time reminder for a specific date and time')
-        .addChannelOption(option =>
-          option.setName('channel')
+        .addChannelOption((option) =>
+          option
+            .setName('channel')
             .setDescription('The channel to send the reminder to')
             .setRequired(true)
-            .addChannelTypes(ChannelType.GuildText))
-        .addStringOption(option =>
-          option.setName('message')
-            .setDescription('The message to send')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('date')
+            .addChannelTypes(ChannelType.GuildText),
+        )
+        .addStringOption((option) =>
+          option.setName('message').setDescription('The message to send').setRequired(true),
+        )
+        .addStringOption((option) =>
+          option
+            .setName('date')
             .setDescription('The date for the reminder (YYYY-MM-DD)')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('time')
+            .setRequired(true),
+        )
+        .addStringOption((option) =>
+          option
+            .setName('time')
             .setDescription('The time for the reminder (HH:MM)')
-            .setRequired(true)))
-    .addSubcommand(subcommand =>
+            .setRequired(true),
+        ),
+    )
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('daily')
         .setDescription('Set a daily reminder at a specific time')
-        .addChannelOption(option =>
-          option.setName('channel')
+        .addChannelOption((option) =>
+          option
+            .setName('channel')
             .setDescription('The channel to send the reminder to')
             .setRequired(true)
-            .addChannelTypes(ChannelType.GuildText))
-        .addStringOption(option =>
-          option.setName('message')
-            .setDescription('The message to send')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('time')
+            .addChannelTypes(ChannelType.GuildText),
+        )
+        .addStringOption((option) =>
+          option.setName('message').setDescription('The message to send').setRequired(true),
+        )
+        .addStringOption((option) =>
+          option
+            .setName('time')
             .setDescription('The time for the daily reminder (HH:MM)')
-            .setRequired(true)))
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('list')
-        .setDescription('List all active reminders'))
-    .addSubcommand(subcommand =>
+            .setRequired(true),
+        ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand.setName('list').setDescription('List all active reminders'),
+    )
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('delete')
         .setDescription('Delete a reminder')
-        .addIntegerOption(option =>
-          option.setName('index')
+        .addIntegerOption((option) =>
+          option
+            .setName('index')
             .setDescription('The index of the reminder to delete')
-            .setRequired(true)))
-    .addSubcommand(subcommand =>
+            .setRequired(true),
+        ),
+    )
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('add-content')
         .setDescription('Add content to an existing reminder')
-        .addIntegerOption(option =>
-          option.setName('index')
+        .addIntegerOption((option) =>
+          option
+            .setName('index')
             .setDescription('The index of the reminder to add content to')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('content')
+            .setRequired(true),
+        )
+        .addStringOption((option) =>
+          option
+            .setName('content')
             .setDescription('The content to add to the reminder')
-            .setRequired(true))) as SlashCommandBuilder;
+            .setRequired(true),
+        ),
+    ) as SlashCommandBuilder;
 
   async execute(interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand();
@@ -239,13 +255,19 @@ class ReminderCommand implements Command {
 
     // Validate date format (YYYY-MM-DD)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      await interaction.reply({ content: 'Invalid date format. Please use YYYY-MM-DD (e.g., 2023-12-31).', ephemeral: true });
+      await interaction.reply({
+        content: 'Invalid date format. Please use YYYY-MM-DD (e.g., 2023-12-31).',
+        ephemeral: true,
+      });
       return;
     }
 
     // Validate time format (HH:MM)
     if (!/^\d{2}:\d{2}$/.test(timeStr)) {
-      await interaction.reply({ content: 'Invalid time format. Please use HH:MM (e.g., 14:30).', ephemeral: true });
+      await interaction.reply({
+        content: 'Invalid time format. Please use HH:MM (e.g., 14:30).',
+        ephemeral: true,
+      });
       return;
     }
 
@@ -255,7 +277,10 @@ class ReminderCommand implements Command {
 
     // Check if the time is in the past
     if (reminderTime <= new Date()) {
-      await interaction.reply({ content: 'Cannot set a reminder for a time in the past.', ephemeral: true });
+      await interaction.reply({
+        content: 'Cannot set a reminder for a time in the past.',
+        ephemeral: true,
+      });
       return;
     }
 
@@ -266,7 +291,7 @@ class ReminderCommand implements Command {
       time: reminderTime,
       userId: interaction.user.id,
       guildId: interaction.guildId || '',
-      recurring: false
+      recurring: false,
     };
 
     // Add to reminders array
@@ -281,9 +306,7 @@ class ReminderCommand implements Command {
       .setColor('#0099ff')
       .setTitle('One-time Reminder Set')
       .setDescription(`I'll remind <#${channel.id}> at ${formattedTime}`)
-      .addFields(
-        { name: 'Message', value: message }
-      )
+      .addFields({ name: 'Message', value: message })
       .setTimestamp()
       .setFooter({ text: `Requested by ${interaction.user.tag}` });
 
@@ -298,7 +321,10 @@ class ReminderCommand implements Command {
 
     // Validate time format (HH:MM)
     if (!/^\d{2}:\d{2}$/.test(timeStr)) {
-      await interaction.reply({ content: 'Invalid time format. Please use HH:MM (e.g., 14:30).', ephemeral: true });
+      await interaction.reply({
+        content: 'Invalid time format. Please use HH:MM (e.g., 14:30).',
+        ephemeral: true,
+      });
       return;
     }
 
@@ -323,7 +349,7 @@ class ReminderCommand implements Command {
       guildId: interaction.guildId || '',
       recurring: true,
       frequency: 'daily',
-      timeOfDay: timeStr
+      timeOfDay: timeStr,
     };
 
     // Add to reminders array
@@ -337,7 +363,7 @@ class ReminderCommand implements Command {
       .setDescription(`I'll remind <#${channel.id}> daily at ${timeStr}`)
       .addFields(
         { name: 'Message', value: message },
-        { name: 'First Occurrence', value: dayjs(reminderTime).format('YYYY-MM-DD HH:mm') }
+        { name: 'First Occurrence', value: dayjs(reminderTime).format('YYYY-MM-DD HH:mm') },
       )
       .setTimestamp()
       .setFooter({ text: `Requested by ${interaction.user.tag}` });
@@ -368,13 +394,13 @@ class ReminderCommand implements Command {
 
       // Add content items if they exist
       if (reminder.content && reminder.content.length > 0) {
-        const contentText = reminder.content.map(item => `• ${item}`).join('\n');
+        const contentText = reminder.content.map((item) => `• ${item}`).join('\n');
         value += `\n\nContent:\n${contentText}`;
       }
 
       embed.addFields({
         name: `${index + 1}. ${typeStr}`,
-        value: value
+        value: value,
       });
     });
 
@@ -403,7 +429,7 @@ class ReminderCommand implements Command {
       .addFields(
         { name: 'Channel', value: `<#${deletedReminder.channelId}>` },
         { name: 'Time', value: timeStr },
-        { name: 'Message', value: deletedReminder.message }
+        { name: 'Message', value: deletedReminder.message },
       )
       .setTimestamp()
       .setFooter({ text: `Requested by ${interaction.user.tag}` });
@@ -439,7 +465,7 @@ class ReminderCommand implements Command {
     const timeStr = dayjs(reminder.time).format('YYYY-MM-DD HH:mm');
 
     // Create a list of all content items
-    const contentList = reminder.content.map(item => `• ${item}`).join('\n');
+    const contentList = reminder.content.map((item) => `• ${item}`).join('\n');
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
@@ -449,7 +475,7 @@ class ReminderCommand implements Command {
         { name: 'Channel', value: `<#${reminder.channelId}>` },
         { name: 'Time', value: timeStr },
         { name: 'Message', value: reminder.message },
-        { name: 'Content', value: contentList }
+        { name: 'Content', value: contentList },
       )
       .setTimestamp()
       .setFooter({ text: `Requested by ${interaction.user.tag}` });

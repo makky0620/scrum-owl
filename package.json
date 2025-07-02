@@ -8,9 +8,16 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "deploy": "ts-node src/deploy-commands.ts"
+    "deploy": "ts-node src/deploy-commands.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
-  "keywords": ["discord", "bot", "planning-poker", "scrum"],
+  "keywords": [
+    "discord",
+    "bot",
+    "planning-poker",
+    "scrum"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -22,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "^18.16.0",
+    "prettier": "^3.1.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4"
   }

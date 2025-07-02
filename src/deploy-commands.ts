@@ -12,7 +12,9 @@ if (!fs.existsSync(commandsPath)) {
   fs.mkdirSync(commandsPath);
 }
 
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
+const commandFiles = fs
+  .readdirSync(commandsPath)
+  .filter((file) => file.endsWith('.js') || file.endsWith('.ts'));
 
 // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
 for (const file of commandFiles) {
@@ -21,7 +23,9 @@ for (const file of commandFiles) {
   if ('data' in command && 'execute' in command) {
     commands.push(command.data.toJSON());
   } else {
-    console.log(`[WARNING] The command at ${file} is missing a required "data" or "execute" property.`);
+    console.log(
+      `[WARNING] The command at ${file} is missing a required "data" or "execute" property.`,
+    );
   }
 }
 
@@ -44,7 +48,9 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN || '
       { body: commands },
     );
 
-    console.log(`Successfully reloaded ${Array.isArray(data) ? data.length : 0} application (/) commands.`);
+    console.log(
+      `Successfully reloaded ${Array.isArray(data) ? data.length : 0} application (/) commands.`,
+    );
   } catch (error) {
     // And of course, make sure you catch and log any errors!
     console.error(error);
