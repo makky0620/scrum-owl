@@ -5,7 +5,6 @@ import {
   MessageFlags,
 } from 'discord.js';
 import { Command } from '../command';
-import axios from 'axios';
 import dayjs from '../utils/dayjs';
 import * as fs from 'fs';
 import * as path from 'path';
