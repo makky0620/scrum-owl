@@ -8,7 +8,7 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. Built wi
 - Facilitator Selection: Randomly select a facilitator
 - PR Metrics: Analyze pull request metrics
 - Reminders: Set one-time or recurring reminders
-- Timer: Track pair programming sessions
+- Burndown Chart: Generate sprint burndown charts
 
 ## Setup
 
@@ -88,6 +88,22 @@ Requires Backlog API configuration in .env
 # Add content to reminder
 /reminder add-content index: [number] content: [text]
 ```
+
+### Burndown Chart
+```
+# Register a new sprint
+/burndown register name: [sprint name] start_date: [YYYY-MM-DD] end_date: [YYYY-MM-DD] total_points: [number]
+
+# View burndown chart for a registered sprint
+/burndown view index: [sprint index] completed_points: [number]
+
+# List all registered sprints
+/burndown list
+
+# Delete a registered sprint
+/burndown delete index: [sprint index]
+```
+Manages sprint information and generates burndown charts for sprint progress visualization. Sprint data is persisted between sessions. Sprints are managed by index numbers (starting from 1) shown in the list command.
 
 ## Development
 
