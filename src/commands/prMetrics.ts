@@ -166,14 +166,14 @@ const command: Command = {
           .setTimestamp()
           .setFooter({ text: `Project: ${BACKLOG_PROJECT_KEY}` });
 
-        // Add all recent PRs to the embed
-        const recentPRs = prTimes.sort((a, b) => b.number - a.number);
+        // Add the 10 most recent PRs to the embed
+        const recentPRs = prTimes.sort((a, b) => b.number - a.number).slice(0, 10);
         if (recentPRs.length > 0) {
           let recentPRsText = '';
           recentPRs.forEach((pr) => {
             recentPRsText += `#${pr.number}: ${pr.summary} - ${pr.timeToMergeHours.toFixed(2)} hours\n`;
           });
-          embed.addFields({ name: 'All PRs', value: recentPRsText });
+          embed.addFields({ name: 'Recent PRs', value: recentPRsText });
         }
 
         embeds.push(embed);
