@@ -2,7 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from '
 import { Command } from '../command';
 import axios from 'axios';
 import 'dotenv/config';
-import dayjs from '../utils/dayjs';
+import dayjs, { businessHoursDiff } from '../utils/dayjs';
 
 // Backlog API configuration
 const BACKLOG_HOST = process.env.BACKLOG_HOST;
@@ -127,11 +127,11 @@ const command: Command = {
           continue;
         }
 
-        // Calculate time between creation and merge for each PR
+        // Calculate business hours between creation and merge for each PR
         const prTimes = mergedPRs.map((pr) => {
           const createdDate = dayjs(pr.created);
           const mergedDate = dayjs(pr.mergedAt!);
-          const timeToMergeHours = mergedDate.diff(createdDate, 'hour', true);
+          const timeToMergeHours = businessHoursDiff(createdDate, mergedDate);
 
           return {
             number: pr.number,
@@ -155,12 +155,12 @@ const command: Command = {
           .setDescription(`Analysis of ${mergedPRs.length} merged PRs in the last ${days} days`)
           .addFields(
             {
-              name: 'Average Time to Merge',
+              name: 'Average Business Hours to Merge',
               value: `${averageHours.toFixed(2)} hours`,
               inline: true,
             },
-            { name: 'Minimum Time', value: `${minTime.toFixed(2)} hours`, inline: true },
-            { name: 'Maximum Time', value: `${maxTime.toFixed(2)} hours`, inline: true },
+            { name: 'Minimum Business Hours', value: `${minTime.toFixed(2)} hours`, inline: true },
+            { name: 'Maximum Business Hours', value: `${maxTime.toFixed(2)} hours`, inline: true },
             { name: 'Total PRs Analyzed', value: `${mergedPRs.length}`, inline: true },
           )
           .setTimestamp()
@@ -171,7 +171,7 @@ const command: Command = {
         if (recentPRs.length > 0) {
           let recentPRsText = '';
           recentPRs.forEach((pr) => {
-            recentPRsText += `#${pr.number}: ${pr.summary} - ${pr.timeToMergeHours.toFixed(2)} hours\n`;
+            recentPRsText += `#${pr.number}: ${pr.summary} - ${pr.timeToMergeHours.toFixed(2)} business hours\n`;
           });
           embed.addFields({ name: 'Recent PRs', value: recentPRsText });
         }
