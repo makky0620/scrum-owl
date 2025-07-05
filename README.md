@@ -1,3 +1,5 @@
+![Scrum Owl Logo](assets/icons/logo.png)
+
 # Scrum Owl Discord Bot
 
 A Discord bot that facilitates Planning Poker sessions for agile teams. Built with TypeScript and discord.js.
