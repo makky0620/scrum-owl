@@ -1,4 +1,4 @@
-# Scrum Master Discord Bot
+# Scrum Owl Discord Bot
 
 A Discord bot that facilitates Planning Poker sessions for agile teams. Built with TypeScript and discord.js.
 
@@ -22,7 +22,7 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. Built wi
 1. Clone and install:
    ```
    git clone <repository-url>
-   cd scrum-master
+   cd scrum-owl
    npm install
    ```
 

@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: scrum-master-bot
+    container_name: scrum-owl-bot
     restart: unless-stopped
     env_file:
       - .env

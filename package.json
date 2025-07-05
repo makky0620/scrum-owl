@@ -1,5 +1,5 @@
 {
-  "name": "scrum-master",
+  "name": "scrum-owl",
   "version": "1.0.0",
   "description": "Discord bot for planning poker",
   "main": "dist/index.js",
@@ -17,7 +17,7 @@
     "discord",
     "bot",
     "planning-poker",
-    "scrum"
+    "agile"
   ],
   "author": "",
   "license": "ISC",
