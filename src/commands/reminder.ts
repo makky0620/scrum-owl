@@ -374,8 +374,17 @@ class ReminderCommand implements Command {
 
   // Handle listing reminders
   async handleListReminders(interaction: ChatInputCommandInteraction) {
-    if (reminders.length === 0) {
-      await interaction.reply({ content: 'No active reminders.', flags: MessageFlags.Ephemeral });
+    // Filter reminders by guild ID
+    const guildId = interaction.guildId;
+    if (!guildId) {
+      await interaction.reply({ content: 'This command can only be used in a server.', flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    const guildReminders = reminders.filter(reminder => reminder.guildId === guildId);
+
+    if (guildReminders.length === 0) {
+      await interaction.reply({ content: 'No active reminders for this server.', flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -386,7 +395,7 @@ class ReminderCommand implements Command {
       .setFooter({ text: `Requested by ${interaction.user.tag}` });
 
     // Add fields for each reminder
-    reminders.forEach((reminder, index) => {
+    guildReminders.forEach((reminder, index) => {
       const channelMention = `<#${reminder.channelId}>`;
       const timeStr = dayjs(reminder.time).format('YYYY-MM-DD HH:mm');
       const typeStr = reminder.recurring ? `Daily at ${reminder.timeOfDay}` : 'One-time';
@@ -411,8 +420,17 @@ class ReminderCommand implements Command {
   // Handle deleting a reminder
   async handleDeleteReminder(interaction: ChatInputCommandInteraction) {
     const index = interaction.options.getInteger('index', true) - 1;
+    const guildId = interaction.guildId;
 
-    if (index < 0 || index >= reminders.length) {
+    if (!guildId) {
+      await interaction.reply({ content: 'This command can only be used in a server.', flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    // Filter reminders by guild ID
+    const guildReminders = reminders.filter(reminder => reminder.guildId === guildId);
+
+    if (index < 0 || index >= guildReminders.length) {
       await interaction.reply({
         content: 'Invalid reminder index.',
         flags: MessageFlags.Ephemeral,
@@ -420,7 +438,24 @@ class ReminderCommand implements Command {
       return;
     }
 
-    const deletedReminder = reminders.splice(index, 1)[0];
+    // Find the reminder to delete in the global array
+    const reminderToDelete = guildReminders[index];
+    const globalIndex = reminders.findIndex(reminder => 
+      reminder.guildId === reminderToDelete.guildId &&
+      reminder.channelId === reminderToDelete.channelId &&
+      reminder.message === reminderToDelete.message &&
+      reminder.time.getTime() === reminderToDelete.time.getTime()
+    );
+
+    if (globalIndex === -1) {
+      await interaction.reply({
+        content: 'Reminder not found.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const deletedReminder = reminders.splice(globalIndex, 1)[0];
     saveReminders(reminders);
 
     const typeStr = deletedReminder.recurring ? 'Daily' : 'One-time';
@@ -445,8 +480,17 @@ class ReminderCommand implements Command {
   async handleAddContent(interaction: ChatInputCommandInteraction) {
     const index = interaction.options.getInteger('index', true) - 1;
     const content = interaction.options.getString('content', true);
+    const guildId = interaction.guildId;
 
-    if (index < 0 || index >= reminders.length) {
+    if (!guildId) {
+      await interaction.reply({ content: 'This command can only be used in a server.', flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    // Filter reminders by guild ID
+    const guildReminders = reminders.filter(reminder => reminder.guildId === guildId);
+
+    if (index < 0 || index >= guildReminders.length) {
       await interaction.reply({
         content: 'Invalid reminder index.',
         flags: MessageFlags.Ephemeral,
@@ -454,7 +498,24 @@ class ReminderCommand implements Command {
       return;
     }
 
-    const reminder = reminders[index];
+    // Find the reminder to modify in the global array
+    const reminderToModify = guildReminders[index];
+    const globalIndex = reminders.findIndex(reminder => 
+      reminder.guildId === reminderToModify.guildId &&
+      reminder.channelId === reminderToModify.channelId &&
+      reminder.message === reminderToModify.message &&
+      reminder.time.getTime() === reminderToModify.time.getTime()
+    );
+
+    if (globalIndex === -1) {
+      await interaction.reply({
+        content: 'Reminder not found.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const reminder = reminders[globalIndex];
 
     // Initialize content array if it doesn't exist
     if (!reminder.content) {
