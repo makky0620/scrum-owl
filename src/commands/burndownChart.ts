@@ -103,12 +103,6 @@ class BurndownCommand implements Command {
             .setName('index')
             .setDescription('Index of the sprint to view (from list command)')
             .setRequired(true),
-        )
-        .addIntegerOption((option) =>
-          option
-            .setName('completed_points')
-            .setDescription('Number of story points completed so far')
-            .setRequired(true),
         ),
     )
     .addSubcommand((subcommand) =>
@@ -259,7 +253,6 @@ class BurndownCommand implements Command {
   // Handle viewing a burndown chart
   async handleViewBurndown(interaction: ChatInputCommandInteraction) {
     const sprintIndex = interaction.options.getInteger('index', true) - 1; // Convert to 0-based index
-    const completedPoints = interaction.options.getInteger('completed_points', true);
 
     // Check if index is valid
     if (sprintIndex < 0 || sprintIndex >= sprints.length) {
@@ -273,21 +266,13 @@ class BurndownCommand implements Command {
     // Get the sprint at the specified index
     const sprint = sprints[sprintIndex];
 
-    // Validate completed points
-    if (completedPoints < 0) {
-      await interaction.reply({
-        content: 'Completed points cannot be negative.',
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
-
-    if (completedPoints > sprint.totalPoints) {
-      await interaction.reply({
-        content: `Completed points (${completedPoints}) cannot be greater than total points (${sprint.totalPoints}).`,
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
+    // Calculate completed points from daily progress data
+    let completedPoints = 0;
+    if (sprint.dailyProgress && sprint.dailyProgress.length > 0) {
+      // Find the most recent progress record to get total completed points
+      const sortedProgress = [...sprint.dailyProgress].sort((a, b) => a.date.localeCompare(b.date));
+      const latestProgress = sortedProgress[sortedProgress.length - 1];
+      completedPoints = latestProgress.totalPointsCompleted;
     }
 
     await interaction.deferReply();

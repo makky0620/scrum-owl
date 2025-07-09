@@ -108,7 +108,7 @@ Requires Backlog API configuration in .env
 /burndown record index: [sprint index] points_achieved: [number] date: [YYYY-MM-DD] (optional, defaults to today)
 
 # View burndown chart for a registered sprint
-/burndown view index: [sprint index] completed_points: [number]
+/burndown view index: [sprint index]
 
 # List all registered sprints
 /burndown list
