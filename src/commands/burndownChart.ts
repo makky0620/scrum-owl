@@ -324,7 +324,8 @@ class BurndownCommand implements Command {
       const sprintDays = this.getWorkingDaysBetween(startDate, endDate) - 1; // -1 because we want the number of intervals, not days
 
       // Calculate working days completed
-      let daysCompleted = this.getWorkingDaysBetween(startDate, today.isBefore(endDate) ? today : endDate) - 1;
+      let daysCompleted =
+        this.getWorkingDaysBetween(startDate, today.isBefore(endDate) ? today : endDate) - 1;
 
       // Ensure daysCompleted is within bounds
       if (daysCompleted < 0) daysCompleted = 0;
@@ -384,7 +385,8 @@ class BurndownCommand implements Command {
             actualBurndown.push(remainingPoints);
           } else {
             // Linear interpolation for past working days
-            const pastRemaining = sprint.totalPoints - (completedPoints * workingDay) / daysCompleted;
+            const pastRemaining =
+              sprint.totalPoints - (completedPoints * workingDay) / daysCompleted;
             actualBurndown.push(Math.round(pastRemaining * 100) / 100);
           }
         }
