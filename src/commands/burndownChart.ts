@@ -250,6 +250,44 @@ class BurndownCommand implements Command {
     await interaction.reply({ embeds: [embed] });
   }
 
+  // Helper function to check if a date is a weekend (Saturday or Sunday)
+  private isWeekend(date: dayjs.Dayjs): boolean {
+    const dayOfWeek = date.day(); // 0 = Sunday, 6 = Saturday
+    return dayOfWeek === 0 || dayOfWeek === 6;
+  }
+
+  // Helper function to get working days between two dates (excluding weekends)
+  private getWorkingDaysBetween(startDate: dayjs.Dayjs, endDate: dayjs.Dayjs): number {
+    let workingDays = 0;
+    let currentDate = startDate;
+
+    while (currentDate.isSameOrBefore(endDate, 'day')) {
+      if (!this.isWeekend(currentDate)) {
+        workingDays++;
+      }
+      currentDate = currentDate.add(1, 'day');
+    }
+
+    return workingDays;
+  }
+
+  // Helper function to get the nth working day from start date
+  private getNthWorkingDay(startDate: dayjs.Dayjs, workingDayIndex: number): dayjs.Dayjs {
+    let currentDate = startDate;
+    let workingDaysCount = 0;
+
+    while (workingDaysCount < workingDayIndex) {
+      if (!this.isWeekend(currentDate)) {
+        workingDaysCount++;
+      }
+      if (workingDaysCount < workingDayIndex) {
+        currentDate = currentDate.add(1, 'day');
+      }
+    }
+
+    return currentDate;
+  }
+
   // Handle viewing a burndown chart
   async handleViewBurndown(interaction: ChatInputCommandInteraction) {
     const sprintIndex = interaction.options.getInteger('index', true) - 1; // Convert to 0-based index
@@ -282,11 +320,11 @@ class BurndownCommand implements Command {
       const endDate = dayjs(sprint.endDate);
       const today = dayjs();
 
-      // Calculate sprint duration in days
-      const sprintDays = endDate.diff(startDate, 'day');
+      // Calculate sprint duration in working days (excluding weekends)
+      const sprintDays = this.getWorkingDaysBetween(startDate, endDate) - 1; // -1 because we want the number of intervals, not days
 
-      // Calculate days completed
-      let daysCompleted = today.diff(startDate, 'day');
+      // Calculate working days completed
+      let daysCompleted = this.getWorkingDaysBetween(startDate, today.isBefore(endDate) ? today : endDate) - 1;
 
       // Ensure daysCompleted is within bounds
       if (daysCompleted < 0) daysCompleted = 0;
@@ -295,10 +333,10 @@ class BurndownCommand implements Command {
       // Calculate remaining points
       const remainingPoints = sprint.totalPoints - completedPoints;
 
-      // Calculate ideal burndown line
+      // Calculate ideal burndown line (using working days only)
       const idealBurndown = [];
-      for (let day = 0; day <= sprintDays; day++) {
-        const idealRemaining = sprint.totalPoints - (sprint.totalPoints * day) / sprintDays;
+      for (let workingDay = 0; workingDay <= sprintDays; workingDay++) {
+        const idealRemaining = sprint.totalPoints - (sprint.totalPoints * workingDay) / sprintDays;
         idealBurndown.push(Math.round(idealRemaining * 100) / 100); // Round to 2 decimal places
       }
 
@@ -312,9 +350,9 @@ class BurndownCommand implements Command {
           a.date.localeCompare(b.date),
         );
 
-        // Fill in actual data for each day
-        for (let day = 0; day <= daysCompleted; day++) {
-          const currentDate = startDate.add(day, 'day').format('YYYY-MM-DD');
+        // Fill in actual data for each working day
+        for (let workingDay = 0; workingDay <= daysCompleted; workingDay++) {
+          const currentDate = this.getNthWorkingDay(startDate, workingDay).format('YYYY-MM-DD');
 
           // Find progress record for this date
           const progressRecord = sortedProgress.find((record) => record.date === currentDate);
@@ -341,22 +379,22 @@ class BurndownCommand implements Command {
         }
       } else {
         // Fall back to linear interpolation when no daily progress data is available
-        for (let day = 0; day <= daysCompleted; day++) {
-          if (day === daysCompleted) {
+        for (let workingDay = 0; workingDay <= daysCompleted; workingDay++) {
+          if (workingDay === daysCompleted) {
             actualBurndown.push(remainingPoints);
           } else {
-            // Linear interpolation for past days
-            const pastRemaining = sprint.totalPoints - (completedPoints * day) / daysCompleted;
+            // Linear interpolation for past working days
+            const pastRemaining = sprint.totalPoints - (completedPoints * workingDay) / daysCompleted;
             actualBurndown.push(Math.round(pastRemaining * 100) / 100);
           }
         }
       }
 
-      // Generate labels for the x-axis (days)
+      // Generate labels for the x-axis (working days only)
       const labels = [];
 
-      for (let day = 0; day <= sprintDays; day++) {
-        const date = startDate.add(day, 'day');
+      for (let workingDay = 0; workingDay <= sprintDays; workingDay++) {
+        const date = this.getNthWorkingDay(startDate, workingDay);
         labels.push(date.format('MM/DD'));
       }
 
@@ -391,14 +429,14 @@ class BurndownCommand implements Command {
         options: {
           title: {
             display: true,
-            text: `Burndown Chart - ${sprint.name}`,
+            text: `Burndown Chart - ${sprint.name} (Weekends Excluded)`,
             fontSize: 16,
           },
           scales: {
             x: {
               title: {
                 display: true,
-                text: 'Sprint Days',
+                text: 'Working Days',
               },
             },
             y: {
@@ -420,8 +458,8 @@ class BurndownCommand implements Command {
       // Create an embed with the chart
       const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`Burndown Chart - ${sprint.name}`)
-        .setDescription(`Sprint progress: Day ${daysCompleted} of ${sprintDays}`)
+        .setTitle(`Burndown Chart - ${sprint.name} (Weekends Excluded)`)
+        .setDescription(`Sprint progress: Working day ${daysCompleted} of ${sprintDays}`)
         .addFields(
           { name: 'Total Story Points', value: sprint.totalPoints.toString(), inline: true },
           { name: 'Remaining Points', value: remainingPoints.toString(), inline: true },

@@ -100,10 +100,6 @@ class BurndownCommand {
             .addIntegerOption((option) => option
             .setName('index')
             .setDescription('Index of the sprint to view (from list command)')
-            .setRequired(true))
-            .addIntegerOption((option) => option
-            .setName('completed_points')
-            .setDescription('Number of story points completed so far')
             .setRequired(true)))
             .addSubcommand((subcommand) => subcommand.setName('list').setDescription('List all registered sprints'))
             .addSubcommand((subcommand) => subcommand
@@ -112,7 +108,22 @@ class BurndownCommand {
             .addIntegerOption((option) => option
             .setName('index')
             .setDescription('Index of the sprint to delete (from list command)')
-            .setRequired(true)));
+            .setRequired(true)))
+            .addSubcommand((subcommand) => subcommand
+            .setName('record')
+            .setDescription('Record points achieved for a specific day')
+            .addIntegerOption((option) => option
+            .setName('index')
+            .setDescription('Index of the sprint (from list command)')
+            .setRequired(true))
+            .addIntegerOption((option) => option
+            .setName('points_achieved')
+            .setDescription('Points achieved on this day')
+            .setRequired(true))
+            .addStringOption((option) => option
+            .setName('date')
+            .setDescription('Date for the record (YYYY-MM-DD, defaults to today)')
+            .setRequired(false)));
     }
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
@@ -128,6 +139,9 @@ class BurndownCommand {
                 break;
             case 'delete':
                 await this.handleDeleteSprint(interaction);
+                break;
+            case 'record':
+                await this.handleRecordProgress(interaction);
                 break;
             default:
                 await interaction.reply({ content: 'Unknown subcommand.', flags: discord_js_1.MessageFlags.Ephemeral });
@@ -182,6 +196,7 @@ class BurndownCommand {
             userId: interaction.user.id,
             guildId: interaction.guildId || '',
             createdAt: new Date().toISOString(),
+            dailyProgress: [], // Initialize empty daily progress array
         };
         // Add to sprints array
         sprints.push(sprint);
@@ -194,16 +209,46 @@ class BurndownCommand {
             .addFields({ name: 'Start Date', value: startDateStr, inline: true }, { name: 'End Date', value: endDateStr, inline: true }, { name: 'Total Points', value: totalPoints.toString(), inline: true }, {
             name: 'Duration',
             value: `${endDate.diff(startDate, 'day')} days`,
-            inline: true
+            inline: true,
         })
             .setTimestamp()
             .setFooter({ text: `Registered by ${interaction.user.tag}` });
         await interaction.reply({ embeds: [embed] });
     }
+    // Helper function to check if a date is a weekend (Saturday or Sunday)
+    isWeekend(date) {
+        const dayOfWeek = date.day(); // 0 = Sunday, 6 = Saturday
+        return dayOfWeek === 0 || dayOfWeek === 6;
+    }
+    // Helper function to get working days between two dates (excluding weekends)
+    getWorkingDaysBetween(startDate, endDate) {
+        let workingDays = 0;
+        let currentDate = startDate;
+        while (currentDate.isSameOrBefore(endDate, 'day')) {
+            if (!this.isWeekend(currentDate)) {
+                workingDays++;
+            }
+            currentDate = currentDate.add(1, 'day');
+        }
+        return workingDays;
+    }
+    // Helper function to get the nth working day from start date
+    getNthWorkingDay(startDate, workingDayIndex) {
+        let currentDate = startDate;
+        let workingDaysCount = 0;
+        while (workingDaysCount < workingDayIndex) {
+            if (!this.isWeekend(currentDate)) {
+                workingDaysCount++;
+            }
+            if (workingDaysCount < workingDayIndex) {
+                currentDate = currentDate.add(1, 'day');
+            }
+        }
+        return currentDate;
+    }
     // Handle viewing a burndown chart
     async handleViewBurndown(interaction) {
         const sprintIndex = interaction.options.getInteger('index', true) - 1; // Convert to 0-based index
-        const completedPoints = interaction.options.getInteger('completed_points', true);
         // Check if index is valid
         if (sprintIndex < 0 || sprintIndex >= sprints.length) {
             await interaction.reply({
@@ -214,30 +259,23 @@ class BurndownCommand {
         }
         // Get the sprint at the specified index
         const sprint = sprints[sprintIndex];
-        // Validate completed points
-        if (completedPoints < 0) {
-            await interaction.reply({
-                content: 'Completed points cannot be negative.',
-                flags: discord_js_1.MessageFlags.Ephemeral,
-            });
-            return;
-        }
-        if (completedPoints > sprint.totalPoints) {
-            await interaction.reply({
-                content: `Completed points (${completedPoints}) cannot be greater than total points (${sprint.totalPoints}).`,
-                flags: discord_js_1.MessageFlags.Ephemeral,
-            });
-            return;
+        // Calculate completed points from daily progress data
+        let completedPoints = 0;
+        if (sprint.dailyProgress && sprint.dailyProgress.length > 0) {
+            // Find the most recent progress record to get total completed points
+            const sortedProgress = [...sprint.dailyProgress].sort((a, b) => a.date.localeCompare(b.date));
+            const latestProgress = sortedProgress[sortedProgress.length - 1];
+            completedPoints = latestProgress.totalPointsCompleted;
         }
         await interaction.deferReply();
         try {
             const startDate = (0, dayjs_1.default)(sprint.startDate);
             const endDate = (0, dayjs_1.default)(sprint.endDate);
             const today = (0, dayjs_1.default)();
-            // Calculate sprint duration in days
-            const sprintDays = endDate.diff(startDate, 'day');
-            // Calculate days completed
-            let daysCompleted = today.diff(startDate, 'day');
+            // Calculate sprint duration in working days (excluding weekends)
+            const sprintDays = this.getWorkingDaysBetween(startDate, endDate) - 1; // -1 because we want the number of intervals, not days
+            // Calculate working days completed
+            let daysCompleted = this.getWorkingDaysBetween(startDate, today.isBefore(endDate) ? today : endDate) - 1;
             // Ensure daysCompleted is within bounds
             if (daysCompleted < 0)
                 daysCompleted = 0;
@@ -245,30 +283,62 @@ class BurndownCommand {
                 daysCompleted = sprintDays;
             // Calculate remaining points
             const remainingPoints = sprint.totalPoints - completedPoints;
-            // Calculate ideal burndown line
+            // Calculate ideal burndown line (using working days only)
             const idealBurndown = [];
-            for (let day = 0; day <= sprintDays; day++) {
-                const idealRemaining = sprint.totalPoints - (sprint.totalPoints * day) / sprintDays;
+            for (let workingDay = 0; workingDay <= sprintDays; workingDay++) {
+                const idealRemaining = sprint.totalPoints - (sprint.totalPoints * workingDay) / sprintDays;
                 idealBurndown.push(Math.round(idealRemaining * 100) / 100); // Round to 2 decimal places
             }
             // Calculate actual burndown line
             const actualBurndown = [];
-            // Fill in actual data for days completed
-            for (let day = 0; day <= daysCompleted; day++) {
-                if (day === daysCompleted) {
-                    actualBurndown.push(remainingPoints);
-                }
-                else {
-                    // For simplicity, we'll use a linear interpolation for past days
-                    // In a real implementation, you would use actual historical data
-                    const pastRemaining = sprint.totalPoints - (completedPoints * day) / daysCompleted;
-                    actualBurndown.push(Math.round(pastRemaining * 100) / 100);
+            // Use actual daily progress data if available, otherwise fall back to interpolation
+            if (sprint.dailyProgress && sprint.dailyProgress.length > 0) {
+                // Sort daily progress by date
+                const sortedProgress = [...sprint.dailyProgress].sort((a, b) => a.date.localeCompare(b.date));
+                // Fill in actual data for each working day
+                for (let workingDay = 0; workingDay <= daysCompleted; workingDay++) {
+                    const currentDate = this.getNthWorkingDay(startDate, workingDay).format('YYYY-MM-DD');
+                    // Find progress record for this date
+                    const progressRecord = sortedProgress.find((record) => record.date === currentDate);
+                    if (progressRecord) {
+                        // Use actual data: total points - total completed points = remaining points
+                        const remainingForDay = sprint.totalPoints - progressRecord.totalPointsCompleted;
+                        actualBurndown.push(Math.round(remainingForDay * 100) / 100);
+                    }
+                    else {
+                        // Find the most recent progress record before this date
+                        const previousRecord = sortedProgress
+                            .filter((record) => record.date < currentDate)
+                            .pop(); // Get the last (most recent) record
+                        if (previousRecord) {
+                            // Use the most recent data
+                            const remainingForDay = sprint.totalPoints - previousRecord.totalPointsCompleted;
+                            actualBurndown.push(Math.round(remainingForDay * 100) / 100);
+                        }
+                        else {
+                            // No progress recorded yet, all points remain
+                            actualBurndown.push(sprint.totalPoints);
+                        }
+                    }
                 }
             }
-            // Generate labels for the x-axis (days)
+            else {
+                // Fall back to linear interpolation when no daily progress data is available
+                for (let workingDay = 0; workingDay <= daysCompleted; workingDay++) {
+                    if (workingDay === daysCompleted) {
+                        actualBurndown.push(remainingPoints);
+                    }
+                    else {
+                        // Linear interpolation for past working days
+                        const pastRemaining = sprint.totalPoints - (completedPoints * workingDay) / daysCompleted;
+                        actualBurndown.push(Math.round(pastRemaining * 100) / 100);
+                    }
+                }
+            }
+            // Generate labels for the x-axis (working days only)
             const labels = [];
-            for (let day = 0; day <= sprintDays; day++) {
-                const date = startDate.add(day, 'day');
+            for (let workingDay = 0; workingDay <= sprintDays; workingDay++) {
+                const date = this.getNthWorkingDay(startDate, workingDay);
                 labels.push(date.format('MM/DD'));
             }
             // Create chart configuration
@@ -293,21 +363,23 @@ class BurndownCommand {
                             borderWidth: 2,
                             fill: false,
                             // Only show points for days we have data
-                            pointRadius: Array(sprintDays + 1).fill(0).map((_, i) => (i <= daysCompleted ? 5 : 0)),
+                            pointRadius: Array(sprintDays + 1)
+                                .fill(0)
+                                .map((_, i) => (i <= daysCompleted ? 5 : 0)),
                         },
                     ],
                 },
                 options: {
                     title: {
                         display: true,
-                        text: `Burndown Chart - ${sprint.name}`,
+                        text: `Burndown Chart - ${sprint.name} (Weekends Excluded)`,
                         fontSize: 16,
                     },
                     scales: {
                         x: {
                             title: {
                                 display: true,
-                                text: 'Sprint Days',
+                                text: 'Working Days',
                             },
                         },
                         y: {
@@ -327,16 +399,16 @@ class BurndownCommand {
             // Create an embed with the chart
             const embed = new discord_js_1.EmbedBuilder()
                 .setColor('#0099ff')
-                .setTitle(`Burndown Chart - ${sprint.name}`)
-                .setDescription(`Sprint progress: Day ${daysCompleted} of ${sprintDays}`)
+                .setTitle(`Burndown Chart - ${sprint.name} (Weekends Excluded)`)
+                .setDescription(`Sprint progress: Working day ${daysCompleted} of ${sprintDays}`)
                 .addFields({ name: 'Total Story Points', value: sprint.totalPoints.toString(), inline: true }, { name: 'Remaining Points', value: remainingPoints.toString(), inline: true }, { name: 'Completed Points', value: completedPoints.toString(), inline: true }, {
                 name: 'Completion Rate',
                 value: `${Math.round((completedPoints / sprint.totalPoints) * 100)}%`,
-                inline: true
+                inline: true,
             }, {
                 name: 'Sprint Progress',
                 value: `${Math.round((daysCompleted / sprintDays) * 100)}%`,
-                inline: true
+                inline: true,
             })
                 .setImage(chartUrl)
                 .setTimestamp()
@@ -390,9 +462,122 @@ class BurndownCommand {
             .setColor('#FF0000')
             .setTitle('Sprint Deleted')
             .setDescription(`Sprint "${deletedSprint.name}" has been deleted`)
-            .addFields({ name: 'Start Date', value: (0, dayjs_1.default)(deletedSprint.startDate).format('YYYY-MM-DD'), inline: true }, { name: 'End Date', value: (0, dayjs_1.default)(deletedSprint.endDate).format('YYYY-MM-DD'), inline: true }, { name: 'Total Points', value: deletedSprint.totalPoints.toString(), inline: true })
+            .addFields({
+            name: 'Start Date',
+            value: (0, dayjs_1.default)(deletedSprint.startDate).format('YYYY-MM-DD'),
+            inline: true,
+        }, {
+            name: 'End Date',
+            value: (0, dayjs_1.default)(deletedSprint.endDate).format('YYYY-MM-DD'),
+            inline: true,
+        }, { name: 'Total Points', value: deletedSprint.totalPoints.toString(), inline: true })
             .setTimestamp()
             .setFooter({ text: `Deleted by ${interaction.user.tag}` });
+        await interaction.reply({ embeds: [embed] });
+    }
+    // Handle recording daily progress
+    async handleRecordProgress(interaction) {
+        const sprintIndex = interaction.options.getInteger('index', true) - 1; // Convert to 0-based index
+        const pointsAchieved = interaction.options.getInteger('points_achieved', true);
+        const dateStr = interaction.options.getString('date') || (0, dayjs_1.default)().format('YYYY-MM-DD');
+        // Check if index is valid
+        if (sprintIndex < 0 || sprintIndex >= sprints.length) {
+            await interaction.reply({
+                content: `Invalid sprint index. Use /burndown list to see available sprints.`,
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
+            return;
+        }
+        // Validate date format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            await interaction.reply({
+                content: 'Invalid date format. Please use YYYY-MM-DD (e.g., 2023-12-31).',
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
+            return;
+        }
+        const sprint = sprints[sprintIndex];
+        const recordDate = (0, dayjs_1.default)(dateStr);
+        const sprintStart = (0, dayjs_1.default)(sprint.startDate);
+        const sprintEnd = (0, dayjs_1.default)(sprint.endDate);
+        // Validate date is within sprint range
+        if (recordDate.isBefore(sprintStart, 'day') || recordDate.isAfter(sprintEnd, 'day')) {
+            await interaction.reply({
+                content: `Date must be within the sprint range (${sprintStart.format('YYYY-MM-DD')} to ${sprintEnd.format('YYYY-MM-DD')}).`,
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
+            return;
+        }
+        // Validate points achieved
+        if (pointsAchieved < 0) {
+            await interaction.reply({
+                content: 'Points achieved cannot be negative.',
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
+            return;
+        }
+        // Initialize dailyProgress array if it doesn't exist
+        if (!sprint.dailyProgress) {
+            sprint.dailyProgress = [];
+        }
+        // Check if there's already a record for this date
+        const existingRecordIndex = sprint.dailyProgress.findIndex((record) => record.date === dateStr);
+        // Calculate total points completed up to this date
+        let totalPointsCompleted = 0;
+        const sortedProgress = [...sprint.dailyProgress]
+            .filter((record) => record.date !== dateStr) // Exclude current date if updating
+            .sort((a, b) => a.date.localeCompare(b.date));
+        // Add up all points up to the day before this record
+        for (const record of sortedProgress) {
+            if (record.date < dateStr) {
+                totalPointsCompleted += record.pointsCompleted;
+            }
+        }
+        // Add the new points for this day
+        totalPointsCompleted += pointsAchieved;
+        // Validate that total doesn't exceed sprint total
+        if (totalPointsCompleted > sprint.totalPoints) {
+            await interaction.reply({
+                content: `Total completed points (${totalPointsCompleted}) would exceed sprint total (${sprint.totalPoints}). Current record would add ${pointsAchieved} points.`,
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
+            return;
+        }
+        // Create or update the daily progress record
+        const progressRecord = {
+            date: dateStr,
+            pointsCompleted: pointsAchieved,
+            totalPointsCompleted: totalPointsCompleted,
+        };
+        if (existingRecordIndex >= 0) {
+            // Update existing record
+            sprint.dailyProgress[existingRecordIndex] = progressRecord;
+        }
+        else {
+            // Add new record
+            sprint.dailyProgress.push(progressRecord);
+        }
+        // Recalculate totalPointsCompleted for all records after this date
+        const allRecords = sprint.dailyProgress.sort((a, b) => a.date.localeCompare(b.date));
+        let runningTotal = 0;
+        for (const record of allRecords) {
+            runningTotal += record.pointsCompleted;
+            record.totalPointsCompleted = runningTotal;
+        }
+        // Save the updated sprints
+        saveSprints(sprints);
+        // Create confirmation embed
+        const embed = new discord_js_1.EmbedBuilder()
+            .setColor('#00FF00')
+            .setTitle('Daily Progress Recorded')
+            .setDescription(`Progress recorded for sprint "${sprint.name}"`)
+            .addFields({ name: 'Date', value: dateStr, inline: true }, { name: 'Points Achieved', value: pointsAchieved.toString(), inline: true }, { name: 'Total Completed', value: totalPointsCompleted.toString(), inline: true }, {
+            name: 'Remaining Points',
+            value: (sprint.totalPoints - totalPointsCompleted).toString(),
+            inline: true,
+        })
+            .setTimestamp()
+            .setFooter({ text: `Recorded by ${interaction.user.tag}` });
         await interaction.reply({ embeds: [embed] });
     }
 }
