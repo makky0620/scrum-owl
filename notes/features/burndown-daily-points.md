@@ -1,12 +1,14 @@
 # Burndown Daily Points Feature
 
 ## Issue Description
+
 burndwnChartで日付ごとに達成したポイントを記録できるようにしたい
 (Translation: I want to be able to record points achieved per day in the burndown chart)
 
 ## Current Implementation Analysis
 
 ### Current Sprint Interface
+
 ```typescript
 interface Sprint {
   name: string;
@@ -20,6 +22,7 @@ interface Sprint {
 ```
 
 ### Current Limitations
+
 1. The `/burndown view` command only takes a single `completed_points` parameter for the current moment
 2. Historical data uses linear interpolation instead of actual daily progress
 3. No way to record daily achievements - only current total completed points
@@ -28,6 +31,7 @@ interface Sprint {
 ## Proposed Solution
 
 ### Enhanced Sprint Interface
+
 ```typescript
 interface Sprint {
   name: string;
@@ -48,11 +52,13 @@ interface DailyProgress {
 ```
 
 ### New Commands to Add
+
 1. `/burndown record` - Record points achieved for a specific day
    - Parameters: index (sprint), date (optional, defaults to today), points_achieved
 2. Modify `/burndown view` to use actual historical data when available
 
 ### Implementation Plan
+
 1. Update Sprint interface to include dailyProgress
 2. Add new subcommand for recording daily progress
 3. Modify view command to use actual data instead of interpolation
@@ -60,6 +66,7 @@ interface DailyProgress {
 5. Add validation for daily progress entries
 
 ## Test Cases to Implement
+
 1. Record daily progress for a sprint ✅
 2. View burndown chart with actual daily data ✅
 3. Handle edge cases (recording for past dates, duplicate entries, etc.) ✅
@@ -69,6 +76,7 @@ interface DailyProgress {
 ## Implementation Status: COMPLETED ✅
 
 ### What was implemented:
+
 1. **Enhanced Sprint Interface**: Added `dailyProgress` field with `DailyProgress` interface
 2. **New `/burndown record` command**: Record points achieved for specific days
 3. **Enhanced `/burndown view` command**: Uses actual daily data when available, falls back to interpolation
@@ -78,6 +86,7 @@ interface DailyProgress {
 7. **Updated documentation**: README.md updated with new command usage
 
 ### Key Features:
+
 - ✅ Record daily progress with `/burndown record index:1 points_achieved:3 date:2025-07-01`
 - ✅ Date parameter is optional (defaults to today)
 - ✅ Handles duplicate entries (updates existing records)
@@ -88,6 +97,7 @@ interface DailyProgress {
 - ✅ Proper error handling and user feedback
 
 ### Testing Results:
+
 - ✅ Build successful (no TypeScript errors)
 - ✅ Commands deployed successfully to Discord
 - ✅ Backward compatibility verified with existing sprint data
@@ -96,6 +106,7 @@ interface DailyProgress {
 - ✅ Data persistence confirmed
 
 ### Pull Request:
+
 - Branch: `feature/burndown-daily-points`
 - Commit: `b8459dc - Add daily point tracking to burndown charts`
 - GitHub PR: https://github.com/makky0620/scrum-owl/pull/new/feature/burndown-daily-points

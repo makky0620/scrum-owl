@@ -22,6 +22,7 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. Built wi
 ### Quick Start
 
 1. Clone and install:
+
    ```
    git clone <repository-url>
    cd scrum-owl
@@ -33,6 +34,7 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. Built wi
    - Copy the bot token
 
 3. Configure environment:
+
    ```
    # .env file
    DISCORD_TOKEN=your_discord_bot_token
@@ -58,22 +60,27 @@ docker-compose up -d
 ## Commands
 
 ### Planning Poker
+
 ```
 /poker description: [item to estimate]
 ```
 
 ### Facilitator Selection
+
 ```
 /facilitator participants: [comma-separated names]
 ```
 
 ### PR Metrics
+
 ```
 /prmetrics repositories: [repo names] days: [days to look back]
 ```
+
 Requires Backlog API configuration in .env
 
 ### Reminders
+
 ```
 # One-time reminder
 /reminder once channel: [channel] message: [text] date: [YYYY-MM-DD] time: [HH:MM]
@@ -92,6 +99,7 @@ Requires Backlog API configuration in .env
 ```
 
 ### Burndown Chart
+
 ```
 # Register a new sprint
 /burndown register name: [sprint name] start_date: [YYYY-MM-DD] end_date: [YYYY-MM-DD] total_points: [number]
@@ -108,6 +116,7 @@ Requires Backlog API configuration in .env
 # Delete a registered sprint
 /burndown delete index: [sprint index]
 ```
+
 Manages sprint information and generates burndown charts for sprint progress visualization. Sprint data is persisted between sessions. Sprints are managed by index numbers (starting from 1) shown in the list command.
 
 **Daily Progress Tracking**: Use the `record` command to track points achieved each day. When daily progress data is available, the burndown chart will use actual historical data instead of linear interpolation, providing more accurate sprint visualization.
@@ -115,6 +124,7 @@ Manages sprint information and generates burndown charts for sprint progress vis
 ## Development
 
 Source code is in the `src` directory. To add a new command:
+
 1. Create a file in `src/commands/`
 2. Implement the `Command` interface
 3. Run `npm run deploy`

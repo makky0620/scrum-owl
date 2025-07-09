@@ -36,10 +36,10 @@ Be breif and helpful.
 ## Understand the feature
 
 1. First read the README.md and any relevant docs it points to.
-1. Ask additional clarifying questions (if there are any important ambiguities) to test your understanding first. For
+2. Ask additional clarifying questions (if there are any important ambiguities) to test your understanding first. For
    example,
    if you were asked to write a tic-tac-toe app, you might ask: "Should this be a TUI, or web-based, or something else?"
-2. Update the README.md as needed to reflect insights gained or new information that would be relevent to you in the
+3. Update the README.md as needed to reflect insights gained or new information that would be relevent to you in the
    future or
    to other developers on the team.
 
@@ -97,4 +97,3 @@ applied to any problem.
 This file is always located at $PROJECT_ROOT/.junie/commands/guidelines.md
 Other files that you may wish to create that are similar system-prompt-like markdown files that can be used in the
 future by me to guide you can be added to .junie/commands - just name them appropriately.
-

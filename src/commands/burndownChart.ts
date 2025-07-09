@@ -244,11 +244,11 @@ class BurndownCommand implements Command {
         { name: 'Start Date', value: startDateStr, inline: true },
         { name: 'End Date', value: endDateStr, inline: true },
         { name: 'Total Points', value: totalPoints.toString(), inline: true },
-        { 
-          name: 'Duration', 
-          value: `${endDate.diff(startDate, 'day')} days`, 
-          inline: true 
-        }
+        {
+          name: 'Duration',
+          value: `${endDate.diff(startDate, 'day')} days`,
+          inline: true,
+        },
       )
       .setTimestamp()
       .setFooter({ text: `Registered by ${interaction.user.tag}` });
@@ -323,14 +323,16 @@ class BurndownCommand implements Command {
       // Use actual daily progress data if available, otherwise fall back to interpolation
       if (sprint.dailyProgress && sprint.dailyProgress.length > 0) {
         // Sort daily progress by date
-        const sortedProgress = [...sprint.dailyProgress].sort((a, b) => a.date.localeCompare(b.date));
+        const sortedProgress = [...sprint.dailyProgress].sort((a, b) =>
+          a.date.localeCompare(b.date),
+        );
 
         // Fill in actual data for each day
         for (let day = 0; day <= daysCompleted; day++) {
           const currentDate = startDate.add(day, 'day').format('YYYY-MM-DD');
 
           // Find progress record for this date
-          const progressRecord = sortedProgress.find(record => record.date === currentDate);
+          const progressRecord = sortedProgress.find((record) => record.date === currentDate);
 
           if (progressRecord) {
             // Use actual data: total points - total completed points = remaining points
@@ -339,7 +341,7 @@ class BurndownCommand implements Command {
           } else {
             // Find the most recent progress record before this date
             const previousRecord = sortedProgress
-              .filter(record => record.date < currentDate)
+              .filter((record) => record.date < currentDate)
               .pop(); // Get the last (most recent) record
 
             if (previousRecord) {
@@ -395,7 +397,9 @@ class BurndownCommand implements Command {
               borderWidth: 2,
               fill: false,
               // Only show points for days we have data
-              pointRadius: Array(sprintDays + 1).fill(0).map((_, i) => (i <= daysCompleted ? 5 : 0)),
+              pointRadius: Array(sprintDays + 1)
+                .fill(0)
+                .map((_, i) => (i <= daysCompleted ? 5 : 0)),
             },
           ],
         },
@@ -437,16 +441,16 @@ class BurndownCommand implements Command {
           { name: 'Total Story Points', value: sprint.totalPoints.toString(), inline: true },
           { name: 'Remaining Points', value: remainingPoints.toString(), inline: true },
           { name: 'Completed Points', value: completedPoints.toString(), inline: true },
-          { 
-            name: 'Completion Rate', 
-            value: `${Math.round((completedPoints / sprint.totalPoints) * 100)}%`, 
-            inline: true 
+          {
+            name: 'Completion Rate',
+            value: `${Math.round((completedPoints / sprint.totalPoints) * 100)}%`,
+            inline: true,
           },
-          { 
-            name: 'Sprint Progress', 
-            value: `${Math.round((daysCompleted / sprintDays) * 100)}%`, 
-            inline: true 
-          }
+          {
+            name: 'Sprint Progress',
+            value: `${Math.round((daysCompleted / sprintDays) * 100)}%`,
+            inline: true,
+          },
         )
         .setImage(chartUrl)
         .setTimestamp()
@@ -512,9 +516,17 @@ class BurndownCommand implements Command {
       .setTitle('Sprint Deleted')
       .setDescription(`Sprint "${deletedSprint.name}" has been deleted`)
       .addFields(
-        { name: 'Start Date', value: dayjs(deletedSprint.startDate).format('YYYY-MM-DD'), inline: true },
-        { name: 'End Date', value: dayjs(deletedSprint.endDate).format('YYYY-MM-DD'), inline: true },
-        { name: 'Total Points', value: deletedSprint.totalPoints.toString(), inline: true }
+        {
+          name: 'Start Date',
+          value: dayjs(deletedSprint.startDate).format('YYYY-MM-DD'),
+          inline: true,
+        },
+        {
+          name: 'End Date',
+          value: dayjs(deletedSprint.endDate).format('YYYY-MM-DD'),
+          inline: true,
+        },
+        { name: 'Total Points', value: deletedSprint.totalPoints.toString(), inline: true },
       )
       .setTimestamp()
       .setFooter({ text: `Deleted by ${interaction.user.tag}` });
@@ -575,12 +587,12 @@ class BurndownCommand implements Command {
     }
 
     // Check if there's already a record for this date
-    const existingRecordIndex = sprint.dailyProgress.findIndex(record => record.date === dateStr);
+    const existingRecordIndex = sprint.dailyProgress.findIndex((record) => record.date === dateStr);
 
     // Calculate total points completed up to this date
     let totalPointsCompleted = 0;
     const sortedProgress = [...sprint.dailyProgress]
-      .filter(record => record.date !== dateStr) // Exclude current date if updating
+      .filter((record) => record.date !== dateStr) // Exclude current date if updating
       .sort((a, b) => a.date.localeCompare(b.date));
 
     // Add up all points up to the day before this record
@@ -606,7 +618,7 @@ class BurndownCommand implements Command {
     const progressRecord: DailyProgress = {
       date: dateStr,
       pointsCompleted: pointsAchieved,
-      totalPointsCompleted: totalPointsCompleted
+      totalPointsCompleted: totalPointsCompleted,
     };
 
     if (existingRecordIndex >= 0) {
@@ -638,7 +650,11 @@ class BurndownCommand implements Command {
         { name: 'Date', value: dateStr, inline: true },
         { name: 'Points Achieved', value: pointsAchieved.toString(), inline: true },
         { name: 'Total Completed', value: totalPointsCompleted.toString(), inline: true },
-        { name: 'Remaining Points', value: (sprint.totalPoints - totalPointsCompleted).toString(), inline: true }
+        {
+          name: 'Remaining Points',
+          value: (sprint.totalPoints - totalPointsCompleted).toString(),
+          inline: true,
+        },
       )
       .setTimestamp()
       .setFooter({ text: `Recorded by ${interaction.user.tag}` });

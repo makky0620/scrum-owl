@@ -377,14 +377,20 @@ class ReminderCommand implements Command {
     // Filter reminders by guild ID
     const guildId = interaction.guildId;
     if (!guildId) {
-      await interaction.reply({ content: 'This command can only be used in a server.', flags: MessageFlags.Ephemeral });
+      await interaction.reply({
+        content: 'This command can only be used in a server.',
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
 
-    const guildReminders = reminders.filter(reminder => reminder.guildId === guildId);
+    const guildReminders = reminders.filter((reminder) => reminder.guildId === guildId);
 
     if (guildReminders.length === 0) {
-      await interaction.reply({ content: 'No active reminders for this server.', flags: MessageFlags.Ephemeral });
+      await interaction.reply({
+        content: 'No active reminders for this server.',
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
 
@@ -423,12 +429,15 @@ class ReminderCommand implements Command {
     const guildId = interaction.guildId;
 
     if (!guildId) {
-      await interaction.reply({ content: 'This command can only be used in a server.', flags: MessageFlags.Ephemeral });
+      await interaction.reply({
+        content: 'This command can only be used in a server.',
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
 
     // Filter reminders by guild ID
-    const guildReminders = reminders.filter(reminder => reminder.guildId === guildId);
+    const guildReminders = reminders.filter((reminder) => reminder.guildId === guildId);
 
     if (index < 0 || index >= guildReminders.length) {
       await interaction.reply({
@@ -440,11 +449,12 @@ class ReminderCommand implements Command {
 
     // Find the reminder to delete in the global array
     const reminderToDelete = guildReminders[index];
-    const globalIndex = reminders.findIndex(reminder => 
-      reminder.guildId === reminderToDelete.guildId &&
-      reminder.channelId === reminderToDelete.channelId &&
-      reminder.message === reminderToDelete.message &&
-      reminder.time.getTime() === reminderToDelete.time.getTime()
+    const globalIndex = reminders.findIndex(
+      (reminder) =>
+        reminder.guildId === reminderToDelete.guildId &&
+        reminder.channelId === reminderToDelete.channelId &&
+        reminder.message === reminderToDelete.message &&
+        reminder.time.getTime() === reminderToDelete.time.getTime(),
     );
 
     if (globalIndex === -1) {
@@ -483,12 +493,15 @@ class ReminderCommand implements Command {
     const guildId = interaction.guildId;
 
     if (!guildId) {
-      await interaction.reply({ content: 'This command can only be used in a server.', flags: MessageFlags.Ephemeral });
+      await interaction.reply({
+        content: 'This command can only be used in a server.',
+        flags: MessageFlags.Ephemeral,
+      });
       return;
     }
 
     // Filter reminders by guild ID
-    const guildReminders = reminders.filter(reminder => reminder.guildId === guildId);
+    const guildReminders = reminders.filter((reminder) => reminder.guildId === guildId);
 
     if (index < 0 || index >= guildReminders.length) {
       await interaction.reply({
@@ -500,11 +513,12 @@ class ReminderCommand implements Command {
 
     // Find the reminder to modify in the global array
     const reminderToModify = guildReminders[index];
-    const globalIndex = reminders.findIndex(reminder => 
-      reminder.guildId === reminderToModify.guildId &&
-      reminder.channelId === reminderToModify.channelId &&
-      reminder.message === reminderToModify.message &&
-      reminder.time.getTime() === reminderToModify.time.getTime()
+    const globalIndex = reminders.findIndex(
+      (reminder) =>
+        reminder.guildId === reminderToModify.guildId &&
+        reminder.channelId === reminderToModify.channelId &&
+        reminder.message === reminderToModify.message &&
+        reminder.time.getTime() === reminderToModify.time.getTime(),
     );
 
     if (globalIndex === -1) {
