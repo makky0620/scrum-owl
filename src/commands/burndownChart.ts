@@ -64,7 +64,7 @@ function loadSprints(): Sprint[] {
 const sprints: Sprint[] = loadSprints();
 
 // Create a class that implements the Command interface
-class BurndownCommand implements Command {
+export class BurndownCommand implements Command {
   data = new SlashCommandBuilder()
     .setName('burndown')
     .setDescription('Manage sprint burndown charts')
@@ -141,6 +141,23 @@ class BurndownCommand implements Command {
             .setDescription('Date for the record (YYYY-MM-DD, defaults to today)')
             .setRequired(false),
         ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('update-total')
+        .setDescription('Update total points for an existing sprint')
+        .addIntegerOption((option) =>
+          option
+            .setName('index')
+            .setDescription('Index of the sprint to update (from list command)')
+            .setRequired(true),
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName('total_points')
+            .setDescription('New total points for the sprint')
+            .setRequired(true),
+        ),
     ) as SlashCommandBuilder;
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -161,6 +178,9 @@ class BurndownCommand implements Command {
         break;
       case 'record':
         await this.handleRecordProgress(interaction);
+        break;
+      case 'update-total':
+        await this.handleUpdateTotalPoints(interaction);
         break;
       default:
         await interaction.reply({ content: 'Unknown subcommand.', flags: MessageFlags.Ephemeral });
@@ -685,6 +705,60 @@ class BurndownCommand implements Command {
       .setFooter({ text: `Recorded by ${interaction.user.tag}` });
 
     await interaction.reply({ embeds: [embed] });
+  }
+
+  // Handle updating total points for an existing sprint
+  async handleUpdateTotalPoints(interaction: ChatInputCommandInteraction) {
+    const sprintIndex = interaction.options.getInteger('index', true) - 1; // Convert to 0-based index
+    const newTotalPoints = interaction.options.getInteger('total_points', true);
+
+    // Validate sprint index
+    if (sprintIndex < 0 || sprintIndex >= sprints.length) {
+      await interaction.reply({
+        content: 'Invalid sprint index. Use `/burndown list` to see available sprints.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    // Validate total points
+    if (newTotalPoints <= 0) {
+      await interaction.reply({
+        content: 'Total points must be a positive number.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const sprint = sprints[sprintIndex];
+
+    // Calculate current total completed points
+    let currentCompletedPoints = 0;
+    if (sprint.dailyProgress && sprint.dailyProgress.length > 0) {
+      // Find the highest totalPointsCompleted value
+      currentCompletedPoints = Math.max(...sprint.dailyProgress.map(record => record.totalPointsCompleted));
+    }
+
+    // Validate that new total points is not less than already completed points
+    if (newTotalPoints < currentCompletedPoints) {
+      await interaction.reply({
+        content: `New total points (${newTotalPoints}) cannot be less than already completed points (${currentCompletedPoints}).`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    // Update the sprint's total points
+    sprint.totalPoints = newTotalPoints;
+
+    // Save the updated sprints
+    saveSprints(sprints);
+
+    // Send confirmation message
+    await interaction.reply({
+      content: `Successfully updated total points for "${sprint.name}" to ${newTotalPoints} points.`,
+      flags: MessageFlags.Ephemeral,
+    });
   }
 }
 
