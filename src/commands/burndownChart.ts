@@ -431,7 +431,7 @@ class BurndownCommand implements Command {
         options: {
           title: {
             display: true,
-            text: `Burndown Chart - ${sprint.name} (Weekends Excluded)`,
+            text: `Burndown Chart - ${sprint.name}`,
             fontSize: 16,
           },
           scales: {
@@ -460,7 +460,7 @@ class BurndownCommand implements Command {
       // Create an embed with the chart
       const embed = new EmbedBuilder()
         .setColor('#0099ff')
-        .setTitle(`Burndown Chart - ${sprint.name} (Weekends Excluded)`)
+        .setTitle(`Burndown Chart - ${sprint.name}`)
         .setDescription(`Sprint progress: Working day ${daysCompleted} of ${sprintDays}`)
         .addFields(
           { name: 'Total Story Points', value: sprint.totalPoints.toString(), inline: true },
