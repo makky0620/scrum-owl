@@ -327,12 +327,18 @@ class ReminderCommand {
         // Filter reminders by guild ID
         const guildId = interaction.guildId;
         if (!guildId) {
-            await interaction.reply({ content: 'This command can only be used in a server.', flags: discord_js_1.MessageFlags.Ephemeral });
+            await interaction.reply({
+                content: 'This command can only be used in a server.',
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
             return;
         }
-        const guildReminders = reminders.filter(reminder => reminder.guildId === guildId);
+        const guildReminders = reminders.filter((reminder) => reminder.guildId === guildId);
         if (guildReminders.length === 0) {
-            await interaction.reply({ content: 'No active reminders for this server.', flags: discord_js_1.MessageFlags.Ephemeral });
+            await interaction.reply({
+                content: 'No active reminders for this server.',
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
             return;
         }
         const embed = new discord_js_1.EmbedBuilder()
@@ -363,11 +369,14 @@ class ReminderCommand {
         const index = interaction.options.getInteger('index', true) - 1;
         const guildId = interaction.guildId;
         if (!guildId) {
-            await interaction.reply({ content: 'This command can only be used in a server.', flags: discord_js_1.MessageFlags.Ephemeral });
+            await interaction.reply({
+                content: 'This command can only be used in a server.',
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
             return;
         }
         // Filter reminders by guild ID
-        const guildReminders = reminders.filter(reminder => reminder.guildId === guildId);
+        const guildReminders = reminders.filter((reminder) => reminder.guildId === guildId);
         if (index < 0 || index >= guildReminders.length) {
             await interaction.reply({
                 content: 'Invalid reminder index.',
@@ -377,7 +386,7 @@ class ReminderCommand {
         }
         // Find the reminder to delete in the global array
         const reminderToDelete = guildReminders[index];
-        const globalIndex = reminders.findIndex(reminder => reminder.guildId === reminderToDelete.guildId &&
+        const globalIndex = reminders.findIndex((reminder) => reminder.guildId === reminderToDelete.guildId &&
             reminder.channelId === reminderToDelete.channelId &&
             reminder.message === reminderToDelete.message &&
             reminder.time.getTime() === reminderToDelete.time.getTime());
@@ -407,11 +416,14 @@ class ReminderCommand {
         const content = interaction.options.getString('content', true);
         const guildId = interaction.guildId;
         if (!guildId) {
-            await interaction.reply({ content: 'This command can only be used in a server.', flags: discord_js_1.MessageFlags.Ephemeral });
+            await interaction.reply({
+                content: 'This command can only be used in a server.',
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
             return;
         }
         // Filter reminders by guild ID
-        const guildReminders = reminders.filter(reminder => reminder.guildId === guildId);
+        const guildReminders = reminders.filter((reminder) => reminder.guildId === guildId);
         if (index < 0 || index >= guildReminders.length) {
             await interaction.reply({
                 content: 'Invalid reminder index.',
@@ -421,7 +433,7 @@ class ReminderCommand {
         }
         // Find the reminder to modify in the global array
         const reminderToModify = guildReminders[index];
-        const globalIndex = reminders.findIndex(reminder => reminder.guildId === reminderToModify.guildId &&
+        const globalIndex = reminders.findIndex((reminder) => reminder.guildId === reminderToModify.guildId &&
             reminder.channelId === reminderToModify.channelId &&
             reminder.message === reminderToModify.message &&
             reminder.time.getTime() === reminderToModify.time.getTime());
