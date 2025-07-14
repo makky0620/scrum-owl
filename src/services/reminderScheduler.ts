@@ -168,7 +168,7 @@ export class ReminderScheduler {
       }
 
       const message = this.formatReminderMessage(reminder);
-      await channel.send(message);
+      await channel.send({ embeds: [ message ] });
 
       console.log(`[ReminderScheduler] Triggered reminder: ${reminder.title} for user ${reminder.userId}`);
 
@@ -192,7 +192,7 @@ export class ReminderScheduler {
     const newCount = config.currentCount + 1;
 
     // Check if reminder should be deactivated
-    const shouldDeactivate = 
+    const shouldDeactivate =
       (config.maxOccurrences && newCount >= config.maxOccurrences) ||
       (config.endDate && dayjs().isAfter(config.endDate));
 
@@ -207,9 +207,9 @@ export class ReminderScheduler {
       nextTriggerTime: this.calculateNextTriggerTime(reminder),
       recurringConfig: {
         ...config,
-        currentCount: newCount
+        currentCount: newCount,
       },
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     await this.storage.updateReminder(updatedReminder);
@@ -219,14 +219,14 @@ export class ReminderScheduler {
     const updatedReminder: Reminder = {
       ...reminder,
       isActive: false,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     await this.storage.updateReminder(updatedReminder);
     console.log(`[ReminderScheduler] Deactivated reminder: ${reminder.title}`);
   }
 
-  formatReminderMessage(reminder: Reminder): { content: string; embeds: EmbedBuilder[] } {
+  formatReminderMessage(reminder: Reminder): EmbedBuilder {
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle(`🔔 ${reminder.title}`)
@@ -242,21 +242,18 @@ export class ReminderScheduler {
 
       embed.addFields(
         { name: 'Type', value: `${intervalText} reminder`, inline: true },
-        { name: 'Count', value: occurrenceText, inline: true }
+        { name: 'Count', value: occurrenceText, inline: true },
       );
 
       if (config.maxOccurrences) {
-        embed.addFields({ 
-          name: 'Progress', 
-          value: `${config.currentCount + 1}/${config.maxOccurrences}`, 
-          inline: true 
+        embed.addFields({
+          name: 'Progress',
+          value: `${config.currentCount + 1}/${config.maxOccurrences}`,
+          inline: true,
         });
       }
     }
 
-    return {
-      content: `<@${reminder.userId}>`,
-      embeds: [embed]
-    };
+    return embed;
   }
 }

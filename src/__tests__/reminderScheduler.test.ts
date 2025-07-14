@@ -374,15 +374,11 @@ describe('ReminderScheduler', () => {
   });
 
   describe('formatReminderMessage', () => {
-    it('should format reminder message with user mention', () => {
+    it('should format reminder message without user mention', () => {
       const result = scheduler.formatReminderMessage(mockReminder);
 
-      expect(result).toHaveProperty('content');
-      expect(result).toHaveProperty('embeds');
-      expect(result.content).toContain('<@user123>');
-      expect(result.embeds).toHaveLength(1);
-      expect(result.embeds[0].data.title).toContain('Test Reminder');
-      expect(result.embeds[0].data.description).toContain('This is a test reminder');
+      expect(result.data.title).toContain('Test Reminder');
+      expect(result.data.description).toContain('This is a test reminder');
     });
 
     it('should include recurring information for recurring reminders', () => {
@@ -397,12 +393,9 @@ describe('ReminderScheduler', () => {
 
       const result = scheduler.formatReminderMessage(recurringReminder);
 
-      expect(result).toHaveProperty('content');
-      expect(result).toHaveProperty('embeds');
-      expect(result.embeds).toHaveLength(1);
-      expect(result.embeds[0].data.fields).toBeDefined();
+      expect(result.data.fields).toBeDefined();
 
-      const fields = result.embeds[0].data.fields;
+      const fields = result.data.fields;
       const typeField = fields?.find(f => f.name === 'Type');
       const countField = fields?.find(f => f.name === 'Count');
 
