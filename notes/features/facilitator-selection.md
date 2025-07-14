@@ -16,12 +16,22 @@ Translation: Want to create a feature to select a facilitator. It would be good 
   - Proper error handling and timeout
 
 ## Implementation Plan
-1. Activate the existing feature by renaming `facilitator.old.ts` to `facilitator.ts`
-2. Write tests for the functionality
-3. Test the implementation
+1. ✓ Activate the existing feature by renaming `facilitator.old.ts` to `facilitator.ts`
+2. ✓ Write tests for the functionality
+3. ✓ Test the implementation
 4. Deploy and verify
+
+## Implementation Details
+- Created comprehensive tests in `src/__tests__/facilitator.test.ts`
+- Tests cover command structure, participant parsing, and random selection
+- All tests passing (7/7)
+- Feature activated by renaming `facilitator.old.ts` to `facilitator.ts`
+- No regressions in existing functionality
 
 ## Notes
 - The existing implementation already matches the requirements perfectly
 - No new development needed, just activation of existing code
 - Feature includes nice UX with animations and interactive buttons
+- Command: `/facilitator participants: [comma-separated names]`
+- Randomly selects facilitator from provided participants
+- Interactive UI with start/cancel buttons and spinning animation
