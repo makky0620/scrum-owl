@@ -2,7 +2,7 @@ This outlines the development practices and principles we require you to follow.
 working on features until asked, this document is intended to get you into the right state
 of mind.
 
-1. Make sure you are on the main branch before you start (unless instructed to start on a specific branch)
+1. Make sure you are on the replace branch before you start (unless instructed to start on a specific branch)
 2. Understand the code that is there before you begin to change it.
 3. Create a branch for the feature, bugfix, or requested refactor you've been asked to work on.
 4. Employ test-driven development. Red-Green-Refactor process (outlined below)

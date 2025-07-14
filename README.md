@@ -8,9 +8,7 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. Built wi
 
 - Planning Poker: Estimate tasks with team voting
 - Facilitator Selection: Randomly select a facilitator
-- PR Metrics: Analyze pull request metrics
 - Reminders: Set one-time or recurring reminders
-- Burndown Chart: Generate sprint burndown charts
 
 ## Setup
 
@@ -71,12 +69,6 @@ docker-compose up -d
 /facilitator participants: [comma-separated names]
 ```
 
-### PR Metrics
-
-```
-/prmetrics repositories: [repo names] days: [days to look back]
-```
-
 Requires Backlog API configuration in .env
 
 ### Reminders
@@ -97,29 +89,6 @@ Requires Backlog API configuration in .env
 # Add content to reminder
 /reminder add-content index: [number] content: [text]
 ```
-
-### Burndown Chart
-
-```
-# Register a new sprint
-/burndown register name: [sprint name] start_date: [YYYY-MM-DD] end_date: [YYYY-MM-DD] total_points: [number]
-
-# Record daily progress for a sprint
-/burndown record index: [sprint index] points_achieved: [number] date: [YYYY-MM-DD] (optional, defaults to today)
-
-# View burndown chart for a registered sprint
-/burndown view index: [sprint index]
-
-# List all registered sprints
-/burndown list
-
-# Delete a registered sprint
-/burndown delete index: [sprint index]
-```
-
-Manages sprint information and generates burndown charts for sprint progress visualization. Sprint data is persisted between sessions. Sprints are managed by index numbers (starting from 1) shown in the list command.
-
-**Daily Progress Tracking**: Use the `record` command to track points achieved each day. When daily progress data is available, the burndown chart will use actual historical data instead of linear interpolation, providing more accurate sprint visualization.
 
 ## Development
 
