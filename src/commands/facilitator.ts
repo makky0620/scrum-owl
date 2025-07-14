@@ -31,7 +31,8 @@ const command: Command = {
     const participants = participantsInput
       .split(',')
       .map((name) => name.trim())
-      .filter((name) => name.length > 0);
+      .filter((name) => name.length > 0)
+      .filter((name, index, array) => array.indexOf(name) === index); // Remove duplicates
 
     if (participants.length === 0) {
       await interaction.reply({

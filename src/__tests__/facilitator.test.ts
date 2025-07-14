@@ -24,7 +24,7 @@ describe('Facilitator Command', () => {
     const commandData = command.data.toJSON();
     expect(commandData.options).toBeDefined();
     expect(commandData.options).toHaveLength(1);
-    
+
     const participantsOption = commandData.options[0];
     expect(participantsOption.name).toBe('participants');
     expect(participantsOption.description).toBe('Comma-separated list of participant names');
@@ -36,12 +36,13 @@ describe('Facilitator Command', () => {
     // Test participant parsing logic
     const testInput = 'Alice, Bob, Charlie, David';
     const expectedParticipants = ['Alice', 'Bob', 'Charlie', 'David'];
-    
+
     const participants = testInput
       .split(',')
       .map((name) => name.trim())
-      .filter((name) => name.length > 0);
-    
+      .filter((name) => name.length > 0)
+      .filter((name, index, array) => array.indexOf(name) === index);
+
     expect(participants).toEqual(expectedParticipants);
   });
 
@@ -51,34 +52,48 @@ describe('Facilitator Command', () => {
       .split(',')
       .map((name) => name.trim())
       .filter((name) => name.length > 0);
-    
+
     expect(participants).toHaveLength(0);
   });
 
   test('should handle participants with extra spaces', () => {
     const testInput = ' Alice , Bob  ,  Charlie , David ';
     const expectedParticipants = ['Alice', 'Bob', 'Charlie', 'David'];
-    
+
     const participants = testInput
       .split(',')
       .map((name) => name.trim())
-      .filter((name) => name.length > 0);
-    
+      .filter((name) => name.length > 0)
+      .filter((name, index, array) => array.indexOf(name) === index);
+
+    expect(participants).toEqual(expectedParticipants);
+  });
+
+  test('should handle duplicate participants', () => {
+    const testInput = 'Alice, Bob, Alice, Charlie, Bob';
+    const expectedParticipants = ['Alice', 'Bob', 'Charlie'];
+
+    const participants = testInput
+      .split(',')
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0)
+      .filter((name, index, array) => array.indexOf(name) === index);
+
     expect(participants).toEqual(expectedParticipants);
   });
 
   test('should select random facilitator from participants', () => {
     const participants = ['Alice', 'Bob', 'Charlie', 'David'];
-    
+
     // Mock Math.random to return a predictable value
     const originalRandom = Math.random;
     Math.random = jest.fn(() => 0.5); // This should select index 2 (Charlie)
-    
+
     const selectedIndex = Math.floor(Math.random() * participants.length);
     const selectedFacilitator = participants[selectedIndex];
-    
+
     expect(selectedFacilitator).toBe('Charlie');
-    
+
     // Restore original Math.random
     Math.random = originalRandom;
   });
