@@ -28,8 +28,8 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. Built wi
    ```
 
 2. Create a Discord bot in the [Developer Portal](https://discord.com/developers/applications)
-   - Enable SERVER MEMBERS INTENT and MESSAGE CONTENT INTENT
-   - Copy the bot token
+    - Enable SERVER MEMBERS INTENT and MESSAGE CONTENT INTENT
+    - Copy the bot token
 
 3. Configure environment:
 
@@ -67,27 +67,6 @@ docker-compose up -d
 
 ```
 /facilitator participants: [comma-separated names]
-```
-
-Requires Backlog API configuration in .env
-
-### Reminders
-
-```
-# One-time reminder
-/reminder once channel: [channel] message: [text] date: [YYYY-MM-DD] time: [HH:MM]
-
-# Daily reminder
-/reminder daily channel: [channel] message: [text] time: [HH:MM]
-
-# List reminders
-/reminder list
-
-# Delete reminder
-/reminder delete index: [number]
-
-# Add content to reminder
-/reminder add-content index: [number] content: [text]
 ```
 
 ## Development
