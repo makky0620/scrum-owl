@@ -1,61 +1,151 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.data = void 0;
-exports.parseParticipants = parseParticipants;
-exports.selectRandomFacilitator = selectRandomFacilitator;
-exports.execute = execute;
 const discord_js_1 = require("discord.js");
-function parseParticipants(input) {
-    if (!input || input.trim() === '') {
-        return [];
-    }
-    return input
-        .split(',')
-        .map(name => name.trim())
-        .filter(name => name.length > 0)
-        .filter((name, index, array) => array.indexOf(name) === index); // Remove duplicates
-}
-function selectRandomFacilitator(participants) {
-    if (participants.length === 0) {
-        return null;
-    }
-    if (participants.length === 1) {
-        return participants[0];
-    }
-    const randomIndex = Math.floor(Math.random() * participants.length);
-    return participants[randomIndex];
-}
-const data = new discord_js_1.SlashCommandBuilder()
-    .setName('facilitator')
-    .setDescription('Randomly select a facilitator from participants')
-    .addStringOption(option => option
-    .setName('participants')
-    .setDescription('Comma-separated list of participant names')
-    .setRequired(true));
-exports.data = data;
-async function execute(interaction) {
-    const participantsInput = interaction.options.getString('participants', true);
-    const participants = parseParticipants(participantsInput);
-    if (participants.length === 0) {
-        await interaction.reply({
-            content: '❌ No valid participants provided. Please provide a comma-separated list of names.',
-            ephemeral: true
+// Emojis for game-like presentation
+const emojis = ['🎲', '🎯', '🎮', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎺', '🎸', '🎹', '🎻', '🎼'];
+const command = {
+    data: new discord_js_1.SlashCommandBuilder()
+        .setName('facilitator')
+        .setDescription('Randomly select a facilitator from a list of participants')
+        .addStringOption((option) => option
+        .setName('participants')
+        .setDescription('Comma-separated list of participant names')
+        .setRequired(true)),
+    async execute(interaction) {
+        // Get the participants from the command options
+        const participantsInput = interaction.options.getString('participants', true);
+        const participants = participantsInput
+            .split(',')
+            .map((name) => name.trim())
+            .filter((name) => name.length > 0)
+            .filter((name, index, array) => array.indexOf(name) === index); // Remove duplicates
+        if (participants.length === 0) {
+            await interaction.reply({
+                content: 'Please provide at least one participant name.',
+                flags: discord_js_1.MessageFlags.Ephemeral,
+            });
+            return;
+        }
+        // Create an embed for the facilitator selection
+        const embed = new discord_js_1.EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle('Facilitator Selection')
+            .setDescription('Selecting a random facilitator...')
+            .addFields({ name: 'Participants', value: participants.join('\n'), inline: false })
+            .setTimestamp()
+            .setFooter({ text: 'Click the button to start the selection' });
+        // Create a button to start the selection
+        const row = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
+            .setCustomId('start_selection')
+            .setLabel('Start Selection')
+            .setStyle(discord_js_1.ButtonStyle.Primary)
+            .setEmoji('🎲'), new discord_js_1.ButtonBuilder()
+            .setCustomId('cancel_selection')
+            .setLabel('Cancel')
+            .setStyle(discord_js_1.ButtonStyle.Danger));
+        // Send the initial message with the embed and button
+        const message = await interaction.reply({
+            embeds: [embed],
+            components: [row],
+            fetchReply: true,
         });
-        return;
-    }
-    const selectedFacilitator = selectRandomFacilitator(participants);
-    if (!selectedFacilitator) {
-        await interaction.reply({
-            content: '❌ Unable to select a facilitator.',
-            ephemeral: true
+        // Create a collector for button interactions
+        const collector = message.createMessageComponentCollector({
+            componentType: discord_js_1.ComponentType.Button,
+            time: 5 * 60 * 1000, // 5 minutes
         });
-        return;
-    }
-    const embed = new discord_js_1.EmbedBuilder()
-        .setTitle('🎯 Facilitator Selected!')
-        .setDescription(`**${selectedFacilitator}** has been randomly selected as the facilitator.`)
-        .addFields({ name: 'Participants', value: participants.join(', '), inline: false })
-        .setColor(0x00AE86)
-        .setTimestamp();
-    await interaction.reply({ embeds: [embed] });
-}
+        collector.on('collect', async (i) => {
+            const customId = i.customId;
+            if (customId === 'start_selection') {
+                // Disable the buttons
+                const disabledRow = new discord_js_1.ActionRowBuilder().addComponents(new discord_js_1.ButtonBuilder()
+                    .setCustomId('start_selection')
+                    .setLabel('Selection in progress...')
+                    .setStyle(discord_js_1.ButtonStyle.Primary)
+                    .setEmoji('🎲')
+                    .setDisabled(true), new discord_js_1.ButtonBuilder()
+                    .setCustomId('cancel_selection')
+                    .setLabel('Cancel')
+                    .setStyle(discord_js_1.ButtonStyle.Danger)
+                    .setDisabled(true));
+                await i.update({
+                    embeds: [embed],
+                    components: [disabledRow],
+                });
+                // Simulate a "spinning wheel" effect
+                const spinningEmojis = [...emojis];
+                const spinningTimes = 10; // Number of "spins"
+                const spinningInterval = 500; // Milliseconds between spins
+                for (let spin = 0; spin < spinningTimes; spin++) {
+                    // Shuffle the participants for each spin
+                    const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+                    // Update the embed with the current "spin"
+                    const spinEmbed = new discord_js_1.EmbedBuilder()
+                        .setColor('#0099ff')
+                        .setTitle('Facilitator Selection')
+                        .setDescription(`Selecting... ${spinningEmojis[spin % spinningEmojis.length]}`)
+                        .addFields({
+                        name: 'Participants',
+                        value: shuffledParticipants.join('\n'),
+                        inline: false,
+                    })
+                        .setTimestamp()
+                        .setFooter({ text: 'Selection in progress...' });
+                    await interaction.editReply({
+                        embeds: [spinEmbed],
+                        components: [disabledRow],
+                    });
+                    // Wait for the next spin
+                    await new Promise((resolve) => setTimeout(resolve, spinningInterval));
+                }
+                // Select a random facilitator
+                const selectedIndex = Math.floor(Math.random() * participants.length);
+                const selectedFacilitator = participants[selectedIndex];
+                // Create the final result embed
+                const resultEmbed = new discord_js_1.EmbedBuilder()
+                    .setColor('#00FF00')
+                    .setTitle('🎉 Facilitator Selected! 🎉')
+                    .setDescription(`**${selectedFacilitator}** has been selected as the facilitator!`)
+                    .addFields({ name: 'All Participants', value: participants.join('\n'), inline: false })
+                    .setTimestamp()
+                    .setFooter({ text: 'Thanks for using the Facilitator Selector!' });
+                // Update the message with the result
+                await interaction.editReply({
+                    embeds: [resultEmbed],
+                    components: [], // Remove all buttons
+                });
+                // End the collector
+                collector.stop();
+            }
+            else if (customId === 'cancel_selection') {
+                // Cancel the selection
+                const cancelEmbed = new discord_js_1.EmbedBuilder()
+                    .setColor('#FF0000')
+                    .setTitle('Facilitator Selection')
+                    .setDescription('Selection cancelled.')
+                    .setTimestamp();
+                await i.update({
+                    embeds: [cancelEmbed],
+                    components: [], // Remove all buttons
+                });
+                // End the collector
+                collector.stop();
+            }
+        });
+        collector.on('end', async () => {
+            if (!collector.ended) {
+                // If the collector timed out
+                const timeoutEmbed = new discord_js_1.EmbedBuilder()
+                    .setColor('#FF0000')
+                    .setTitle('Facilitator Selection')
+                    .setDescription('Selection timed out.')
+                    .setTimestamp();
+                await interaction.editReply({
+                    embeds: [timeoutEmbed],
+                    components: [], // Remove all buttons
+                });
+            }
+        });
+    },
+};
+module.exports = command;
