@@ -1,5 +1,7 @@
 import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
 import { Command } from './command';
+import { ReminderScheduler } from './services/reminderScheduler';
+import { ReminderStorage } from './utils/storage';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
@@ -13,6 +15,10 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 // Create a collection to store commands
 client.commands = new Collection<string, Command>();
 
+// Initialize reminder scheduler
+const reminderStorage = new ReminderStorage();
+const reminderScheduler = new ReminderScheduler(client, reminderStorage);
+
 // Load commands from the commands directory
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
@@ -20,7 +26,7 @@ const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const command = require(filePath);
-  
+
   // Set a new item in the Collection with the key as the command name and the value as the exported module
   if ('data' in command && 'execute' in command) {
     client.commands.set(command.data.name, command);
@@ -33,6 +39,10 @@ for (const file of commandFiles) {
 // When the client is ready, run this code (only once)
 client.once(Events.ClientReady, readyClient => {
   console.log(`[INFO] Ready! Logged in as ${readyClient.user.tag}`);
+
+  // Start the reminder scheduler
+  reminderScheduler.start();
+  console.log('[INFO] Reminder scheduler started');
 });
 
 // Handle slash command interactions
@@ -50,9 +60,9 @@ client.on(Events.InteractionCreate, async interaction => {
     await command.execute(interaction);
   } catch (error) {
     console.error(`[ERROR] Error executing command ${interaction.commandName}:`, error);
-    
+
     const errorMessage = { content: 'There was an error while executing this command!', ephemeral: true };
-    
+
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp(errorMessage);
     } else {
@@ -63,6 +73,19 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // Log in to Discord with your client's token
 client.login(process.env.DISCORD_TOKEN);
+
+// Graceful shutdown handling
+process.on('SIGINT', () => {
+  console.log('[INFO] Received SIGINT, shutting down gracefully...');
+  reminderScheduler.stop();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('[INFO] Received SIGTERM, shutting down gracefully...');
+  reminderScheduler.stop();
+  process.exit(0);
+});
 
 // Extend the Client interface to include commands
 declare module 'discord.js' {
