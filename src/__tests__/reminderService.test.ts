@@ -1,0 +1,289 @@
+import { ReminderService } from '../services/reminderService';
+import { ReminderStorage } from '../utils/storage';
+import { Reminder } from '../models/reminder';
+import dayjs from 'dayjs';
+
+// Mock the storage
+jest.mock('../utils/storage');
+const MockedReminderStorage = ReminderStorage as jest.MockedClass<typeof ReminderStorage>;
+
+describe('ReminderService', () => {
+  let reminderService: ReminderService;
+  let mockStorage: jest.Mocked<ReminderStorage>;
+
+  const mockReminder: Reminder = {
+    id: 'test-id-1',
+    userId: 'user123',
+    channelId: 'channel123',
+    guildId: 'guild123',
+    title: 'Test Reminder',
+    message: 'This is a test reminder',
+    nextTriggerTime: dayjs().add(1, 'hour').toDate(),
+    type: 'once',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  beforeEach(() => {
+    mockStorage = new MockedReminderStorage() as jest.Mocked<ReminderStorage>;
+    reminderService = new ReminderService(mockStorage);
+    jest.clearAllMocks();
+  });
+
+  describe('createReminder', () => {
+    it('should create a one-time reminder with valid data', async () => {
+      const futureTime = dayjs().add(1, 'hour').format('YYYY-MM-DD HH:mm');
+      const reminderData = {
+        userId: 'user123',
+        channelId: 'channel123',
+        guildId: 'guild123',
+        title: 'Test Reminder',
+        message: 'This is a test reminder',
+        time: futureTime,
+        type: 'once' as const
+      };
+
+      mockStorage.addReminder.mockResolvedValue();
+
+      const result = await reminderService.createReminder(reminderData);
+
+      expect(result.id).toBeDefined();
+      expect(result.title).toBe('Test Reminder');
+      expect(result.type).toBe('once');
+      expect(result.isActive).toBe(true);
+      expect(mockStorage.addReminder).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Test Reminder',
+        type: 'once'
+      }));
+    });
+
+    it('should create a recurring reminder with day filter', async () => {
+      const reminderData = {
+        userId: 'user123',
+        channelId: 'channel123',
+        guildId: 'guild123',
+        title: 'Daily Standup',
+        message: 'Time for standup!',
+        time: '09:00',
+        type: 'recurring' as const,
+        recurringConfig: {
+          interval: 'daily' as const,
+          dayFilter: {
+            skipWeekends: true,
+            allowedDays: [1, 2, 3, 4, 5]
+          }
+        }
+      };
+
+      mockStorage.addReminder.mockResolvedValue();
+
+      const result = await reminderService.createReminder(reminderData);
+
+      expect(result.type).toBe('recurring');
+      expect(result.recurringConfig?.interval).toBe('daily');
+      expect(result.recurringConfig?.dayFilter?.skipWeekends).toBe(true);
+      expect(result.recurringConfig?.currentCount).toBe(0);
+    });
+
+    it('should validate required fields', async () => {
+      const invalidData = {
+        userId: 'user123',
+        channelId: 'channel123',
+        guildId: 'guild123',
+        title: '',
+        message: 'Test message',
+        time: '2024-07-15 14:30',
+        type: 'once' as const
+      };
+
+      await expect(reminderService.createReminder(invalidData))
+        .rejects.toThrow('Title is required');
+    });
+
+    it('should validate time format', async () => {
+      const invalidData = {
+        userId: 'user123',
+        channelId: 'channel123',
+        guildId: 'guild123',
+        title: 'Test',
+        message: 'Test message',
+        time: 'invalid-time',
+        type: 'once' as const
+      };
+
+      await expect(reminderService.createReminder(invalidData))
+        .rejects.toThrow('Invalid time format');
+    });
+
+    it('should validate past time for one-time reminders', async () => {
+      const pastTime = dayjs().subtract(1, 'hour').format('YYYY-MM-DD HH:mm');
+      const invalidData = {
+        userId: 'user123',
+        channelId: 'channel123',
+        guildId: 'guild123',
+        title: 'Test',
+        message: 'Test message',
+        time: pastTime,
+        type: 'once' as const
+      };
+
+      await expect(reminderService.createReminder(invalidData))
+        .rejects.toThrow('Cannot set reminder for past time');
+    });
+
+    it('should validate day filter conflicts', async () => {
+      const conflictingData = {
+        userId: 'user123',
+        channelId: 'channel123',
+        guildId: 'guild123',
+        title: 'Test',
+        message: 'Test message',
+        time: '09:00',
+        type: 'recurring' as const,
+        recurringConfig: {
+          interval: 'daily' as const,
+          dayFilter: {
+            skipWeekends: true,
+            allowedDays: [0, 6] // Only weekends
+          }
+        }
+      };
+
+      await expect(reminderService.createReminder(conflictingData))
+        .rejects.toThrow('Cannot skip weekends and only allow weekends');
+    });
+  });
+
+  describe('updateReminder', () => {
+    it('should update an existing reminder', async () => {
+      const updatedData = {
+        id: 'test-id-1',
+        title: 'Updated Title',
+        message: 'Updated message'
+      };
+
+      mockStorage.getReminderById.mockResolvedValue(mockReminder);
+      mockStorage.updateReminder.mockResolvedValue();
+
+      const result = await reminderService.updateReminder(updatedData);
+
+      expect(result.title).toBe('Updated Title');
+      expect(result.message).toBe('Updated message');
+      expect(result.updatedAt).toBeInstanceOf(Date);
+      expect(mockStorage.updateReminder).toHaveBeenCalled();
+    });
+
+    it('should throw error if reminder not found', async () => {
+      mockStorage.getReminderById.mockResolvedValue(undefined);
+
+      await expect(reminderService.updateReminder({ id: 'non-existent' }))
+        .rejects.toThrow('Reminder not found');
+    });
+  });
+
+  describe('deleteReminder', () => {
+    it('should delete a reminder by id', async () => {
+      mockStorage.deleteReminder.mockResolvedValue();
+
+      await reminderService.deleteReminder('test-id-1');
+
+      expect(mockStorage.deleteReminder).toHaveBeenCalledWith('test-id-1');
+    });
+  });
+
+  describe('getUserReminders', () => {
+    it('should return reminders for a specific user', async () => {
+      const userReminders = [mockReminder];
+      mockStorage.getRemindersByUser.mockResolvedValue(userReminders);
+
+      const result = await reminderService.getUserReminders('user123');
+
+      expect(result).toEqual(userReminders);
+      expect(mockStorage.getRemindersByUser).toHaveBeenCalledWith('user123');
+    });
+  });
+
+  describe('parseTimeString', () => {
+    it('should parse relative time strings', () => {
+      const result = reminderService.parseTimeString('30m');
+      const expected = dayjs().add(30, 'minute');
+
+      expect(dayjs(result).diff(expected, 'minute')).toBeLessThan(1);
+    });
+
+    it('should parse absolute time strings', () => {
+      const result = reminderService.parseTimeString('2024-07-15 14:30');
+      const expected = dayjs('2024-07-15 14:30');
+
+      expect(dayjs(result).isSame(expected)).toBe(true);
+    });
+
+    it('should parse time-only strings for today', () => {
+      const result = reminderService.parseTimeString('14:30');
+      const resultDayjs = dayjs(result);
+
+      expect(resultDayjs.hour()).toBe(14);
+      expect(resultDayjs.minute()).toBe(30);
+      expect(resultDayjs.second()).toBe(0);
+
+      // Should be either today or tomorrow depending on current time
+      const today = dayjs().hour(14).minute(30).second(0).millisecond(0);
+      const tomorrow = today.add(1, 'day');
+
+      const isToday = resultDayjs.isSame(today, 'minute');
+      const isTomorrow = resultDayjs.isSame(tomorrow, 'minute');
+
+      expect(isToday || isTomorrow).toBe(true);
+    });
+
+    it('should throw error for invalid time format', () => {
+      expect(() => reminderService.parseTimeString('invalid'))
+        .toThrow('Invalid time format');
+    });
+  });
+
+  describe('validateDayFilter', () => {
+    it('should validate valid day filter', () => {
+      const validFilter = {
+        skipWeekends: true,
+        allowedDays: [1, 2, 3, 4, 5]
+      };
+
+      expect(() => reminderService.validateDayFilter(validFilter)).not.toThrow();
+    });
+
+    it('should throw error for conflicting day filter', () => {
+      const conflictingFilter = {
+        skipWeekends: true,
+        allowedDays: [0, 6] // Only weekends
+      };
+
+      expect(() => reminderService.validateDayFilter(conflictingFilter))
+        .toThrow('Cannot skip weekends and only allow weekends');
+    });
+
+    it('should throw error for invalid day numbers', () => {
+      const invalidFilter = {
+        skipWeekends: false,
+        allowedDays: [7, 8] // Invalid day numbers
+      };
+
+      expect(() => reminderService.validateDayFilter(invalidFilter))
+        .toThrow('Invalid day number');
+    });
+  });
+
+  describe('generateId', () => {
+    it('should generate unique IDs', () => {
+      const id1 = reminderService.generateId();
+      const id2 = reminderService.generateId();
+
+      expect(id1).toBeDefined();
+      expect(id2).toBeDefined();
+      expect(id1).not.toBe(id2);
+      expect(typeof id1).toBe('string');
+      expect(id1.length).toBeGreaterThan(0);
+    });
+  });
+});

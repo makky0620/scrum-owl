@@ -28,8 +28,8 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. Built wi
    ```
 
 2. Create a Discord bot in the [Developer Portal](https://discord.com/developers/applications)
-   - Enable SERVER MEMBERS INTENT and MESSAGE CONTENT INTENT
-   - Copy the bot token
+    - Enable SERVER MEMBERS INTENT and MESSAGE CONTENT INTENT
+    - Copy the bot token
 
 3. Configure environment:
 
@@ -69,26 +69,65 @@ docker-compose up -d
 /facilitator participants: [comma-separated names]
 ```
 
-Requires Backlog API configuration in .env
-
 ### Reminders
 
+Create, manage, and delete reminders.
+
+#### Creating Reminders
+
+```
+/reminder create title: [title] message: [message] time: [time] type: [once|recurring]
+```
+
+**Required Parameters:**
+- `title`: Title of the reminder
+- `message`: Message content of the reminder
+- `time`: Execution time (e.g., "14:30", "2h", "2024-07-15 14:30")
+- `type`: Type of reminder (`once`: one-time, `recurring`: repeating)
+
+**Recurring Reminder Options:**
+- `recurring`: Recurring interval (`daily`: daily, `weekly`: weekly, `monthly`: monthly, `custom`: custom)
+- `custom_interval`: Custom interval in minutes (required for custom type)
+- `skip_weekends`: Skip weekends (true/false)
+- `allowed_days`: Allowed days (0=Sunday, 1=Monday...6=Saturday) e.g., "1,2,3,4,5"
+- `end_date`: End date (YYYY-MM-DD format)
+- `max_occurrences`: Maximum number of executions
+
+**Usage Examples:**
 ```
 # One-time reminder
-/reminder once channel: [channel] message: [text] date: [YYYY-MM-DD] time: [HH:MM]
+/reminder create title: "Meeting" message: "Team meeting is starting" time: "14:30" type: once
 
 # Daily reminder
-/reminder daily channel: [channel] message: [text] time: [HH:MM]
+/reminder create title: "Daily Report" message: "Time to write daily report" time: "17:00" type: recurring recurring: daily
 
-# List reminders
-/reminder list
-
-# Delete reminder
-/reminder delete index: [number]
-
-# Add content to reminder
-/reminder add-content index: [number] content: [text]
+# Weekdays only reminder
+/reminder create title: "Stand-up" message: "Stand-up meeting time" time: "09:00" type: recurring recurring: daily allowed_days: "1,2,3,4,5"
 ```
+
+#### Listing Reminders
+
+```
+/reminder list
+```
+
+Displays a list of reminders you have created.
+
+#### Deleting Reminders
+
+```
+/reminder delete id: [reminder_id]
+```
+
+Deletes the reminder with the specified ID.
+
+#### Editing Reminders
+
+```
+/reminder edit id: [reminder_id] [title: new_title] [message: new_message] [time: new_time] [active: true/false]
+```
+
+Edits an existing reminder. All parameters are optional.
 
 ## Development
 
