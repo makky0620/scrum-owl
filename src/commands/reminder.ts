@@ -6,11 +6,8 @@ import {
 } from 'discord.js';
 import { Command } from '../command';
 import { ReminderService, CreateReminderData, UpdateReminderData } from '../services/reminderService';
-import { ReminderScheduler } from '../services/reminderScheduler';
-import { ReminderStorage } from '../utils/storage';
 
 const reminderService = new ReminderService();
-const reminderStorage = new ReminderStorage();
 
 const command: Command = {
   data: new SlashCommandBuilder()
