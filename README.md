@@ -69,6 +69,44 @@ docker-compose up -d
 /facilitator participants: [comma-separated names]
 ```
 
+### Reminders
+
+Create and manage recurring reminders with support for multiple days of the week:
+
+```
+/reminder create title: [reminder title] days: [days] time: [HH:mm] [description: optional] [timezone: optional]
+/reminder list
+/reminder edit reminder_id: [id]
+/reminder delete reminder_id: [id]
+/reminder toggle reminder_id: [id]
+```
+
+#### Examples
+
+```
+# Single day reminder
+/reminder create title: "Daily Standup" days: "monday" time: "09:00"
+
+# Multiple days reminder
+/reminder create title: "Team Sync" days: "mon,wed,fri" time: "14:00"
+
+# Using day numbers (0=Sunday, 1=Monday, etc.)
+/reminder create title: "Weekend Planning" days: "0,6" time: "10:00"
+
+# Mixed format with description and timezone
+/reminder create title: "Sprint Review" days: "friday,1" time: "15:30" description: "Review completed work" timezone: "America/New_York"
+
+# Edit an existing reminder (opens modal interface)
+/reminder edit reminder_id: "abc123"
+```
+
+#### Day Format Options
+
+- **Day names**: `monday`, `tuesday`, `wednesday`, `thursday`, `friday`, `saturday`, `sunday`
+- **Short names**: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun`
+- **Numbers**: `0` (Sunday), `1` (Monday), `2` (Tuesday), `3` (Wednesday), `4` (Thursday), `5` (Friday), `6` (Saturday)
+- **Multiple days**: Separate with commas: `"mon,wed,fri"` or `"1,3,5"`
+
 ## Development
 
 Source code is in the `src` directory. To add a new command:
