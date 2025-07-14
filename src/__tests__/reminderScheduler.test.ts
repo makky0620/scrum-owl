@@ -377,9 +377,12 @@ describe('ReminderScheduler', () => {
     it('should format reminder message with user mention', () => {
       const result = scheduler.formatReminderMessage(mockReminder);
 
-      expect(result).toContain('<@user123>');
-      expect(result).toContain('Test Reminder');
-      expect(result).toContain('This is a test reminder');
+      expect(result).toHaveProperty('content');
+      expect(result).toHaveProperty('embeds');
+      expect(result.content).toContain('<@user123>');
+      expect(result.embeds).toHaveLength(1);
+      expect(result.embeds[0].data.title).toContain('Test Reminder');
+      expect(result.embeds[0].data.description).toContain('This is a test reminder');
     });
 
     it('should include recurring information for recurring reminders', () => {
@@ -394,8 +397,17 @@ describe('ReminderScheduler', () => {
 
       const result = scheduler.formatReminderMessage(recurringReminder);
 
-      expect(result).toContain('Daily reminder');
-      expect(result).toContain('Occurrence: 6');
+      expect(result).toHaveProperty('content');
+      expect(result).toHaveProperty('embeds');
+      expect(result.embeds).toHaveLength(1);
+      expect(result.embeds[0].data.fields).toBeDefined();
+
+      const fields = result.embeds[0].data.fields;
+      const typeField = fields?.find(f => f.name === 'Type');
+      const countField = fields?.find(f => f.name === 'Count');
+
+      expect(typeField?.value).toContain('Daily reminder');
+      expect(countField?.value).toContain('Occurrence: 6');
     });
   });
 });

@@ -21,10 +21,10 @@ export class ReminderScheduler {
     }
 
     console.log('[ReminderScheduler] Starting reminder scheduler...');
-    
+
     // Load existing reminders
     await this.storage.getActiveReminders();
-    
+
     // Start the interval
     this.intervalId = setInterval(() => {
       this.checkReminders().catch(error => {
@@ -161,7 +161,7 @@ export class ReminderScheduler {
   async triggerReminder(reminder: Reminder): Promise<void> {
     try {
       const channel = await this.client.channels.fetch(reminder.channelId) as TextChannel;
-      
+
       if (!channel) {
         console.error(`[ReminderScheduler] Channel ${reminder.channelId} not found`);
         return;
@@ -226,7 +226,7 @@ export class ReminderScheduler {
     console.log(`[ReminderScheduler] Deactivated reminder: ${reminder.title}`);
   }
 
-  formatReminderMessage(reminder: Reminder): string {
+  formatReminderMessage(reminder: Reminder): { content: string; embeds: EmbedBuilder[] } {
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle(`🔔 ${reminder.title}`)
@@ -239,7 +239,7 @@ export class ReminderScheduler {
       const config = reminder.recurringConfig;
       const intervalText = config.interval.charAt(0).toUpperCase() + config.interval.slice(1);
       const occurrenceText = `Occurrence: ${config.currentCount + 1}`;
-      
+
       embed.addFields(
         { name: 'Type', value: `${intervalText} reminder`, inline: true },
         { name: 'Count', value: occurrenceText, inline: true }
@@ -254,6 +254,9 @@ export class ReminderScheduler {
       }
     }
 
-    return `<@${reminder.userId}>\n${JSON.stringify(embed.toJSON())}`;
+    return {
+      content: `<@${reminder.userId}>`,
+      embeds: [embed]
+    };
   }
 }
