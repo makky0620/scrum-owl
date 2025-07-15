@@ -176,29 +176,6 @@ describe('ReminderScheduler', () => {
       expect(scheduler.shouldTriggerToday(weekdayReminder)).toBe(true);
     });
 
-    it('should respect allowedDays filter', () => {
-      const customDayReminder = {
-        ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          currentCount: 0,
-          dayFilter: {
-            skipWeekends: false,
-            allowedDays: [1, 3, 5] // Monday, Wednesday, Friday
-          }
-        }
-      };
-
-      jest.spyOn(Date.prototype, 'getDay')
-        .mockReturnValueOnce(1) // Monday - allowed
-        .mockReturnValueOnce(2) // Tuesday - not allowed
-        .mockReturnValueOnce(3); // Wednesday - allowed
-
-      expect(scheduler.shouldTriggerToday(customDayReminder)).toBe(true);
-      expect(scheduler.shouldTriggerToday(customDayReminder)).toBe(false);
-      expect(scheduler.shouldTriggerToday(customDayReminder)).toBe(true);
-    });
   });
 
   describe('calculateNextTriggerTime', () => {
@@ -250,22 +227,6 @@ describe('ReminderScheduler', () => {
       expect(dayjs(result).isSame(expected, 'minute')).toBe(true);
     });
 
-    it('should calculate next custom interval trigger time', () => {
-      const customReminder = {
-        ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'custom' as const,
-          customInterval: 180, // 3 hours in minutes
-          currentCount: 0
-        }
-      };
-
-      const result = scheduler.calculateNextTriggerTime(customReminder);
-      const expected = dayjs(mockReminder.nextTriggerTime).add(180, 'minute');
-
-      expect(dayjs(result).isSame(expected, 'minute')).toBe(true);
-    });
 
     it('should skip to next valid day when day filter is applied', () => {
       const weekdayOnlyReminder = {
@@ -313,27 +274,6 @@ describe('ReminderScheduler', () => {
       );
     });
 
-    it('should deactivate reminder when max occurrences reached', async () => {
-      const maxOccurrenceReminder = {
-        ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          currentCount: 4,
-          maxOccurrences: 5
-        }
-      };
-
-      mockStorage.updateReminder.mockResolvedValue();
-
-      await scheduler.processRecurringReminder(maxOccurrenceReminder);
-
-      expect(mockStorage.updateReminder).toHaveBeenCalledWith(
-        expect.objectContaining({
-          isActive: false
-        })
-      );
-    });
 
     it('should deactivate reminder when end date reached', async () => {
       const endDateReminder = {

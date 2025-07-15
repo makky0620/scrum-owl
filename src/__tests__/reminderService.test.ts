@@ -70,8 +70,7 @@ describe('ReminderService', () => {
         recurringConfig: {
           interval: 'daily' as const,
           dayFilter: {
-            skipWeekends: true,
-            allowedDays: [1, 2, 3, 4, 5]
+            skipWeekends: true
           }
         }
       };
@@ -132,27 +131,6 @@ describe('ReminderService', () => {
         .rejects.toThrow('Cannot set reminder for past time');
     });
 
-    it('should validate day filter conflicts', async () => {
-      const conflictingData = {
-        userId: 'user123',
-        channelId: 'channel123',
-        guildId: 'guild123',
-        title: 'Test',
-        message: 'Test message',
-        time: '09:00',
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          dayFilter: {
-            skipWeekends: true,
-            allowedDays: [0, 6] // Only weekends
-          }
-        }
-      };
-
-      await expect(reminderService.createReminder(conflictingData))
-        .rejects.toThrow('Cannot skip weekends and only allow weekends');
-    });
   });
 
   describe('updateReminder', () => {
@@ -244,33 +222,20 @@ describe('ReminderService', () => {
   });
 
   describe('validateDayFilter', () => {
-    it('should validate valid day filter', () => {
+    it('should validate day filter with skipWeekends', () => {
       const validFilter = {
-        skipWeekends: true,
-        allowedDays: [1, 2, 3, 4, 5]
+        skipWeekends: true
       };
 
       expect(() => reminderService.validateDayFilter(validFilter)).not.toThrow();
     });
 
-    it('should throw error for conflicting day filter', () => {
-      const conflictingFilter = {
-        skipWeekends: true,
-        allowedDays: [0, 6] // Only weekends
+    it('should validate day filter without skipWeekends', () => {
+      const validFilter = {
+        skipWeekends: false
       };
 
-      expect(() => reminderService.validateDayFilter(conflictingFilter))
-        .toThrow('Cannot skip weekends and only allow weekends');
-    });
-
-    it('should throw error for invalid day numbers', () => {
-      const invalidFilter = {
-        skipWeekends: false,
-        allowedDays: [7, 8] // Invalid day numbers
-      };
-
-      expect(() => reminderService.validateDayFilter(invalidFilter))
-        .toThrow('Invalid day number');
+      expect(() => reminderService.validateDayFilter(validFilter)).not.toThrow();
     });
   });
 

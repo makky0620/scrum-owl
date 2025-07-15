@@ -87,10 +87,6 @@ export class ReminderScheduler {
       return false;
     }
 
-    // Check allowed days
-    if (filter.allowedDays && !filter.allowedDays.includes(dayOfWeek)) {
-      return false;
-    }
 
     return true;
   }
@@ -113,11 +109,6 @@ export class ReminderScheduler {
         break;
       case 'monthly':
         nextTime = nextTime.add(1, 'month');
-        break;
-      case 'custom':
-        if (config.customInterval) {
-          nextTime = nextTime.add(config.customInterval, 'minute');
-        }
         break;
     }
 
@@ -144,12 +135,6 @@ export class ReminderScheduler {
         continue;
       }
 
-      // Check allowed days
-      if (dayFilter.allowedDays && !dayFilter.allowedDays.includes(dayOfWeek)) {
-        currentTime = currentTime.add(1, 'day');
-        attempts++;
-        continue;
-      }
 
       // Valid day found
       break;
@@ -192,9 +177,7 @@ export class ReminderScheduler {
     const newCount = config.currentCount + 1;
 
     // Check if reminder should be deactivated
-    const shouldDeactivate =
-      (config.maxOccurrences && newCount >= config.maxOccurrences) ||
-      (config.endDate && dayjs().isAfter(config.endDate));
+    const shouldDeactivate = config.endDate && dayjs().isAfter(config.endDate);
 
     if (shouldDeactivate) {
       await this.deactivateReminder(reminder);
@@ -245,13 +228,6 @@ export class ReminderScheduler {
         { name: 'Count', value: occurrenceText, inline: true },
       );
 
-      if (config.maxOccurrences) {
-        embed.addFields({
-          name: 'Progress',
-          value: `${config.currentCount + 1}/${config.maxOccurrences}`,
-          inline: true,
-        });
-      }
     }
 
     return embed;

@@ -38,8 +38,7 @@ describe('Reminder Model', () => {
           interval: 'daily',
           currentCount: 0,
           dayFilter: {
-            skipWeekends: true,
-            allowedDays: [1, 2, 3, 4, 5] // Monday to Friday
+            skipWeekends: true
           }
         },
         isActive: true,
@@ -50,12 +49,11 @@ describe('Reminder Model', () => {
       expect(reminder.type).toBe('recurring');
       expect(reminder.recurringConfig).toBeDefined();
       expect(reminder.recurringConfig?.dayFilter?.skipWeekends).toBe(true);
-      expect(reminder.recurringConfig?.dayFilter?.allowedDays).toEqual([1, 2, 3, 4, 5]);
     });
 
     it('should create a recurring reminder with end conditions', () => {
       const endDate = dayjs().add(1, 'month').toDate();
-      
+
       const reminder: Reminder = {
         id: 'test-id-3',
         userId: 'user123',
@@ -68,8 +66,7 @@ describe('Reminder Model', () => {
         recurringConfig: {
           interval: 'weekly',
           currentCount: 0,
-          endDate: endDate,
-          maxOccurrences: 4
+          endDate: endDate
         },
         isActive: true,
         createdAt: new Date(),
@@ -77,31 +74,7 @@ describe('Reminder Model', () => {
       };
 
       expect(reminder.recurringConfig?.endDate).toEqual(endDate);
-      expect(reminder.recurringConfig?.maxOccurrences).toBe(4);
     });
 
-    it('should create a custom interval reminder', () => {
-      const reminder: Reminder = {
-        id: 'test-id-4',
-        userId: 'user123',
-        channelId: 'channel123',
-        guildId: 'guild123',
-        title: 'Custom Reminder',
-        message: 'Every 3 days reminder',
-        nextTriggerTime: dayjs().add(3, 'day').toDate(),
-        type: 'recurring',
-        recurringConfig: {
-          interval: 'custom',
-          customInterval: 4320, // 3 days in minutes
-          currentCount: 0
-        },
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      expect(reminder.recurringConfig?.interval).toBe('custom');
-      expect(reminder.recurringConfig?.customInterval).toBe(4320);
-    });
   });
 });

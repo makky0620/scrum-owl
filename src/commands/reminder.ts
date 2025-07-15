@@ -53,15 +53,8 @@ const command: Command = {
             .addChoices(
               { name: 'Daily', value: 'daily' },
               { name: 'Weekly', value: 'weekly' },
-              { name: 'Monthly', value: 'monthly' },
-              { name: 'Custom', value: 'custom' }
+              { name: 'Monthly', value: 'monthly' }
             )
-        )
-        .addIntegerOption(option =>
-          option
-            .setName('custom_interval')
-            .setDescription('Custom interval in minutes (for custom recurring)')
-            .setRequired(false)
         )
         .addBooleanOption(option =>
           option
@@ -71,20 +64,8 @@ const command: Command = {
         )
         .addStringOption(option =>
           option
-            .setName('allowed_days')
-            .setDescription('Allowed days (0=Sun,1=Mon,...,6=Sat) e.g., "1,2,3,4,5"')
-            .setRequired(false)
-        )
-        .addStringOption(option =>
-          option
             .setName('end_date')
             .setDescription('End date for recurring reminders (YYYY-MM-DD)')
-            .setRequired(false)
-        )
-        .addIntegerOption(option =>
-          option
-            .setName('max_occurrences')
-            .setDescription('Maximum number of occurrences')
             .setRequired(false)
         )
     )
@@ -166,7 +147,7 @@ const command: Command = {
     } catch (error) {
       console.error('[Reminder Command] Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      
+
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({
           content: `Error: ${errorMessage}`,
@@ -188,11 +169,8 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
   const time = interaction.options.getString('time', true);
   const type = interaction.options.getString('type', true) as 'once' | 'recurring';
   const recurring = interaction.options.getString('recurring');
-  const customInterval = interaction.options.getInteger('custom_interval');
   const skipWeekends = interaction.options.getBoolean('skip_weekends');
-  const allowedDaysStr = interaction.options.getString('allowed_days');
   const endDateStr = interaction.options.getString('end_date');
-  const maxOccurrences = interaction.options.getInteger('max_occurrences');
 
   // Validate recurring options
   if (type === 'recurring' && !recurring) {
@@ -203,30 +181,6 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  if (recurring === 'custom' && !customInterval) {
-    await interaction.reply({
-      content: 'Custom interval is required when using custom recurring type.',
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  // Parse allowed days
-  let allowedDays: number[] | undefined;
-  if (allowedDaysStr) {
-    try {
-      allowedDays = allowedDaysStr.split(',').map(d => parseInt(d.trim()));
-      if (allowedDays.some(d => d < 0 || d > 6)) {
-        throw new Error('Invalid day number');
-      }
-    } catch (error) {
-      await interaction.reply({
-        content: 'Invalid allowed_days format. Use comma-separated numbers 0-6 (0=Sunday, 6=Saturday).',
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
-  }
 
   // Parse end date
   let endDate: Date | undefined;
@@ -257,22 +211,13 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
       currentCount: 0,
     };
 
-    if (customInterval) {
-      createData.recurringConfig.customInterval = customInterval;
-    }
-
     if (endDate) {
       createData.recurringConfig.endDate = endDate;
     }
 
-    if (maxOccurrences) {
-      createData.recurringConfig.maxOccurrences = maxOccurrences;
-    }
-
-    if (skipWeekends || allowedDays) {
+    if (skipWeekends) {
       createData.recurringConfig.dayFilter = {
-        skipWeekends: skipWeekends || false,
-        allowedDays,
+        skipWeekends: skipWeekends,
       };
     }
   }
@@ -295,16 +240,11 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
   if (reminder.recurringConfig) {
     const config = reminder.recurringConfig;
     embed.addFields({ name: 'Interval', value: config.interval, inline: true });
-    
+
     if (config.dayFilter?.skipWeekends) {
       embed.addFields({ name: 'Skip Weekends', value: 'Yes', inline: true });
     }
-    
-    if (config.dayFilter?.allowedDays) {
-      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const allowedDayNames = config.dayFilter.allowedDays.map(d => dayNames[d]).join(', ');
-      embed.addFields({ name: 'Allowed Days', value: allowedDayNames, inline: true });
-    }
+
   }
 
   await interaction.reply({ embeds: [embed] });

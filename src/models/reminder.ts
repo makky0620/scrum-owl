@@ -1,18 +1,15 @@
 export type ReminderType = 'once' | 'recurring';
 
-export type RecurringInterval = 'daily' | 'weekly' | 'monthly' | 'custom';
+export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
 
 export interface DayFilter {
   skipWeekends: boolean;
-  allowedDays?: number[]; // 0=Sunday, 1=Monday, ..., 6=Saturday
   skipHolidays?: boolean; // Future extension
 }
 
 export interface RecurringConfig {
   interval: RecurringInterval;
-  customInterval?: number; // Custom interval in minutes
   endDate?: Date;
-  maxOccurrences?: number;
   currentCount: number;
   dayFilter?: DayFilter;
 }

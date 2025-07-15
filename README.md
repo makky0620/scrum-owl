@@ -86,12 +86,9 @@ Create, manage, and delete reminders.
 - `type`: Type of reminder (`once`: one-time, `recurring`: repeating)
 
 **Recurring Reminder Options:**
-- `recurring`: Recurring interval (`daily`: daily, `weekly`: weekly, `monthly`: monthly, `custom`: custom)
-- `custom_interval`: Custom interval in minutes (required for custom type)
+- `recurring`: Recurring interval (`daily`: daily, `weekly`: weekly, `monthly`: monthly)
 - `skip_weekends`: Skip weekends (true/false)
-- `allowed_days`: Allowed days (0=Sunday, 1=Monday...6=Saturday) e.g., "1,2,3,4,5"
 - `end_date`: End date (YYYY-MM-DD format)
-- `max_occurrences`: Maximum number of executions
 
 **Usage Examples:**
 ```
@@ -101,8 +98,8 @@ Create, manage, and delete reminders.
 # Daily reminder
 /reminder create title: "Daily Report" message: "Time to write daily report" time: "17:00" type: recurring recurring: daily
 
-# Weekdays only reminder
-/reminder create title: "Stand-up" message: "Stand-up meeting time" time: "09:00" type: recurring recurring: daily allowed_days: "1,2,3,4,5"
+# Skip weekends reminder
+/reminder create title: "Stand-up" message: "Stand-up meeting time" time: "09:00" type: recurring recurring: daily skip_weekends: true
 ```
 
 #### Listing Reminders
