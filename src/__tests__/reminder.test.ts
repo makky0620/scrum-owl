@@ -24,7 +24,7 @@ describe('Reminder Model', () => {
       expect(reminder.isActive).toBe(true);
     });
 
-    it('should create a valid recurring reminder with day filter', () => {
+    it('should create a valid daily reminder with day filter', () => {
       const reminder: Reminder = {
         id: 'test-id-2',
         userId: 'user123',
@@ -33,7 +33,7 @@ describe('Reminder Model', () => {
         title: 'Daily Standup',
         message: 'Time for daily standup!',
         nextTriggerTime: dayjs().add(1, 'day').toDate(),
-        type: 'recurring',
+        type: 'daily',
         recurringConfig: {
           interval: 'daily',
           currentCount: 0,
@@ -46,12 +46,12 @@ describe('Reminder Model', () => {
         updatedAt: new Date()
       };
 
-      expect(reminder.type).toBe('recurring');
+      expect(reminder.type).toBe('daily');
       expect(reminder.recurringConfig).toBeDefined();
       expect(reminder.recurringConfig?.dayFilter?.skipWeekends).toBe(true);
     });
 
-    it('should create a recurring reminder with end conditions', () => {
+    it('should create a daily reminder with end conditions', () => {
       const endDate = dayjs().add(1, 'month').toDate();
 
       const reminder: Reminder = {
@@ -59,12 +59,12 @@ describe('Reminder Model', () => {
         userId: 'user123',
         channelId: 'channel123',
         guildId: 'guild123',
-        title: 'Weekly Review',
-        message: 'Time for weekly review',
-        nextTriggerTime: dayjs().add(1, 'week').toDate(),
-        type: 'recurring',
+        title: 'Daily Report',
+        message: 'Time for daily report',
+        nextTriggerTime: dayjs().add(1, 'day').toDate(),
+        type: 'daily',
         recurringConfig: {
-          interval: 'weekly',
+          interval: 'daily',
           currentCount: 0,
           endDate: endDate
         },

@@ -58,8 +58,8 @@ export class ReminderScheduler {
         if (dayjs(reminder.nextTriggerTime).isBefore(now) || dayjs(reminder.nextTriggerTime).isSame(now, 'minute')) {
           // Check if reminder should trigger today (day filter)
           if (!this.shouldTriggerToday(reminder)) {
-            // Skip to next valid day for recurring reminders
-            if (reminder.type === 'recurring') {
+            // Skip to next valid day for daily reminders
+            if (reminder.type === 'daily') {
               await this.processRecurringReminder(reminder);
             }
             continue;
@@ -99,17 +99,9 @@ export class ReminderScheduler {
     let nextTime = dayjs(reminder.nextTriggerTime);
     const config = reminder.recurringConfig;
 
-    // Calculate base next time based on interval
-    switch (config.interval) {
-      case 'daily':
-        nextTime = nextTime.add(1, 'day');
-        break;
-      case 'weekly':
-        nextTime = nextTime.add(1, 'week');
-        break;
-      case 'monthly':
-        nextTime = nextTime.add(1, 'month');
-        break;
+    // Calculate base next time based on interval (only daily is supported)
+    if (config.interval === 'daily') {
+      nextTime = nextTime.add(1, 'day');
     }
 
     // Apply day filter if present
@@ -218,7 +210,7 @@ export class ReminderScheduler {
       .setFooter({ text: 'Scrum Owl Reminder' });
 
     // Add recurring information
-    if (reminder.type === 'recurring' && reminder.recurringConfig) {
+    if (reminder.type === 'daily' && reminder.recurringConfig) {
       const config = reminder.recurringConfig;
       const intervalText = config.interval.charAt(0).toUpperCase() + config.interval.slice(1);
       const occurrenceText = `Occurrence: ${config.currentCount + 1}`;

@@ -1,4 +1,4 @@
-export type ReminderType = 'once' | 'recurring';
+export type ReminderType = 'once' | 'daily';
 
 export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
 

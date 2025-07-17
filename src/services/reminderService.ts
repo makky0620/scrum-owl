@@ -11,7 +11,8 @@ export interface CreateReminderData {
   message: string;
   time: string;
   type: ReminderType;
-  recurringConfig?: Partial<RecurringConfig>;
+  skipWeekends?: boolean;
+  endDate?: Date;
 }
 
 export interface UpdateReminderData {
@@ -34,6 +35,11 @@ export class ReminderService {
     // Validate required fields
     this.validateRequiredFields(data);
 
+    // Validate reminder type
+    if (data.type !== 'once' && data.type !== 'daily') {
+      throw new Error('Invalid reminder type. Only "once" and "daily" are supported.');
+    }
+
     // Parse and validate time
     const nextTriggerTime = this.parseTimeString(data.time);
 
@@ -42,17 +48,19 @@ export class ReminderService {
       throw new Error('Cannot set reminder for past time');
     }
 
-    // Validate recurring config if provided
+    // Create recurring config for daily reminders
     let recurringConfig: RecurringConfig | undefined;
-    if (data.type === 'recurring' && data.recurringConfig) {
+    if (data.type === 'daily') {
       recurringConfig = {
-        interval: data.recurringConfig.interval || 'daily',
+        interval: 'daily',
         currentCount: 0,
-        ...data.recurringConfig
+        dayFilter: {
+          skipWeekends: data.skipWeekends || false
+        }
       };
 
-      if (recurringConfig.dayFilter) {
-        this.validateDayFilter(recurringConfig.dayFilter);
+      if (data.endDate) {
+        recurringConfig.endDate = data.endDate;
       }
     }
 
