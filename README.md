@@ -76,17 +76,16 @@ Create, manage, and delete reminders.
 #### Creating Reminders
 
 ```
-/reminder create title: [title] message: [message] time: [time] type: [once|recurring]
+/reminder create title: [title] message: [message] time: [time] type: [once|daily]
 ```
 
 **Required Parameters:**
 - `title`: Title of the reminder
 - `message`: Message content of the reminder
 - `time`: Execution time (e.g., "14:30", "2h", "2024-07-15 14:30")
-- `type`: Type of reminder (`once`: one-time, `recurring`: repeating)
+- `type`: Type of reminder (`once`: one-time, `daily`: daily repeating)
 
-**Recurring Reminder Options:**
-- `recurring`: Recurring interval (`daily`: daily, `weekly`: weekly, `monthly`: monthly)
+**Daily Reminder Options:**
 - `skip_weekends`: Skip weekends (true/false)
 - `end_date`: End date (YYYY-MM-DD format)
 
@@ -96,10 +95,10 @@ Create, manage, and delete reminders.
 /reminder create title: "Meeting" message: "Team meeting is starting" time: "14:30" type: once
 
 # Daily reminder
-/reminder create title: "Daily Report" message: "Time to write daily report" time: "17:00" type: recurring recurring: daily
+/reminder create title: "Daily Report" message: "Time to write daily report" time: "17:00" type: daily
 
 # Skip weekends reminder
-/reminder create title: "Stand-up" message: "Stand-up meeting time" time: "09:00" type: recurring recurring: daily skip_weekends: true
+/reminder create title: "Stand-up" message: "Stand-up meeting time" time: "09:00" type: daily skip_weekends: true
 ```
 
 #### Listing Reminders

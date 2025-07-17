@@ -1,4 +1,4 @@
-import { Reminder, ReminderType, RecurringInterval } from '../models/reminder';
+import { Reminder, ReminderType } from '../models/reminder';
 import dayjs from 'dayjs';
 
 describe('Reminder Model', () => {

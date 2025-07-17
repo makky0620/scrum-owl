@@ -1,14 +1,12 @@
 export type ReminderType = 'once' | 'daily';
 
-export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
-
 export interface DayFilter {
   skipWeekends: boolean;
   skipHolidays?: boolean; // Future extension
 }
 
 export interface RecurringConfig {
-  interval: RecurringInterval;
+  interval: 'daily';
   endDate?: Date;
   currentCount: number;
   dayFilter?: DayFilter;
