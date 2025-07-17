@@ -1,4 +1,4 @@
-import { Reminder, ReminderType, RecurringConfig, DayFilter } from '../models/reminder';
+import { Reminder, ReminderType, DayFilter } from '../models/reminder';
 import { ReminderStorage } from '../utils/storage';
 import dayjs from 'dayjs';
 import { randomUUID } from 'crypto';
@@ -12,7 +12,6 @@ export interface CreateReminderData {
   time: string;
   type: ReminderType;
   skipWeekends?: boolean;
-  endDate?: Date;
 }
 
 export interface UpdateReminderData {
@@ -21,7 +20,7 @@ export interface UpdateReminderData {
   message?: string;
   time?: string;
   isActive?: boolean;
-  recurringConfig?: Partial<RecurringConfig>;
+  dayFilter?: DayFilter;
 }
 
 export class ReminderService {
@@ -48,20 +47,12 @@ export class ReminderService {
       throw new Error('Cannot set reminder for past time');
     }
 
-    // Create recurring config for daily reminders
-    let recurringConfig: RecurringConfig | undefined;
+    // Create day filter for daily reminders
+    let dayFilter: DayFilter | undefined;
     if (data.type === 'daily') {
-      recurringConfig = {
-        interval: 'daily',
-        currentCount: 0,
-        dayFilter: {
-          skipWeekends: data.skipWeekends || false
-        }
+      dayFilter = {
+        skipWeekends: data.skipWeekends || false
       };
-
-      if (data.endDate) {
-        recurringConfig.endDate = data.endDate;
-      }
     }
 
     const now = new Date();
@@ -74,7 +65,7 @@ export class ReminderService {
       message: data.message,
       nextTriggerTime,
       type: data.type,
-      recurringConfig,
+      dayFilter,
       isActive: true,
       createdAt: now,
       updatedAt: now
@@ -105,17 +96,10 @@ export class ReminderService {
       updatedReminder.nextTriggerTime = this.parseTimeString(data.time);
     }
 
-    // Update recurring config if provided
-    if (data.recurringConfig && existingReminder.recurringConfig) {
-      updatedReminder.recurringConfig = {
-        ...existingReminder.recurringConfig,
-        ...data.recurringConfig
-      };
-
-      // Validate day filter if updated
-      if (updatedReminder.recurringConfig.dayFilter) {
-        this.validateDayFilter(updatedReminder.recurringConfig.dayFilter);
-      }
+    // Update day filter if provided
+    if (data.dayFilter) {
+      updatedReminder.dayFilter = data.dayFilter;
+      this.validateDayFilter(updatedReminder.dayFilter);
     }
 
     await this.storage.updateReminder(updatedReminder);

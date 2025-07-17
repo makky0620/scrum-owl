@@ -75,8 +75,7 @@ describe('ReminderService', () => {
       const result = await reminderService.createReminder(reminderData);
 
       expect(result.type).toBe('daily');
-      expect(result.recurringConfig?.dayFilter?.skipWeekends).toBe(true);
-      expect(result.recurringConfig?.currentCount).toBe(0);
+      expect(result.dayFilter?.skipWeekends).toBe(true);
     });
 
     it('should create a daily reminder without skip weekends option', async () => {
@@ -95,8 +94,7 @@ describe('ReminderService', () => {
       const result = await reminderService.createReminder(reminderData);
 
       expect(result.type).toBe('daily');
-      expect(result.recurringConfig?.dayFilter?.skipWeekends).toBe(false);
-      expect(result.recurringConfig?.currentCount).toBe(0);
+      expect(result.dayFilter?.skipWeekends).toBe(false);
     });
 
     it('should reject weekly and monthly reminder types', async () => {

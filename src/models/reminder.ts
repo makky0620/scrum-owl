@@ -5,13 +5,6 @@ export interface DayFilter {
   skipHolidays?: boolean; // Future extension
 }
 
-export interface RecurringConfig {
-  interval: 'daily';
-  endDate?: Date;
-  currentCount: number;
-  dayFilter?: DayFilter;
-}
-
 export interface Reminder {
   id: string;
   userId: string;
@@ -21,7 +14,7 @@ export interface Reminder {
   message: string;
   nextTriggerTime: Date;
   type: ReminderType;
-  recurringConfig?: RecurringConfig;
+  dayFilter?: DayFilter;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

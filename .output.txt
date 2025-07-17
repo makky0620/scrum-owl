@@ -1,0 +1,212 @@
+
+> scrum-owl@1.0.0 test
+> jest
+(node:34256) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:34257) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ PASS  src/__tests__/facilitator.test.ts
+ PASS  src/__tests__/planningPoker.test.ts
+ FAIL  src/__tests__/reminder.test.ts
+  ● Test suite failed to run
+    src/__tests__/reminder.test.ts:23:23 - error TS2339: Property 'recurringConfig' does not exist on type 'Reminder'.
+    23       expect(reminder.recurringConfig).toBeUndefined();
+                             ~~~~~~~~~~~~~~~
+    src/__tests__/reminder.test.ts:37:9 - error TS2353: Object literal may only specify known properties, and 'recurringConfig' does not exist in type 'Reminder'.
+    37         recurringConfig: {
+               ~~~~~~~~~~~~~~~
+    src/__tests__/reminder.test.ts:50:23 - error TS2339: Property 'recurringConfig' does not exist on type 'Reminder'.
+    50       expect(reminder.recurringConfig).toBeDefined();
+                             ~~~~~~~~~~~~~~~
+    src/__tests__/reminder.test.ts:51:23 - error TS2339: Property 'recurringConfig' does not exist on type 'Reminder'.
+    51       expect(reminder.recurringConfig?.dayFilter?.skipWeekends).toBe(true);
+                             ~~~~~~~~~~~~~~~
+    src/__tests__/reminder.test.ts:66:9 - error TS2353: Object literal may only specify known properties, and 'recurringConfig' does not exist in type 'Reminder'.
+    66         recurringConfig: {
+               ~~~~~~~~~~~~~~~
+    src/__tests__/reminder.test.ts:76:23 - error TS2339: Property 'recurringConfig' does not exist on type 'Reminder'.
+    76       expect(reminder.recurringConfig?.endDate).toEqual(endDate);
+                             ~~~~~~~~~~~~~~~
+(node:34255) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:34253) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ PASS  src/__tests__/reminderService.test.ts
+(node:34254) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ PASS  src/__tests__/storage.test.ts
+  ● Console
+    console.error
+      Error loading reminders: SyntaxError: Unexpected token 'i', "invalid json" is not valid JSON
+          at JSON.parse (<anonymous>)
+          at ReminderStorage.loadReminders (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/utils/storage.ts:19:30)
+          at Object.<anonymous> (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/__tests__/storage.test.ts:60:39)
+          at Promise.then.completed (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:316:40)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at _runTest (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:121:9)
+          at run (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-runner/build/testWorker.js:106:12)
+      31 |       }));
+      32 |     } catch (error) {
+    > 33 |       console.error('Error loading reminders:', error);
+         |               ^
+      34 |       return [];
+      35 |     }
+      36 |   }
+      at ReminderStorage.loadReminders (src/utils/storage.ts:33:15)
+      at Object.<anonymous> (src/__tests__/storage.test.ts:60:39)
+    console.error
+      Error saving reminders: Error: Write failed
+          at Object.<anonymous> (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/__tests__/storage.test.ts:114:15)
+          at /Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-environment-node/node_modules/jest-mock/build/index.js:397:39
+          at Object.<anonymous> (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-environment-node/node_modules/jest-mock/build/index.js:404:13)
+          at Object.mockConstructor (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-environment-node/node_modules/jest-mock/build/index.js:148:19)
+          at Object.writeFileSync (eval at _createMockFunction (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-environment-node/node_modules/jest-mock/build/index.js:566:31), <anonymous>:3:59)
+          at ReminderStorage.saveReminders (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/utils/storage.ts:45:10)
+          at Object.<anonymous> (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/__tests__/storage.test.ts:117:28)
+          at Promise.then.completed (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:316:40)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at _runTest (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:121:9)
+          at run (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-runner/build/testWorker.js:106:12)
+      45 |       fs.writeFileSync(this.dataPath, JSON.stringify(reminders, null, 2), 'utf8');
+      46 |     } catch (error) {
+    > 47 |       console.error('Error saving reminders:', error);
+         |               ^
+      48 |       throw error;
+      49 |     }
+      50 |   }
+      at ReminderStorage.saveReminders (src/utils/storage.ts:47:15)
+      at Object.<anonymous> (src/__tests__/storage.test.ts:117:28)
+(node:34252) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ PASS  src/__tests__/reminderScheduler.test.ts
+  ● Console
+    console.log
+      [ReminderScheduler] Starting reminder scheduler...
+      at ReminderScheduler.start (src/services/reminderScheduler.ts:23:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler started
+      at ReminderScheduler.start (src/services/reminderScheduler.ts:36:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Starting reminder scheduler...
+      at ReminderScheduler.start (src/services/reminderScheduler.ts:23:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler started
+      at ReminderScheduler.start (src/services/reminderScheduler.ts:36:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Starting reminder scheduler...
+      at ReminderScheduler.start (src/services/reminderScheduler.ts:23:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler started
+      at ReminderScheduler.start (src/services/reminderScheduler.ts:36:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Triggered reminder: Test Reminder for user user123
+      at ReminderScheduler.triggerReminder (src/services/reminderScheduler.ts:147:15)
+    console.log
+      [ReminderScheduler] Deactivated reminder: Test Reminder
+      at ReminderScheduler.deactivateReminder (src/services/reminderScheduler.ts:179:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.error
+      [ReminderScheduler] Error triggering reminder test-id-1: Error: Channel not found
+          at Object.<anonymous> (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/__tests__/reminderScheduler.test.ts:125:66)
+          at Promise.then.completed (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:316:40)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at _runTest (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:121:9)
+          at run (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/Users/makinotakashi/Workspace/nextjs/scrum-master/node_modules/jest-runner/build/testWorker.js:106:12)
+      154 |       }
+      155 |     } catch (error) {
+    > 156 |       console.error(`[ReminderScheduler] Error triggering reminder ${reminder.id}:`, error);
+          |               ^
+      157 |     }
+      158 |   }
+      159 |
+      at ReminderScheduler.triggerReminder (src/services/reminderScheduler.ts:156:15)
+      at ReminderScheduler.checkReminders (src/services/reminderScheduler.ts:68:11)
+      at Object.<anonymous> (src/__tests__/reminderScheduler.test.ts:127:7)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Deactivated reminder: Test Reminder
+      at ReminderScheduler.deactivateReminder (src/services/reminderScheduler.ts:179:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+    console.log
+      [ReminderScheduler] Reminder scheduler stopped
+      at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
+Test Suites: 1 failed, 5 passed, 6 total
+Tests:       59 passed, 59 total
+Snapshots:   0 total
+Time:        3.772 s, estimated 5 s
+Ran all test suites.
