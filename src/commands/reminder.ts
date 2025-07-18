@@ -3,6 +3,7 @@ import {
   ChatInputCommandInteraction,
   EmbedBuilder,
   MessageFlags,
+  ChannelType,
 } from 'discord.js';
 import { Command } from '../command';
 import { ReminderService, CreateReminderData, UpdateReminderData } from '../services/reminderService';
@@ -50,6 +51,13 @@ const command: Command = {
             .setName('skip_weekends')
             .setDescription('Skip weekends for daily reminders')
             .setRequired(false)
+        )
+        .addChannelOption(option =>
+          option
+            .setName('channel')
+            .setDescription('Channel to send the reminder to (defaults to current channel)')
+            .setRequired(false)
+            .addChannelTypes(ChannelType.GuildText)
         )
     )
     .addSubcommand(subcommand =>
@@ -152,10 +160,30 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
   const time = interaction.options.getString('time', true);
   const type = interaction.options.getString('type', true) as 'once' | 'daily';
   const skipWeekends = interaction.options.getBoolean('skip_weekends');
+  const specifiedChannel = interaction.options.getChannel('channel');
+
+  // Determine which channel to use
+  let targetChannelId: string;
+
+  if (specifiedChannel) {
+    // Validate that the specified channel is a text channel
+    if (specifiedChannel.type !== ChannelType.GuildText) {
+      await interaction.reply({
+        content: 'Please specify a text channel for the reminder.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    targetChannelId = specifiedChannel.id;
+  } else {
+    // Use current channel as fallback
+    targetChannelId = interaction.channelId!;
+  }
 
   const createData: CreateReminderData = {
     userId: interaction.user.id,
-    channelId: interaction.channelId!,
+    channelId: targetChannelId,
     guildId: interaction.guildId!,
     title,
     message,
