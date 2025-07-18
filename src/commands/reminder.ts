@@ -10,7 +10,7 @@ import { ReminderService, CreateReminderData, UpdateReminderData } from '../serv
 
 const reminderService = new ReminderService();
 
-export const command: Command = {
+const command: Command = {
   data: new SlashCommandBuilder()
     .setName('reminder')
     .setDescription('Manage reminders')
@@ -328,3 +328,5 @@ async function handleEdit(interaction: ChatInputCommandInteraction) {
 
   await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 }
+
+module.exports = command;

@@ -31,3 +31,36 @@ Add the ability to specify a destination channel for reminders instead of always
 - Bot doesn't have permission to send messages in specified channel
 - Channel is not a text channel
 - Cross-guild channel specification (should be prevented)
+
+## Implementation Status: ✅ COMPLETED
+
+### Changes Made
+1. **Added channel option to create subcommand** - Optional channel parameter with GuildText type restriction
+2. **Modified handleCreate function** - Added logic to use specified channel or fallback to current channel
+3. **Added validation** - Validates that specified channel is a text channel
+4. **Created comprehensive tests** - Added test suite for channel specification functionality
+5. **Updated documentation** - Updated README.md with new parameter and usage examples
+
+### Files Modified
+- `src/commands/reminder.ts` - Added channel option and logic
+- `src/__tests__/reminderCommand.test.ts` - New test file for command functionality
+- `README.md` - Updated documentation with channel parameter
+- `notes/features/reminder-channel-specification.md` - This notes file
+
+### Test Results
+- All existing tests continue to pass (66 tests total)
+- New channel specification tests pass (5 tests)
+- Feature works as expected with proper validation
+
+### Pull Request
+- Branch: `feature/reminder-channel-specification`
+- Status: Pushed to GitHub
+- PR URL: https://github.com/makky0620/scrum-owl/pull/new/feature/reminder-channel-specification
+
+### Usage
+Users can now specify a destination channel for reminders:
+```
+/reminder create title: "Meeting" message: "Team meeting" time: "14:30" type: once channel: #general
+```
+
+If no channel is specified, the reminder will be sent to the current channel (backward compatible).
