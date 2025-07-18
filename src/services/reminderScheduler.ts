@@ -1,6 +1,6 @@
 import { Client, TextChannel, EmbedBuilder } from 'discord.js';
 import { ReminderStorage } from '../utils/storage';
-import { Reminder } from '../models/reminder';
+import { Reminder, DayFilter } from '../models/reminder';
 import dayjs from 'dayjs';
 
 export class ReminderScheduler {
@@ -58,8 +58,8 @@ export class ReminderScheduler {
         if (dayjs(reminder.nextTriggerTime).isBefore(now) || dayjs(reminder.nextTriggerTime).isSame(now, 'minute')) {
           // Check if reminder should trigger today (day filter)
           if (!this.shouldTriggerToday(reminder)) {
-            // Skip to next valid day for recurring reminders
-            if (reminder.type === 'recurring') {
+            // Skip to next valid day for daily reminders
+            if (reminder.type === 'daily') {
               await this.processRecurringReminder(reminder);
             }
             continue;
@@ -74,53 +74,43 @@ export class ReminderScheduler {
   }
 
   shouldTriggerToday(reminder: Reminder): boolean {
-    if (!reminder.recurringConfig?.dayFilter) {
+    if (!reminder.dayFilter) {
       return true;
     }
 
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0=Sunday, 6=Saturday
-    const filter = reminder.recurringConfig.dayFilter;
+    const filter = reminder.dayFilter;
 
     // Check skip weekends
     if (filter.skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
       return false;
     }
 
-
     return true;
   }
 
   calculateNextTriggerTime(reminder: Reminder): Date {
-    if (!reminder.recurringConfig) {
+    if (reminder.type === 'once') {
       return reminder.nextTriggerTime;
     }
 
     let nextTime = dayjs(reminder.nextTriggerTime);
-    const config = reminder.recurringConfig;
 
-    // Calculate base next time based on interval
-    switch (config.interval) {
-      case 'daily':
-        nextTime = nextTime.add(1, 'day');
-        break;
-      case 'weekly':
-        nextTime = nextTime.add(1, 'week');
-        break;
-      case 'monthly':
-        nextTime = nextTime.add(1, 'month');
-        break;
+    // Calculate base next time (only daily is supported for recurring reminders)
+    if (reminder.type === 'daily') {
+      nextTime = nextTime.add(1, 'day');
     }
 
     // Apply day filter if present
-    if (config.dayFilter) {
-      nextTime = this.findNextValidDay(nextTime, config.dayFilter);
+    if (reminder.dayFilter) {
+      nextTime = this.findNextValidDay(nextTime, reminder.dayFilter);
     }
 
     return nextTime.toDate();
   }
 
-  private findNextValidDay(startTime: dayjs.Dayjs, dayFilter: any): dayjs.Dayjs {
+  private findNextValidDay(startTime: dayjs.Dayjs, dayFilter: DayFilter): dayjs.Dayjs {
     let currentTime = startTime;
     let attempts = 0;
     const maxAttempts = 14; // Prevent infinite loop
@@ -134,7 +124,6 @@ export class ReminderScheduler {
         attempts++;
         continue;
       }
-
 
       // Valid day found
       break;
@@ -169,29 +158,10 @@ export class ReminderScheduler {
   }
 
   async processRecurringReminder(reminder: Reminder): Promise<void> {
-    if (!reminder.recurringConfig) {
-      return;
-    }
-
-    const config = reminder.recurringConfig;
-    const newCount = config.currentCount + 1;
-
-    // Check if reminder should be deactivated
-    const shouldDeactivate = config.endDate && dayjs().isAfter(config.endDate);
-
-    if (shouldDeactivate) {
-      await this.deactivateReminder(reminder);
-      return;
-    }
-
     // Update for next occurrence
     const updatedReminder: Reminder = {
       ...reminder,
       nextTriggerTime: this.calculateNextTriggerTime(reminder),
-      recurringConfig: {
-        ...config,
-        currentCount: newCount,
-      },
       updatedAt: new Date(),
     };
 
@@ -217,17 +187,11 @@ export class ReminderScheduler {
       .setTimestamp()
       .setFooter({ text: 'Scrum Owl Reminder' });
 
-    // Add recurring information
-    if (reminder.type === 'recurring' && reminder.recurringConfig) {
-      const config = reminder.recurringConfig;
-      const intervalText = config.interval.charAt(0).toUpperCase() + config.interval.slice(1);
-      const occurrenceText = `Occurrence: ${config.currentCount + 1}`;
-
+    // Add type information for daily reminders
+    if (reminder.type === 'daily') {
       embed.addFields(
-        { name: 'Type', value: `${intervalText} reminder`, inline: true },
-        { name: 'Count', value: occurrenceText, inline: true },
+        { name: 'Type', value: 'Daily reminder', inline: true }
       );
-
     }
 
     return embed;

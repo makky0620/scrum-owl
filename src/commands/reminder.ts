@@ -42,30 +42,13 @@ const command: Command = {
             .setRequired(true)
             .addChoices(
               { name: 'Once', value: 'once' },
-              { name: 'Recurring', value: 'recurring' }
-            )
-        )
-        .addStringOption(option =>
-          option
-            .setName('recurring')
-            .setDescription('Recurring interval (required for recurring reminders)')
-            .setRequired(false)
-            .addChoices(
-              { name: 'Daily', value: 'daily' },
-              { name: 'Weekly', value: 'weekly' },
-              { name: 'Monthly', value: 'monthly' }
+              { name: 'Daily', value: 'daily' }
             )
         )
         .addBooleanOption(option =>
           option
             .setName('skip_weekends')
-            .setDescription('Skip weekends for recurring reminders')
-            .setRequired(false)
-        )
-        .addStringOption(option =>
-          option
-            .setName('end_date')
-            .setDescription('End date for recurring reminders (YYYY-MM-DD)')
+            .setDescription('Skip weekends for daily reminders')
             .setRequired(false)
         )
     )
@@ -167,33 +150,8 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
   const title = interaction.options.getString('title', true);
   const message = interaction.options.getString('message', true);
   const time = interaction.options.getString('time', true);
-  const type = interaction.options.getString('type', true) as 'once' | 'recurring';
-  const recurring = interaction.options.getString('recurring');
+  const type = interaction.options.getString('type', true) as 'once' | 'daily';
   const skipWeekends = interaction.options.getBoolean('skip_weekends');
-  const endDateStr = interaction.options.getString('end_date');
-
-  // Validate recurring options
-  if (type === 'recurring' && !recurring) {
-    await interaction.reply({
-      content: 'Recurring interval is required for recurring reminders.',
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-
-  // Parse end date
-  let endDate: Date | undefined;
-  if (endDateStr) {
-    endDate = new Date(endDateStr);
-    if (isNaN(endDate.getTime())) {
-      await interaction.reply({
-        content: 'Invalid end date format. Use YYYY-MM-DD.',
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
-  }
 
   const createData: CreateReminderData = {
     userId: interaction.user.id,
@@ -205,21 +163,8 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
     type,
   };
 
-  if (type === 'recurring' && recurring) {
-    createData.recurringConfig = {
-      interval: recurring as any,
-      currentCount: 0,
-    };
-
-    if (endDate) {
-      createData.recurringConfig.endDate = endDate;
-    }
-
-    if (skipWeekends) {
-      createData.recurringConfig.dayFilter = {
-        skipWeekends: skipWeekends,
-      };
-    }
+  if (type === 'daily' && skipWeekends) {
+    createData.skipWeekends = skipWeekends;
   }
 
   const reminder = await reminderService.createReminder(createData);
@@ -237,14 +182,8 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
     .setTimestamp()
     .setFooter({ text: 'Scrum Owl Reminder' });
 
-  if (reminder.recurringConfig) {
-    const config = reminder.recurringConfig;
-    embed.addFields({ name: 'Interval', value: config.interval, inline: true });
-
-    if (config.dayFilter?.skipWeekends) {
-      embed.addFields({ name: 'Skip Weekends', value: 'Yes', inline: true });
-    }
-
+  if (reminder.type === 'daily' && reminder.dayFilter?.skipWeekends) {
+    embed.addFields({ name: 'Skip Weekends', value: 'Yes', inline: true });
   }
 
   await interaction.reply({ embeds: [embed] });
@@ -273,8 +212,9 @@ async function handleList(interaction: ChatInputCommandInteraction) {
   if (activeReminders.length > 0) {
     const activeList = activeReminders.map(r => {
       const nextTrigger = r.nextTriggerTime.toLocaleString();
-      const typeInfo = r.type === 'recurring' ? ` (${r.recurringConfig?.interval})` : '';
-      return `**${r.title}**${typeInfo}\nID: \`${r.id}\`\nNext: ${nextTrigger}`;
+      const typeInfo = r.type === 'daily' ? ' (daily)' : '';
+      const skipWeekendsInfo = r.type === 'daily' && r.dayFilter?.skipWeekends ? ' - Skip weekends' : '';
+      return `**${r.title}**${typeInfo}${skipWeekendsInfo}\nID: \`${r.id}\`\nNext: ${nextTrigger}`;
     }).join('\n\n');
 
     embed.addFields({ name: '🟢 Active Reminders', value: activeList, inline: false });

@@ -1,17 +1,8 @@
-export type ReminderType = 'once' | 'recurring';
-
-export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
+export type ReminderType = 'once' | 'daily';
 
 export interface DayFilter {
   skipWeekends: boolean;
   skipHolidays?: boolean; // Future extension
-}
-
-export interface RecurringConfig {
-  interval: RecurringInterval;
-  endDate?: Date;
-  currentCount: number;
-  dayFilter?: DayFilter;
 }
 
 export interface Reminder {
@@ -23,7 +14,7 @@ export interface Reminder {
   message: string;
   nextTriggerTime: Date;
   type: ReminderType;
-  recurringConfig?: RecurringConfig;
+  dayFilter?: DayFilter;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

@@ -58,7 +58,7 @@ describe('ReminderService', () => {
       }));
     });
 
-    it('should create a recurring reminder with day filter', async () => {
+    it('should create a daily reminder with skip weekends option', async () => {
       const reminderData = {
         userId: 'user123',
         channelId: 'channel123',
@@ -66,23 +66,50 @@ describe('ReminderService', () => {
         title: 'Daily Standup',
         message: 'Time for standup!',
         time: '09:00',
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          dayFilter: {
-            skipWeekends: true
-          }
-        }
+        type: 'daily' as const,
+        skipWeekends: true
       };
 
       mockStorage.addReminder.mockResolvedValue();
 
       const result = await reminderService.createReminder(reminderData);
 
-      expect(result.type).toBe('recurring');
-      expect(result.recurringConfig?.interval).toBe('daily');
-      expect(result.recurringConfig?.dayFilter?.skipWeekends).toBe(true);
-      expect(result.recurringConfig?.currentCount).toBe(0);
+      expect(result.type).toBe('daily');
+      expect(result.dayFilter?.skipWeekends).toBe(true);
+    });
+
+    it('should create a daily reminder without skip weekends option', async () => {
+      const reminderData = {
+        userId: 'user123',
+        channelId: 'channel123',
+        guildId: 'guild123',
+        title: 'Daily Report',
+        message: 'Time to write daily report!',
+        time: '17:00',
+        type: 'daily' as const
+      };
+
+      mockStorage.addReminder.mockResolvedValue();
+
+      const result = await reminderService.createReminder(reminderData);
+
+      expect(result.type).toBe('daily');
+      expect(result.dayFilter?.skipWeekends).toBe(false);
+    });
+
+    it('should reject weekly and monthly reminder types', async () => {
+      const weeklyReminderData = {
+        userId: 'user123',
+        channelId: 'channel123',
+        guildId: 'guild123',
+        title: 'Weekly Meeting',
+        message: 'Time for weekly meeting!',
+        time: '09:00',
+        type: 'weekly' as any
+      };
+
+      await expect(reminderService.createReminder(weeklyReminderData))
+        .rejects.toThrow('Invalid reminder type. Only "once" and "daily" are supported.');
     });
 
     it('should validate required fields', async () => {

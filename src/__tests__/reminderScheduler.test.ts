@@ -138,13 +138,9 @@ describe('ReminderScheduler', () => {
     it('should skip weekends when skipWeekends is true', () => {
       const weekendReminder = {
         ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          currentCount: 0,
-          dayFilter: {
-            skipWeekends: true
-          }
+        type: 'daily' as const,
+        dayFilter: {
+          skipWeekends: true
         }
       };
 
@@ -160,13 +156,9 @@ describe('ReminderScheduler', () => {
     it('should allow weekdays when skipWeekends is true', () => {
       const weekdayReminder = {
         ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          currentCount: 0,
-          dayFilter: {
-            skipWeekends: true
-          }
+        type: 'daily' as const,
+        dayFilter: {
+          skipWeekends: true
         }
       };
 
@@ -182,11 +174,7 @@ describe('ReminderScheduler', () => {
     it('should calculate next daily trigger time', () => {
       const dailyReminder = {
         ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          currentCount: 0
-        }
+        type: 'daily' as const
       };
 
       const result = scheduler.calculateNextTriggerTime(dailyReminder);
@@ -195,50 +183,14 @@ describe('ReminderScheduler', () => {
       expect(dayjs(result).isSame(expected, 'minute')).toBe(true);
     });
 
-    it('should calculate next weekly trigger time', () => {
-      const weeklyReminder = {
-        ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'weekly' as const,
-          currentCount: 0
-        }
-      };
-
-      const result = scheduler.calculateNextTriggerTime(weeklyReminder);
-      const expected = dayjs(mockReminder.nextTriggerTime).add(1, 'week');
-
-      expect(dayjs(result).isSame(expected, 'minute')).toBe(true);
-    });
-
-    it('should calculate next monthly trigger time', () => {
-      const monthlyReminder = {
-        ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'monthly' as const,
-          currentCount: 0
-        }
-      };
-
-      const result = scheduler.calculateNextTriggerTime(monthlyReminder);
-      const expected = dayjs(mockReminder.nextTriggerTime).add(1, 'month');
-
-      expect(dayjs(result).isSame(expected, 'minute')).toBe(true);
-    });
-
 
     it('should skip to next valid day when day filter is applied', () => {
       const weekdayOnlyReminder = {
         ...mockReminder,
-        type: 'recurring' as const,
+        type: 'daily' as const,
         nextTriggerTime: dayjs().day(5).toDate(), // Friday
-        recurringConfig: {
-          interval: 'daily' as const,
-          currentCount: 0,
-          dayFilter: {
-            skipWeekends: true
-          }
+        dayFilter: {
+          skipWeekends: true
         }
       };
 
@@ -251,48 +203,20 @@ describe('ReminderScheduler', () => {
   });
 
   describe('processRecurringReminder', () => {
-    it('should update recurring reminder for next occurrence', async () => {
-      const recurringReminder = {
+    it('should update daily reminder for next occurrence', async () => {
+      const dailyReminder = {
         ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          currentCount: 0
-        }
+        type: 'daily' as const
       };
 
       mockStorage.updateReminder.mockResolvedValue();
 
-      await scheduler.processRecurringReminder(recurringReminder);
+      await scheduler.processRecurringReminder(dailyReminder);
 
       expect(mockStorage.updateReminder).toHaveBeenCalledWith(
         expect.objectContaining({
-          recurringConfig: expect.objectContaining({
-            currentCount: 1
-          })
-        })
-      );
-    });
-
-
-    it('should deactivate reminder when end date reached', async () => {
-      const endDateReminder = {
-        ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          currentCount: 0,
-          endDate: dayjs().subtract(1, 'day').toDate()
-        }
-      };
-
-      mockStorage.updateReminder.mockResolvedValue();
-
-      await scheduler.processRecurringReminder(endDateReminder);
-
-      expect(mockStorage.updateReminder).toHaveBeenCalledWith(
-        expect.objectContaining({
-          isActive: false
+          nextTriggerTime: expect.any(Date),
+          updatedAt: expect.any(Date)
         })
       );
     });
@@ -321,26 +245,20 @@ describe('ReminderScheduler', () => {
       expect(result.data.description).toContain('This is a test reminder');
     });
 
-    it('should include recurring information for recurring reminders', () => {
-      const recurringReminder = {
+    it('should include daily information for daily reminders', () => {
+      const dailyReminder = {
         ...mockReminder,
-        type: 'recurring' as const,
-        recurringConfig: {
-          interval: 'daily' as const,
-          currentCount: 5
-        }
+        type: 'daily' as const
       };
 
-      const result = scheduler.formatReminderMessage(recurringReminder);
+      const result = scheduler.formatReminderMessage(dailyReminder);
 
       expect(result.data.fields).toBeDefined();
 
       const fields = result.data.fields;
       const typeField = fields?.find(f => f.name === 'Type');
-      const countField = fields?.find(f => f.name === 'Count');
 
       expect(typeField?.value).toContain('Daily reminder');
-      expect(countField?.value).toContain('Occurrence: 6');
     });
   });
 });
