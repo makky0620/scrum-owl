@@ -76,7 +76,7 @@ Create, manage, and delete reminders.
 #### Creating Reminders
 
 ```
-/reminder create title: [title] message: [message] time: [time] type: [once|daily]
+/reminder create title: [title] message: [message] time: [time] type: [once|daily] [channel: #channel]
 ```
 
 **Required Parameters:**
@@ -85,20 +85,24 @@ Create, manage, and delete reminders.
 - `time`: Execution time (e.g., "14:30", "2h", "2024-07-15 14:30")
 - `type`: Type of reminder (`once`: one-time, `daily`: daily repeating)
 
-**Daily Reminder Options:**
-- `skip_weekends`: Skip weekends (true/false)
+**Optional Parameters:**
+- `channel`: Destination channel for the reminder (defaults to current channel)
+- `skip_weekends`: Skip weekends for daily reminders (true/false)
 - `end_date`: End date (YYYY-MM-DD format)
 
 **Usage Examples:**
 ```
-# One-time reminder
+# One-time reminder in current channel
 /reminder create title: "Meeting" message: "Team meeting is starting" time: "14:30" type: once
 
-# Daily reminder
-/reminder create title: "Daily Report" message: "Time to write daily report" time: "17:00" type: daily
+# Daily reminder in specific channel
+/reminder create title: "Daily Report" message: "Time to write daily report" time: "17:00" type: daily channel: #general
 
-# Skip weekends reminder
-/reminder create title: "Stand-up" message: "Stand-up meeting time" time: "09:00" type: daily skip_weekends: true
+# Skip weekends reminder in specific channel
+/reminder create title: "Stand-up" message: "Stand-up meeting time" time: "09:00" type: daily skip_weekends: true channel: #dev-team
+
+# One-time reminder in different channel
+/reminder create title: "Deployment" message: "Production deployment starting" time: "2h" type: once channel: #alerts
 ```
 
 #### Listing Reminders
