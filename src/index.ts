@@ -45,29 +45,75 @@ client.once(Events.ClientReady, readyClient => {
   console.log('[INFO] Reminder scheduler started');
 });
 
-// Handle slash command interactions
+// Handle interactions
 client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+  // Handle slash command interactions
+  if (interaction.isChatInputCommand()) {
+    const command = client.commands.get(interaction.commandName);
 
-  const command = client.commands.get(interaction.commandName);
+    if (!command) {
+      console.error(`[ERROR] No command matching ${interaction.commandName} was found.`);
+      return;
+    }
 
-  if (!command) {
-    console.error(`[ERROR] No command matching ${interaction.commandName} was found.`);
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      console.error(`[ERROR] Error executing command ${interaction.commandName}:`, error);
+
+      const errorMessage = { content: 'There was an error while executing this command!', ephemeral: true };
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage);
+      } else {
+        await interaction.reply(errorMessage);
+      }
+    }
     return;
   }
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(`[ERROR] Error executing command ${interaction.commandName}:`, error);
+  // Handle modal submit interactions
+  if (interaction.isModalSubmit()) {
+    // Extract command name from modal custom ID (format: "commandName-modal:data")
+    const customId = interaction.customId;
+    let commandName = '';
 
-    const errorMessage = { content: 'There was an error while executing this command!', ephemeral: true };
-
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(errorMessage);
-    } else {
-      await interaction.reply(errorMessage);
+    // Check for reminder edit modal
+    if (customId.startsWith('edit-reminder-modal:')) {
+      commandName = 'reminder';
     }
+
+    if (!commandName) {
+      console.error(`[ERROR] Could not determine command for modal submission: ${customId}`);
+      return;
+    }
+
+    const command = client.commands.get(commandName);
+
+    if (!command) {
+      console.error(`[ERROR] No command matching ${commandName} was found for modal submission.`);
+      return;
+    }
+
+    if (!command.handleModalSubmit) {
+      console.error(`[ERROR] Command ${commandName} does not support modal submissions.`);
+      return;
+    }
+
+    try {
+      await command.handleModalSubmit(interaction);
+    } catch (error) {
+      console.error(`[ERROR] Error handling modal submission for ${commandName}:`, error);
+
+      const errorMessage = { content: 'There was an error while processing your submission!', ephemeral: true };
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage);
+      } else {
+        await interaction.reply(errorMessage);
+      }
+    }
+    return;
   }
 });
 

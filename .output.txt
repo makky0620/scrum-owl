@@ -1,12 +1,15 @@
 
 > scrum-owl@1.0.0 test
 > jest
-(node:43387) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:45196) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
  PASS  src/__tests__/reminder.test.ts
-(node:43388) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:45195) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
- PASS  src/__tests__/storage.test.ts
+ PASS  src/__tests__/reminderService.test.ts (6.082 s)
+(node:45197) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ PASS  src/__tests__/storage.test.ts (6.152 s)
   ● Console
     console.error
       Error loading reminders: SyntaxError: Unexpected token 'i', "invalid json" is not valid JSON
@@ -70,46 +73,9 @@
       50 |   }
       at ReminderStorage.saveReminders (src/utils/storage.ts:47:15)
       at Object.<anonymous> (src/__tests__/storage.test.ts:117:28)
-(node:43389) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:45194) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
- PASS  src/__tests__/reminderService.test.ts
-(node:43391) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
- PASS  src/__tests__/reminderCommand.test.ts
-  ● Console
-    console.error
-      [Reminder Command] Error: TypeError: Cannot read properties of undefined (reading 'title')
-          at handleCreate (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/commands/reminder.ts:205:35)
-          at processTicksAndRejections (node:internal/process/task_queues:105:5)
-          at Object.execute (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/commands/reminder.ts:102:11)
-          at Object.<anonymous> (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/__tests__/reminderCommand.test.ts:71:7)
-      118 |       }
-      119 |     } catch (error) {
-    > 120 |       console.error('[Reminder Command] Error:', error);
-          |               ^
-      121 |       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      122 |
-      123 |       if (interaction.replied || interaction.deferred) {
-      at Object.execute (src/commands/reminder.ts:120:15)
-      at Object.<anonymous> (src/__tests__/reminderCommand.test.ts:71:7)
-    console.error
-      [Reminder Command] Error: TypeError: Cannot read properties of undefined (reading 'title')
-          at handleCreate (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/commands/reminder.ts:205:35)
-          at processTicksAndRejections (node:internal/process/task_queues:105:5)
-          at Object.execute (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/commands/reminder.ts:102:11)
-          at Object.<anonymous> (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/__tests__/reminderCommand.test.ts:82:7)
-      118 |       }
-      119 |     } catch (error) {
-    > 120 |       console.error('[Reminder Command] Error:', error);
-          |               ^
-      121 |       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      122 |
-      123 |       if (interaction.replied || interaction.deferred) {
-      at Object.execute (src/commands/reminder.ts:120:15)
-      at Object.<anonymous> (src/__tests__/reminderCommand.test.ts:82:7)
-(node:43390) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
- PASS  src/__tests__/reminderScheduler.test.ts
+ PASS  src/__tests__/reminderScheduler.test.ts (6.442 s)
   ● Console
     console.log
       [ReminderScheduler] Starting reminder scheduler...
@@ -214,14 +180,48 @@
     console.log
       [ReminderScheduler] Reminder scheduler stopped
       at ReminderScheduler.stop (src/services/reminderScheduler.ts:45:13)
-(node:43385) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:45198) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
- PASS  src/__tests__/planningPoker.test.ts
-(node:43386) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:45192) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
- PASS  src/__tests__/facilitator.test.ts
+ PASS  src/__tests__/reminderCommand.test.ts (6.604 s)
+  ● Console
+    console.error
+      [Reminder Command] Error: TypeError: Cannot read properties of undefined (reading 'title')
+          at handleCreate (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/commands/reminder.ts:205:35)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at Object.execute (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/commands/reminder.ts:102:11)
+          at Object.<anonymous> (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/__tests__/reminderCommand.test.ts:71:7)
+      118 |       }
+      119 |     } catch (error) {
+    > 120 |       console.error('[Reminder Command] Error:', error);
+          |               ^
+      121 |       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      122 |
+      123 |       if (interaction.replied || interaction.deferred) {
+      at Object.execute (src/commands/reminder.ts:120:15)
+      at Object.<anonymous> (src/__tests__/reminderCommand.test.ts:71:7)
+    console.error
+      [Reminder Command] Error: TypeError: Cannot read properties of undefined (reading 'title')
+          at handleCreate (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/commands/reminder.ts:205:35)
+          at processTicksAndRejections (node:internal/process/task_queues:105:5)
+          at Object.execute (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/commands/reminder.ts:102:11)
+          at Object.<anonymous> (/Users/makinotakashi/Workspace/nextjs/scrum-master/src/__tests__/reminderCommand.test.ts:82:7)
+      118 |       }
+      119 |     } catch (error) {
+    > 120 |       console.error('[Reminder Command] Error:', error);
+          |               ^
+      121 |       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      122 |
+      123 |       if (interaction.replied || interaction.deferred) {
+      at Object.execute (src/commands/reminder.ts:120:15)
+      at Object.<anonymous> (src/__tests__/reminderCommand.test.ts:82:7)
+ PASS  src/__tests__/facilitator.test.ts (6.581 s)
+(node:45193) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ PASS  src/__tests__/planningPoker.test.ts (6.66 s)
 Test Suites: 7 passed, 7 total
 Tests:       72 passed, 72 total
 Snapshots:   0 total
-Time:        5.506 s
+Time:        7.647 s
 Ran all test suites.
