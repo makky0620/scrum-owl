@@ -79,7 +79,7 @@ const command: Command = {
         .addStringOption(option =>
           option.setName('chart_id')
             .setDescription('ID of the burndown chart to delete')
-            .setRequired(true))),
+            .setRequired(true))) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand();
@@ -240,7 +240,7 @@ async function handleView(interaction: ChatInputCommandInteraction) {
     }
 
     const progressPercentage = ((chart.totalPoints - chart.currentPoints) / chart.totalPoints) * 100;
-    
+
     // Generate chart image URL using QuickChart
     const chartImageUrl = quickChartService.generateBurndownChartUrl(chart);
 
