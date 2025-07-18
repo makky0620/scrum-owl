@@ -4,6 +4,11 @@ import {
   EmbedBuilder,
   MessageFlags,
   ChannelType,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  ActionRowBuilder,
+  ModalSubmitInteraction,
 } from 'discord.js';
 import { Command } from '../command';
 import { ReminderService, CreateReminderData, UpdateReminderData } from '../services/reminderService';
@@ -79,36 +84,12 @@ const command: Command = {
     .addSubcommand(subcommand =>
       subcommand
         .setName('edit')
-        .setDescription('Edit a reminder')
+        .setDescription('Edit a reminder using a modal')
         .addStringOption(option =>
           option
             .setName('id')
             .setDescription('ID of the reminder to edit')
             .setRequired(true)
-        )
-        .addStringOption(option =>
-          option
-            .setName('title')
-            .setDescription('New title')
-            .setRequired(false)
-        )
-        .addStringOption(option =>
-          option
-            .setName('message')
-            .setDescription('New message')
-            .setRequired(false)
-        )
-        .addStringOption(option =>
-          option
-            .setName('time')
-            .setDescription('New time')
-            .setRequired(false)
-        )
-        .addBooleanOption(option =>
-          option
-            .setName('active')
-            .setDescription('Set reminder active/inactive')
-            .setRequired(false)
         )
     ) as SlashCommandBuilder,
 
@@ -137,6 +118,27 @@ const command: Command = {
       }
     } catch (error) {
       console.error('[Reminder Command] Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: `Error: ${errorMessage}`,
+          flags: MessageFlags.Ephemeral,
+        });
+      } else {
+        await interaction.reply({
+          content: `Error: ${errorMessage}`,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    }
+  },
+
+  async handleModalSubmit(interaction: ModalSubmitInteraction) {
+    try {
+      await handleModalSubmit(interaction);
+    } catch (error) {
+      console.error('[Reminder Command] Modal Submit Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
 
       if (interaction.replied || interaction.deferred) {
@@ -288,10 +290,6 @@ async function handleDelete(interaction: ChatInputCommandInteraction) {
 
 async function handleEdit(interaction: ChatInputCommandInteraction) {
   const id = interaction.options.getString('id', true);
-  const title = interaction.options.getString('title');
-  const message = interaction.options.getString('message');
-  const time = interaction.options.getString('time');
-  const active = interaction.options.getBoolean('active');
 
   // Check if reminder exists and belongs to user
   const reminders = await reminderService.getUserReminders(interaction.user.id);
@@ -305,28 +303,156 @@ async function handleEdit(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  const updateData: UpdateReminderData = { id };
+  // Create modal with pre-populated fields
+  const modal = new ModalBuilder()
+    .setCustomId(`edit-reminder-modal:${id}`)
+    .setTitle('Edit Reminder');
 
-  if (title !== null) updateData.title = title;
-  if (message !== null) updateData.message = message;
-  if (time !== null) updateData.time = time;
-  if (active !== null) updateData.isActive = active;
+  // Title input
+  const titleInput = new TextInputBuilder()
+    .setCustomId('title')
+    .setLabel('Title')
+    .setStyle(TextInputStyle.Short)
+    .setValue(reminder.title)
+    .setRequired(true)
+    .setMaxLength(100);
 
-  const updatedReminder = await reminderService.updateReminder(updateData);
+  // Message input
+  const messageInput = new TextInputBuilder()
+    .setCustomId('message')
+    .setLabel('Message')
+    .setStyle(TextInputStyle.Paragraph)
+    .setValue(reminder.message)
+    .setRequired(true)
+    .setMaxLength(2000);
 
-  const embed = new EmbedBuilder()
-    .setColor('#FFA500')
-    .setTitle('✏️ Reminder Updated')
-    .setDescription(`**${updatedReminder.title}** has been updated successfully.`)
-    .addFields(
-      { name: 'Message', value: updatedReminder.message, inline: false },
-      { name: 'Next Trigger', value: updatedReminder.nextTriggerTime.toLocaleString(), inline: true },
-      { name: 'Status', value: updatedReminder.isActive ? 'Active' : 'Inactive', inline: true }
-    )
-    .setTimestamp()
-    .setFooter({ text: 'Scrum Owl Reminder' });
+  // Time input
+  const timeInput = new TextInputBuilder()
+    .setCustomId('time')
+    .setLabel('Time (14:30, 2h, 2024-07-15 14:30)')
+    .setStyle(TextInputStyle.Short)
+    .setValue(reminder.nextTriggerTime.toLocaleString())
+    .setRequired(true)
+    .setMaxLength(50);
 
-  await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+  // Active status input
+  const activeInput = new TextInputBuilder()
+    .setCustomId('active')
+    .setLabel('Active (true/false)')
+    .setStyle(TextInputStyle.Short)
+    .setValue(reminder.isActive.toString())
+    .setRequired(true)
+    .setMaxLength(5);
+
+  // Add inputs to action rows
+  const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(titleInput);
+  const secondActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(messageInput);
+  const thirdActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(timeInput);
+  const fourthActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(activeInput);
+
+  modal.addComponents(firstActionRow, secondActionRow, thirdActionRow, fourthActionRow);
+
+  await interaction.showModal(modal);
+}
+
+async function handleModalSubmit(interaction: ModalSubmitInteraction) {
+  // Extract reminder ID from custom ID
+  const customId = interaction.customId;
+  if (!customId.startsWith('edit-reminder-modal:')) {
+    await interaction.reply({
+      content: 'Invalid modal submission.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const id = customId.split(':')[1];
+
+  // Check if reminder exists and belongs to user
+  const reminders = await reminderService.getUserReminders(interaction.user.id);
+  const reminder = reminders.find(r => r.id === id);
+
+  if (!reminder) {
+    await interaction.reply({
+      content: 'Reminder not found or you do not have permission to edit it.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // Get values from modal
+  const title = interaction.fields.getTextInputValue('title').trim();
+  const message = interaction.fields.getTextInputValue('message').trim();
+  const time = interaction.fields.getTextInputValue('time').trim();
+  const activeStr = interaction.fields.getTextInputValue('active').trim().toLowerCase();
+
+  // Validate inputs
+  if (!title) {
+    await interaction.reply({
+      content: 'Title cannot be empty.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!message) {
+    await interaction.reply({
+      content: 'Message cannot be empty.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  if (!time) {
+    await interaction.reply({
+      content: 'Time cannot be empty.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  // Validate active status
+  const isActive = activeStr === 'true';
+  if (activeStr !== 'true' && activeStr !== 'false') {
+    await interaction.reply({
+      content: 'Active status must be either "true" or "false".',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  try {
+    // Update reminder
+    const updateData: UpdateReminderData = {
+      id,
+      title,
+      message,
+      time,
+      isActive
+    };
+
+    const updatedReminder = await reminderService.updateReminder(updateData);
+
+    const embed = new EmbedBuilder()
+      .setColor('#FFA500')
+      .setTitle('✏️ Reminder Updated')
+      .setDescription(`**${updatedReminder.title}** has been updated successfully.`)
+      .addFields(
+        { name: 'Message', value: updatedReminder.message, inline: false },
+        { name: 'Next Trigger', value: updatedReminder.nextTriggerTime.toLocaleString(), inline: true },
+        { name: 'Status', value: updatedReminder.isActive ? 'Active' : 'Inactive', inline: true }
+      )
+      .setTimestamp()
+      .setFooter({ text: 'Scrum Owl Reminder' });
+
+    await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    await interaction.reply({
+      content: `Error updating reminder: ${errorMessage}`,
+      flags: MessageFlags.Ephemeral,
+    });
+  }
 }
 
 module.exports = command;
