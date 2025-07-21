@@ -205,15 +205,15 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
     .setDescription(`**${reminder.title}** has been created successfully!`)
     .addFields(
       { name: 'Message', value: reminder.message, inline: false },
-      { name: 'Next Trigger', value: reminder.nextTriggerTime.toLocaleString(), inline: true },
-      { name: 'Type', value: reminder.type, inline: true },
-      { name: 'ID', value: reminder.id, inline: true }
+      { name: 'Next Trigger', value: reminder.nextTriggerTime.toLocaleString(), inline: false },
+      { name: 'Type', value: reminder.type, inline: false },
+      { name: 'ID', value: reminder.id, inline: false }
     )
     .setTimestamp()
     .setFooter({ text: 'Scrum Owl Reminder' });
 
   if (reminder.type === 'daily' && reminder.dayFilter?.skipWeekends) {
-    embed.addFields({ name: 'Skip Weekends', value: 'Yes', inline: true });
+    embed.addFields({ name: 'Skip Weekends', value: 'Yes', inline: false });
   }
 
   await interaction.reply({ embeds: [embed] });
@@ -439,8 +439,8 @@ async function handleModalSubmit(interaction: ModalSubmitInteraction) {
       .setDescription(`**${updatedReminder.title}** has been updated successfully.`)
       .addFields(
         { name: 'Message', value: updatedReminder.message, inline: false },
-        { name: 'Next Trigger', value: updatedReminder.nextTriggerTime.toLocaleString(), inline: true },
-        { name: 'Status', value: updatedReminder.isActive ? 'Active' : 'Inactive', inline: true }
+        { name: 'Next Trigger', value: updatedReminder.nextTriggerTime.toLocaleString(), inline: false },
+        { name: 'Status', value: updatedReminder.isActive ? 'Active' : 'Inactive', inline: false }
       )
       .setTimestamp()
       .setFooter({ text: 'Scrum Owl Reminder' });

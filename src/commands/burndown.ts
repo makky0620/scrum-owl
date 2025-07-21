@@ -249,13 +249,15 @@ async function handleView(interaction: ChatInputCommandInteraction) {
       .setTitle(`📊 ${chart.title}`)
       .setDescription(`Burndown chart visualization`)
       .addFields(
-        { name: 'Chart ID', value: chart.id, inline: true },
+        { name: 'Chart ID', value: chart.id, inline: false },
         { name: 'Total Points', value: chart.totalPoints.toString(), inline: true },
         { name: 'Points Remaining', value: chart.currentPoints.toString(), inline: true },
+        { name: '\u200B', value: '\u200B', inline: true },
         { name: 'Start Date', value: dayjs(chart.startDate).format('YYYY-MM-DD'), inline: true },
         { name: 'End Date', value: dayjs(chart.endDate).format('YYYY-MM-DD'), inline: true },
+        { name: '\u200B', value: '\u200B', inline: true },
         { name: 'Status', value: chart.isActive ? '🟢 Active' : '🔴 Inactive', inline: true },
-        { name: 'Progress', value: `${progressPercentage.toFixed(1)}% Complete` }
+        { name: 'Progress', value: `${progressPercentage.toFixed(1)}% Complete`, inline: true }
       )
       .setImage(chartImageUrl);
 
