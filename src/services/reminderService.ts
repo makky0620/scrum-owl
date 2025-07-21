@@ -114,6 +114,10 @@ export class ReminderService {
     return await this.storage.getRemindersByUser(userId);
   }
 
+  async getUserRemindersInGuild(userId: string, guildId: string): Promise<Reminder[]> {
+    return await this.storage.getRemindersByUserAndGuild(userId, guildId);
+  }
+
   parseTimeString(timeString: string): Date {
     // Handle relative time (e.g., "30m", "2h", "1d")
     const relativeTimeRegex = /^(\d+)([mhd])$/;

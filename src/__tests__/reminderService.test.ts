@@ -209,6 +209,27 @@ describe('ReminderService', () => {
     });
   });
 
+  describe('getUserRemindersInGuild', () => {
+    it('should return reminders for a specific user in a specific guild', async () => {
+      const userGuildReminders = [mockReminder];
+      mockStorage.getRemindersByUserAndGuild.mockResolvedValue(userGuildReminders);
+
+      const result = await reminderService.getUserRemindersInGuild('user123', 'guild123');
+
+      expect(result).toEqual(userGuildReminders);
+      expect(mockStorage.getRemindersByUserAndGuild).toHaveBeenCalledWith('user123', 'guild123');
+    });
+
+    it('should return empty array when no reminders found for user in guild', async () => {
+      mockStorage.getRemindersByUserAndGuild.mockResolvedValue([]);
+
+      const result = await reminderService.getUserRemindersInGuild('user123', 'guild123');
+
+      expect(result).toEqual([]);
+      expect(mockStorage.getRemindersByUserAndGuild).toHaveBeenCalledWith('user123', 'guild123');
+    });
+  });
+
   describe('parseTimeString', () => {
     it('should parse relative time strings', () => {
       const result = reminderService.parseTimeString('30m');

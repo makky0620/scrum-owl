@@ -239,4 +239,38 @@ describe('ReminderStorage', () => {
       expect(activeReminders[0].isActive).toBe(true);
     });
   });
+
+  describe('getRemindersByUserAndGuild', () => {
+    it('should return reminders for specific user and guild', async () => {
+      const reminders = [
+        mockReminder, // user123, guild123
+        { ...mockReminder, id: 'test-id-2', userId: 'user456', guildId: 'guild123' }, // different user, same guild
+        { ...mockReminder, id: 'test-id-3', userId: 'user123', guildId: 'guild456' }, // same user, different guild
+        { ...mockReminder, id: 'test-id-4', userId: 'user456', guildId: 'guild456' }  // different user, different guild
+      ];
+      
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(reminders));
+      
+      const userGuildReminders = await storage.getRemindersByUserAndGuild('user123', 'guild123');
+      
+      expect(userGuildReminders).toHaveLength(1);
+      expect(userGuildReminders[0].userId).toBe('user123');
+      expect(userGuildReminders[0].guildId).toBe('guild123');
+      expect(userGuildReminders[0].id).toBe('test-id-1');
+    });
+
+    it('should return empty array when no reminders match user and guild', async () => {
+      const reminders = [
+        { ...mockReminder, userId: 'user456', guildId: 'guild456' }
+      ];
+      
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.readFileSync.mockReturnValue(JSON.stringify(reminders));
+      
+      const userGuildReminders = await storage.getRemindersByUserAndGuild('user123', 'guild123');
+      
+      expect(userGuildReminders).toHaveLength(0);
+    });
+  });
 });
