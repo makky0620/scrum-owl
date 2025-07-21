@@ -220,7 +220,16 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
 }
 
 async function handleList(interaction: ChatInputCommandInteraction) {
-  const reminders = await reminderService.getUserReminders(interaction.user.id);
+  // Handle DM context where guildId might be null
+  if (!interaction.guildId) {
+    await interaction.reply({
+      content: 'Reminder list command can only be used in a server, not in direct messages.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const reminders = await reminderService.getUserRemindersInGuild(interaction.user.id, interaction.guildId);
 
   if (reminders.length === 0) {
     await interaction.reply({

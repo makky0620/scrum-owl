@@ -84,6 +84,11 @@ export class ReminderStorage {
     return reminders.filter(r => r.userId === userId);
   }
 
+  async getRemindersByUserAndGuild(userId: string, guildId: string): Promise<Reminder[]> {
+    const reminders = await this.loadReminders();
+    return reminders.filter(r => r.userId === userId && r.guildId === guildId);
+  }
+
   async getActiveReminders(): Promise<Reminder[]> {
     const reminders = await this.loadReminders();
     return reminders.filter(r => r.isActive);
