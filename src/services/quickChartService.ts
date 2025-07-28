@@ -128,15 +128,28 @@ export class QuickChartService {
     // If we have progress entries, connect the line by filling gaps
     if (chart.progressEntries.length > 0) {
       let lastKnownValue = chart.totalPoints;
+      let lastKnownIndex = 0;
+      
+      // Find the last day with data
+      let lastDataIndex = 0;
+      for (let i = 0; i <= totalDays; i++) {
+        if (actualData[i] !== null) {
+          lastDataIndex = i;
+        }
+      }
+      
+      // Fill gaps with the last known value up to the last data point
       for (let i = 1; i <= totalDays; i++) {
         if (actualData[i] !== null) {
+          // Update the last known value and index
           lastKnownValue = actualData[i] as number;
+          lastKnownIndex = i;
+        } else if (i > lastDataIndex) {
+          // Don't show data after the last known data point
+          actualData[i] = null;
         } else {
-          // Only show the line up to the last known data point
-          const hasLaterData = actualData.slice(i + 1).some(val => val !== null);
-          if (!hasLaterData) {
-            break;
-          }
+          // Fill gap with the last known value
+          actualData[i] = lastKnownValue;
         }
       }
     }
