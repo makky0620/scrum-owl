@@ -67,7 +67,11 @@ const command: Command = {
         .addStringOption(option =>
           option.setName('chart_id')
             .setDescription('ID of the burndown chart')
-            .setRequired(true)))
+            .setRequired(true))
+        .addBooleanOption(option =>
+          option.setName('include_weekends')
+            .setDescription('Include weekends in the chart (default: false)')
+            .setRequired(false)))
     .addSubcommand(subcommand =>
       subcommand
         .setName('list')
@@ -229,6 +233,7 @@ async function handleUpdate(interaction: ChatInputCommandInteraction) {
 async function handleView(interaction: ChatInputCommandInteraction) {
   try {
     const chartId = interaction.options.getString('chart_id', true);
+    const includeWeekends = interaction.options.getBoolean('include_weekends') ?? false;
     const chart = await burndownService.getChartById(chartId);
 
     if (!chart) {
@@ -242,7 +247,7 @@ async function handleView(interaction: ChatInputCommandInteraction) {
     const progressPercentage = ((chart.totalPoints - chart.currentPoints) / chart.totalPoints) * 100;
 
     // Generate chart image URL using QuickChart
-    const chartImageUrl = quickChartService.generateBurndownChartUrl(chart);
+    const chartImageUrl = quickChartService.generateBurndownChartUrl(chart, includeWeekends);
 
     const embed = new EmbedBuilder()
       .setColor('#0099FF')
