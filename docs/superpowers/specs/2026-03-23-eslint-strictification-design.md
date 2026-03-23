@@ -22,19 +22,23 @@ Approach B: moderate strictification with existing code fixes.
 
 ### Add new rules
 
-| Rule | Level | Reason |
+| Rule | Config | Reason |
 |---|---|---|
 | `no-console` | `error` | Enforce use of `logger` utility instead of raw console calls |
-| `eqeqeq` | `error` (always) | Prevent type-coercion bugs from `==` |
+| `eqeqeq` | `['error', 'always']` | Prevent type-coercion bugs from `==` |
 | `@typescript-eslint/consistent-type-imports` | `error` | Enforce `import type` for type-only imports |
-| `@typescript-eslint/explicit-function-return-type` | `error` | Make return types explicit for clarity and type safety |
+| `@typescript-eslint/explicit-function-return-type` | `['error', { allowExpressions: true }]` | Make return types explicit on named functions/methods; `allowExpressions: true` exempts anonymous callbacks (e.g. `it(() => ...)`, `collector.on('collect', async (i) => ...)`) |
 
 ## Existing Code Fixes
 
-### `src/index.ts`
+### `src/index.ts` and `src/deploy-commands.ts`
 
-- Replace `require(filePath)` dynamic load with `await import(filePath)`
-- Remove `// eslint-disable-next-line @typescript-eslint/no-require-imports` comment
+Both files use `require(filePath)` for dynamic command loading with `// eslint-disable-next-line @typescript-eslint/no-require-imports`.
+
+- Replace `require(filePath)` with `await import(filePath)`
+- Remove the `eslint-disable-next-line` comment
+- **Important:** `await import(filePath)` returns a Module Namespace Object. The CommonJS `module.exports` value is at `.default`. Access must change to `(await import(filePath)).default`.
+- Note: TypeScript compiles `import()` to `require()` at build time (`"module": "CommonJS"` in tsconfig), so this is a source/lint-level change and ts-node runtime behavior is unaffected.
 - Add return type annotations to any functions/callbacks missing them
 
 ### `src/utils/logger.ts`
@@ -44,7 +48,8 @@ Approach B: moderate strictification with existing code fixes.
 ### All source files
 
 - Convert type-only imports to `import type` where applicable
-- Add explicit return type annotations to functions/methods missing them
+- Add explicit return type annotations to exported/named functions and class methods missing them
+- Anonymous callbacks (e.g. inside `it()`, `describe()`, event handlers) are exempt due to `allowExpressions: true`
 
 ## Out of Scope
 
