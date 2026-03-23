@@ -1,6 +1,6 @@
 import { BurndownChartService } from '../services/burndownChartService';
 import { BurndownChartStorage } from '../utils/burndownChartStorage';
-import { BurndownChart } from '../models/burndownChart';
+import type { BurndownChart } from '../models/burndownChart';
 import dayjs from 'dayjs';
 
 jest.mock('../utils/burndownChartStorage');
@@ -54,40 +54,49 @@ describe('BurndownChartService', () => {
       expect(chart.currentPoints).toBe(50);
       expect(chart.isActive).toBe(true);
       expect(chart.progressEntries).toHaveLength(0);
-      expect(mockStorage.addChart).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sprint 1' }));
+      expect(mockStorage.addChart).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Sprint 1' }),
+      );
     });
 
     it('should reject when total points is zero', async () => {
-      await expect(service.createChart({ ...validData, totalPoints: 0 }))
-        .rejects.toThrow('Total points must be greater than 0');
+      await expect(service.createChart({ ...validData, totalPoints: 0 })).rejects.toThrow(
+        'Total points must be greater than 0',
+      );
     });
 
     it('should reject invalid start date', async () => {
-      await expect(service.createChart({ ...validData, startDate: 'not-a-date' }))
-        .rejects.toThrow('Invalid start date format');
+      await expect(service.createChart({ ...validData, startDate: 'not-a-date' })).rejects.toThrow(
+        'Invalid start date format',
+      );
     });
 
     it('should reject invalid end date', async () => {
-      await expect(service.createChart({ ...validData, endDate: 'not-a-date' }))
-        .rejects.toThrow('Invalid end date format');
+      await expect(service.createChart({ ...validData, endDate: 'not-a-date' })).rejects.toThrow(
+        'Invalid end date format',
+      );
     });
 
     it('should reject when end date is before start date', async () => {
-      await expect(service.createChart({ ...validData, startDate: '2024-01-14', endDate: '2024-01-01' }))
-        .rejects.toThrow('End date must be after start date');
+      await expect(
+        service.createChart({ ...validData, startDate: '2024-01-14', endDate: '2024-01-01' }),
+      ).rejects.toThrow('End date must be after start date');
     });
 
     it('should reject when end date equals start date', async () => {
-      await expect(service.createChart({ ...validData, startDate: '2024-01-01', endDate: '2024-01-01' }))
-        .rejects.toThrow('End date must be after start date');
+      await expect(
+        service.createChart({ ...validData, startDate: '2024-01-01', endDate: '2024-01-01' }),
+      ).rejects.toThrow('End date must be after start date');
     });
 
     it('should reject missing required fields', async () => {
-      await expect(service.createChart({ ...validData, title: '' }))
-        .rejects.toThrow('Title is required');
+      await expect(service.createChart({ ...validData, title: '' })).rejects.toThrow(
+        'Title is required',
+      );
 
-      await expect(service.createChart({ ...validData, userId: '' }))
-        .rejects.toThrow('User ID is required');
+      await expect(service.createChart({ ...validData, userId: '' })).rejects.toThrow(
+        'User ID is required',
+      );
     });
   });
 
@@ -109,7 +118,11 @@ describe('BurndownChartService', () => {
       mockStorage.getChartById.mockResolvedValue(mockChart);
       mockStorage.updateChart.mockResolvedValue();
 
-      const result = await service.updateProgress({ chartId: 'chart-id-1', pointsBurned: 10, note: 'Done items' });
+      const result = await service.updateProgress({
+        chartId: 'chart-id-1',
+        pointsBurned: 10,
+        note: 'Done items',
+      });
 
       expect(result.progressEntries[0].note).toBe('Done items');
     });
@@ -117,22 +130,25 @@ describe('BurndownChartService', () => {
     it('should throw when chart not found', async () => {
       mockStorage.getChartById.mockResolvedValue(undefined);
 
-      await expect(service.updateProgress({ chartId: 'missing', pointsBurned: 10 }))
-        .rejects.toThrow('Chart not found');
+      await expect(
+        service.updateProgress({ chartId: 'missing', pointsBurned: 10 }),
+      ).rejects.toThrow('Chart not found');
     });
 
     it('should throw when burning more points than remaining', async () => {
       mockStorage.getChartById.mockResolvedValue(mockChart);
 
-      await expect(service.updateProgress({ chartId: 'chart-id-1', pointsBurned: 999 }))
-        .rejects.toThrow('Cannot burn more points than remaining');
+      await expect(
+        service.updateProgress({ chartId: 'chart-id-1', pointsBurned: 999 }),
+      ).rejects.toThrow('Cannot burn more points than remaining');
     });
 
     it('should throw when points burned is negative', async () => {
       mockStorage.getChartById.mockResolvedValue(mockChart);
 
-      await expect(service.updateProgress({ chartId: 'chart-id-1', pointsBurned: -1 }))
-        .rejects.toThrow('Points burned cannot be negative');
+      await expect(
+        service.updateProgress({ chartId: 'chart-id-1', pointsBurned: -1 }),
+      ).rejects.toThrow('Points burned cannot be negative');
     });
 
     it('should allow burning exactly the remaining points', async () => {

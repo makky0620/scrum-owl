@@ -1,4 +1,9 @@
-import { BurndownChart, CreateBurndownChartData, UpdateProgressData, ProgressEntry } from '../models/burndownChart';
+import type {
+  BurndownChart,
+  CreateBurndownChartData,
+  UpdateProgressData,
+  ProgressEntry,
+} from '../models/burndownChart';
 import { BurndownChartStorage } from '../utils/burndownChartStorage';
 import dayjs from 'dayjs';
 import { randomUUID } from 'crypto';
@@ -49,7 +54,7 @@ export class BurndownChartService {
       progressEntries: [],
       isActive: true,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
     await this.storage.addChart(chart);
@@ -75,14 +80,14 @@ export class BurndownChartService {
       date: new Date(),
       pointsRemaining: newCurrentPoints,
       pointsBurned: data.pointsBurned,
-      note: data.note
+      note: data.note,
     };
 
     const updatedChart: BurndownChart = {
       ...chart,
       currentPoints: newCurrentPoints,
       progressEntries: [...chart.progressEntries, progressEntry],
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     await this.storage.updateChart(updatedChart);

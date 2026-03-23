@@ -1,4 +1,4 @@
-import { Reminder, ReminderType, DayFilter } from '../models/reminder';
+import type { Reminder, ReminderType, DayFilter } from '../models/reminder';
 import { ReminderStorage } from '../utils/storage';
 import dayjs from 'dayjs';
 import type { ManipulateType } from 'dayjs';

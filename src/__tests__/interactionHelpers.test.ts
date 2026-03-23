@@ -1,5 +1,6 @@
 import { safeReply } from '../utils/interactionHelpers';
-import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+import type { ChatInputCommandInteraction} from 'discord.js';
+import { MessageFlags } from 'discord.js';
 
 interface MockInteraction {
   replied: boolean;

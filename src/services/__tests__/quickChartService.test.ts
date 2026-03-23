@@ -1,5 +1,5 @@
 import { QuickChartService } from '../quickChartService';
-import { BurndownChart } from '../../models/burndownChart';
+import type { BurndownChart } from '../../models/burndownChart';
 import dayjs from 'dayjs';
 
 describe('QuickChartService', () => {
@@ -26,24 +26,24 @@ describe('QuickChartService', () => {
             date: dayjs('2024-01-03').toDate(),
             pointsRemaining: 80,
             pointsBurned: 20,
-            note: 'First update'
+            note: 'First update',
           },
           {
             date: dayjs('2024-01-07').toDate(),
             pointsRemaining: 60,
             pointsBurned: 20,
-            note: 'Mid sprint'
+            note: 'Mid sprint',
           },
           {
             date: dayjs('2024-01-10').toDate(),
             pointsRemaining: 40,
             pointsBurned: 20,
-            note: 'Latest update'
-          }
+            note: 'Latest update',
+          },
         ],
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       const chartUrl = service.generateBurndownChartUrl(mockChart);
@@ -68,7 +68,7 @@ describe('QuickChartService', () => {
         progressEntries: [],
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       const chartUrl = service.generateBurndownChartUrl(mockChart);
@@ -93,12 +93,12 @@ describe('QuickChartService', () => {
           {
             date: dayjs('2024-01-07').toDate(),
             pointsRemaining: 50,
-            pointsBurned: 50
-          }
+            pointsBurned: 50,
+          },
         ],
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       const chartUrl = service.generateBurndownChartUrl(mockChart);
@@ -126,48 +126,48 @@ describe('QuickChartService', () => {
         {
           date: dayjs('2024-01-01').toDate(), // Day 0
           pointsRemaining: 100,
-          pointsBurned: 0
+          pointsBurned: 0,
         },
         {
           date: dayjs('2024-01-03').toDate(), // Day 2
           pointsRemaining: 80,
-          pointsBurned: 20
+          pointsBurned: 20,
         },
         {
           date: dayjs('2024-01-05').toDate(), // Day 4
           pointsRemaining: 60,
-          pointsBurned: 20
-        }
+          pointsBurned: 20,
+        },
       ],
       isActive: true,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     // Generate the chart URL
     const chartUrl = service.generateBurndownChartUrl(mockChart);
-    
+
     // Decode the URL to extract the chart configuration
     const encodedConfig = chartUrl.split('?c=')[1].split('&')[0];
     const decodedConfig = JSON.parse(decodeURIComponent(encodedConfig));
-    
+
     // Extract the actual data from the chart configuration
     const actualData = decodedConfig.data.datasets[1].data;
-    
+
     // Expected data (weekends excluded, only working days):
     // - Working day 0 (Mon): 100 (from entry)
     // - Working day 1 (Tue): 100 (filled with last known value)
     // - Working day 2 (Wed): 80 (from entry)
     // - Working day 3 (Thu): 80 (filled with last known value)
     // - Working day 4 (Fri): 60 (from entry)
-    
+
     // Verify the data (only 5 working days)
     expect(actualData.length).toBe(5);
     expect(actualData[0]).toBe(100); // Monday (from entry)
     expect(actualData[1]).toBe(100); // Tuesday (filled with last known value)
-    expect(actualData[2]).toBe(80);  // Wednesday (from entry)
-    expect(actualData[3]).toBe(80);  // Thursday (filled with last known value)
-    expect(actualData[4]).toBe(60);  // Friday (from entry)
+    expect(actualData[2]).toBe(80); // Wednesday (from entry)
+    expect(actualData[3]).toBe(80); // Thursday (filled with last known value)
+    expect(actualData[4]).toBe(60); // Friday (from entry)
   });
 
   describe('weekend filtering', () => {
@@ -181,12 +181,12 @@ describe('QuickChartService', () => {
         title: 'Weekend Test Sprint',
         totalPoints: 60,
         startDate: dayjs('2024-01-05').toDate(), // Friday
-        endDate: dayjs('2024-01-09').toDate(),   // Tuesday
+        endDate: dayjs('2024-01-09').toDate(), // Tuesday
         currentPoints: 60,
         progressEntries: [],
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       const chartUrl = service.generateBurndownChartUrl(mockChart);
@@ -209,12 +209,12 @@ describe('QuickChartService', () => {
         title: 'Weekend Test Sprint',
         totalPoints: 60,
         startDate: dayjs('2024-01-05').toDate(), // Friday
-        endDate: dayjs('2024-01-09').toDate(),   // Tuesday
+        endDate: dayjs('2024-01-09').toDate(), // Tuesday
         currentPoints: 60,
         progressEntries: [],
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       const chartUrl = service.generateBurndownChartUrl(mockChart, true);
@@ -237,12 +237,12 @@ describe('QuickChartService', () => {
         title: 'Weekend Test Sprint',
         totalPoints: 60,
         startDate: dayjs('2024-01-05').toDate(), // Friday
-        endDate: dayjs('2024-01-09').toDate(),   // Tuesday (3 working days)
+        endDate: dayjs('2024-01-09').toDate(), // Tuesday (3 working days)
         currentPoints: 60,
         progressEntries: [],
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       const chartUrl = service.generateBurndownChartUrl(mockChart);
@@ -263,12 +263,12 @@ describe('QuickChartService', () => {
         title: 'Weekend Test Sprint',
         totalPoints: 60,
         startDate: dayjs('2024-01-05').toDate(), // Friday
-        endDate: dayjs('2024-01-09').toDate(),   // Tuesday (5 total days)
+        endDate: dayjs('2024-01-09').toDate(), // Tuesday (5 total days)
         currentPoints: 60,
         progressEntries: [],
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       const chartUrl = service.generateBurndownChartUrl(mockChart, true);
@@ -289,28 +289,28 @@ describe('QuickChartService', () => {
         title: 'Weekend Test Sprint',
         totalPoints: 60,
         startDate: dayjs('2024-01-05').toDate(), // Friday
-        endDate: dayjs('2024-01-09').toDate(),   // Tuesday
+        endDate: dayjs('2024-01-09').toDate(), // Tuesday
         currentPoints: 20,
         progressEntries: [
           {
             date: dayjs('2024-01-05').toDate(), // Friday
             pointsRemaining: 60,
-            pointsBurned: 0
+            pointsBurned: 0,
           },
           {
             date: dayjs('2024-01-08').toDate(), // Monday
             pointsRemaining: 40,
-            pointsBurned: 20
+            pointsBurned: 20,
           },
           {
             date: dayjs('2024-01-09').toDate(), // Tuesday
             pointsRemaining: 20,
-            pointsBurned: 20
-          }
+            pointsBurned: 20,
+          },
         ],
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       const chartUrl = service.generateBurndownChartUrl(mockChart);

@@ -1,7 +1,7 @@
 import { ReminderScheduler } from '../services/reminderScheduler';
 import { ReminderStorage } from '../utils/storage';
-import { Reminder } from '../models/reminder';
-import { Client } from 'discord.js';
+import type { Reminder } from '../models/reminder';
+import type { Client } from 'discord.js';
 import dayjs from 'dayjs';
 
 // Mock dependencies

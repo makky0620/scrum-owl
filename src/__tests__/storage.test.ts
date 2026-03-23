@@ -1,5 +1,5 @@
 import { ReminderStorage } from '../utils/storage';
-import { Reminder } from '../models/reminder';
+import type { Reminder } from '../models/reminder';
 import dayjs from 'dayjs';
 import * as fs from 'fs';
 import * as path from 'path';

@@ -1,4 +1,4 @@
-import { Reminder } from '../models/reminder';
+import type { Reminder } from '../models/reminder';
 import dayjs from 'dayjs';
 
 describe('Reminder Model', () => {

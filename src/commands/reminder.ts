@@ -1,20 +1,22 @@
+import type {
+  ChatInputCommandInteraction,
+  ModalSubmitInteraction} from 'discord.js';
 import {
   SlashCommandBuilder,
-  ChatInputCommandInteraction,
   EmbedBuilder,
   MessageFlags,
   ChannelType,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
-  ActionRowBuilder,
-  ModalSubmitInteraction,
+  ActionRowBuilder
 } from 'discord.js';
-import { Command } from '../command';
-import {
-  ReminderService,
+import type { Command } from '../command';
+import type {
   CreateReminderData,
-  UpdateReminderData,
+  UpdateReminderData} from '../services/reminderService';
+import {
+  ReminderService
 } from '../services/reminderService';
 import { safeReply } from '../utils/interactionHelpers';
 import { logger } from '../utils/logger';

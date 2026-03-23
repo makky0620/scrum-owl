@@ -1,6 +1,6 @@
 import { ReminderService } from '../services/reminderService';
 import { ReminderStorage } from '../utils/storage';
-import { Reminder, ReminderType } from '../models/reminder';
+import type { Reminder, ReminderType } from '../models/reminder';
 import dayjs from 'dayjs';
 
 // Mock the storage

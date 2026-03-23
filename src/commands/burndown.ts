@@ -1,14 +1,15 @@
+import type {
+  ChatInputCommandInteraction} from 'discord.js';
 import {
   SlashCommandBuilder,
-  ChatInputCommandInteraction,
   EmbedBuilder,
   MessageFlags,
   ChannelType,
 } from 'discord.js';
-import { Command } from '../command';
+import type { Command } from '../command';
 import { BurndownChartService } from '../services/burndownChartService';
 import { QuickChartService } from '../services/quickChartService';
-import { CreateBurndownChartData, UpdateProgressData } from '../models/burndownChart';
+import type { CreateBurndownChartData, UpdateProgressData } from '../models/burndownChart';
 import { safeReply } from '../utils/interactionHelpers';
 import { logger } from '../utils/logger';
 import dayjs from 'dayjs';

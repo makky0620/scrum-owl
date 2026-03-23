@@ -1,3 +1,6 @@
+import type {
+  ChatInputCommandInteraction,
+  ButtonInteraction} from 'discord.js';
 import {
   SlashCommandBuilder,
   ActionRowBuilder,
@@ -5,11 +8,9 @@ import {
   ButtonStyle,
   EmbedBuilder,
   ComponentType,
-  ChatInputCommandInteraction,
-  ButtonInteraction,
   MessageFlags,
 } from 'discord.js';
-import { Command } from '../command';
+import type { Command } from '../command';
 
 // Emojis for game-like presentation
 const emojis = ['🎲', '🎯', '🎮', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎺', '🎸', '🎹', '🎻', '🎼'];
@@ -101,7 +102,7 @@ const command: Command = {
         const spinningInterval = 500; // Milliseconds between spins
 
         for (let spin = 0; spin < spinningTimes; spin++) {
-            const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+          const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
 
           const spinEmbed = new EmbedBuilder()
             .setColor('#0099ff')

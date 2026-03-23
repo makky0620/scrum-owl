@@ -1,4 +1,4 @@
-import { BurndownChart } from '../models/burndownChart';
+import type { BurndownChart } from '../models/burndownChart';
 import dayjs from 'dayjs';
 
 export class QuickChartService {

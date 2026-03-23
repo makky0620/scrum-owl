@@ -1,4 +1,5 @@
-import { ChatInputCommandInteraction, ChannelType, ModalSubmitInteraction } from 'discord.js';
+import type { ChatInputCommandInteraction, ModalSubmitInteraction } from 'discord.js';
+import { ChannelType } from 'discord.js';
 
 // Mock the ReminderService BEFORE importing the command
 const mockGetUserReminders = jest.fn();

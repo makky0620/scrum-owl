@@ -1,4 +1,4 @@
-import { BurndownChart } from '../models/burndownChart';
+import type { BurndownChart } from '../models/burndownChart';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';

@@ -1,6 +1,7 @@
-import { Client, TextChannel, EmbedBuilder } from 'discord.js';
+import type { Client, TextChannel} from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import { ReminderStorage } from '../utils/storage';
-import { Reminder, DayFilter } from '../models/reminder';
+import type { Reminder, DayFilter } from '../models/reminder';
 import dayjs from 'dayjs';
 import { logger } from '../utils/logger';
 

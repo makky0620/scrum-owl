@@ -1,4 +1,4 @@
-import { Reminder } from '../models/reminder';
+import type { Reminder } from '../models/reminder';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';

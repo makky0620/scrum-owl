@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { Command } from '../command';
+import type { Command } from '../command';
 
 describe('Facilitator Command', () => {
   let command: Command;

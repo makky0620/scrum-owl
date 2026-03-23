@@ -1,3 +1,7 @@
+import type {
+  ChatInputCommandInteraction,
+  ButtonInteraction,
+  Message} from 'discord.js';
 import {
   SlashCommandBuilder,
   ActionRowBuilder,
@@ -5,12 +9,9 @@ import {
   ButtonStyle,
   EmbedBuilder,
   ComponentType,
-  ChatInputCommandInteraction,
-  ButtonInteraction,
-  Message,
   MessageFlags,
 } from 'discord.js';
-import { Command } from '../command';
+import type { Command } from '../command';
 
 const pointValues: string[] = ['0', '1', '2', '3', '5', '8', '13', '21', '?'];
 
@@ -118,9 +119,7 @@ const command: Command = {
         if (!i.replied) {
           await i.reply({ content: `You voted: ${value}`, flags: MessageFlags.Ephemeral });
         }
-      }
-
-      else if (customId === 'show_results') {
+      } else if (customId === 'show_results') {
         if (votes.size === 0) {
           await i.reply({ content: 'No votes have been cast yet!', flags: MessageFlags.Ephemeral });
           return;
@@ -187,9 +186,7 @@ const command: Command = {
           embeds: [embed],
           components: rows,
         });
-      }
-
-      else if (customId === 'end_session') {
+      } else if (customId === 'end_session') {
         collector.stop();
         embed.setColor('#FF0000');
         embed.spliceFields(0, 1, { name: 'Status', value: 'Session ended', inline: false });
