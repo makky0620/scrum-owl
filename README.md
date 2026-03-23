@@ -28,8 +28,8 @@ A Discord bot that facilitates Planning Poker sessions for agile teams. Built wi
    ```
 
 2. Create a Discord bot in the [Developer Portal](https://discord.com/developers/applications)
-    - Enable SERVER MEMBERS INTENT and MESSAGE CONTENT INTENT
-    - Copy the bot token
+   - Enable SERVER MEMBERS INTENT and MESSAGE CONTENT INTENT
+   - Copy the bot token
 
 3. Configure environment:
 
@@ -80,17 +80,20 @@ Create, manage, and delete reminders.
 ```
 
 **Required Parameters:**
+
 - `title`: Title of the reminder
 - `message`: Message content of the reminder
 - `time`: Execution time (e.g., "14:30", "2h", "2024-07-15 14:30")
 - `type`: Type of reminder (`once`: one-time, `daily`: daily repeating)
 
 **Optional Parameters:**
+
 - `channel`: Destination channel for the reminder (defaults to current channel)
 - `skip_weekends`: Skip weekends for daily reminders (true/false)
 - `end_date`: End date (YYYY-MM-DD format)
 
 **Usage Examples:**
+
 ```
 # One-time reminder in current channel
 /reminder create title: "Meeting" message: "Team meeting is starting" time: "14:30" type: once
