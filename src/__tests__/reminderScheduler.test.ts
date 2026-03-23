@@ -52,25 +52,17 @@ describe('ReminderScheduler', () => {
   });
 
   describe('start', () => {
-    it('should start the scheduler and load existing reminders', async () => {
-      const reminders = [mockReminder];
-      mockStorage.getActiveReminders.mockResolvedValue(reminders);
-
+    it('should start the scheduler', async () => {
       await scheduler.start();
 
-      expect(mockStorage.getActiveReminders).toHaveBeenCalled();
       expect(scheduler.isRunning()).toBe(true);
     });
 
     it('should not start if already running', async () => {
-      mockStorage.getActiveReminders.mockResolvedValue([]);
-
       await scheduler.start();
-      const firstCall = mockStorage.getActiveReminders.mock.calls.length;
-
       await scheduler.start(); // Try to start again
 
-      expect(mockStorage.getActiveReminders).toHaveBeenCalledTimes(firstCall);
+      expect(scheduler.isRunning()).toBe(true);
     });
   });
 

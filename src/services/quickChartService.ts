@@ -92,27 +92,24 @@ export class QuickChartService {
     const endDate = dayjs(chart.endDate);
     const totalDays = endDate.diff(startDate, 'day');
 
-    // Generate labels and track working days
     const labels: string[] = [];
     const workingDayIndices: number[] = [];
-    
+
     for (let i = 0; i <= totalDays; i++) {
       const currentDate = startDate.add(i, 'day');
       const dayOfWeek = currentDate.day(); // 0 = Sunday, 6 = Saturday
-      
+
       if (includeWeekends || (dayOfWeek !== 0 && dayOfWeek !== 6)) {
         labels.push(currentDate.format('MM/DD'));
         workingDayIndices.push(i);
       }
     }
 
-    // Generate ideal burndown line based on working days
     const idealData: number[] = [];
-    const workingDaysCount = labels.length - 1; // Number of intervals between working days
-    
+    const workingDaysCount = labels.length - 1;
+
     for (let i = 0; i < labels.length; i++) {
       if (workingDaysCount === 0) {
-        // If only one day, all points remain
         idealData.push(chart.totalPoints);
       } else {
         const remainingPoints = chart.totalPoints * (1 - i / workingDaysCount);
@@ -120,53 +117,43 @@ export class QuickChartService {
       }
     }
 
-    // Generate actual burndown line based on progress entries
     const actualData: (number | null)[] = [];
-    
-    // Initialize with nulls for all working days
+
     for (let i = 0; i < labels.length; i++) {
       actualData[i] = null;
     }
-    
-    // Start with total points on first working day
+
     actualData[0] = chart.totalPoints;
 
-    // Map progress entries to working day indices
+    const dayIndexToWorkingIndex = new Map(workingDayIndices.map((dayIdx, i) => [dayIdx, i]));
+
     chart.progressEntries.forEach(entry => {
       const entryDate = dayjs(entry.date);
       const dayIndex = entryDate.diff(startDate, 'day');
-      
-      // Find the corresponding working day index
-      const workingDayIndex = workingDayIndices.indexOf(dayIndex);
-      if (workingDayIndex >= 0) {
+      const workingDayIndex = dayIndexToWorkingIndex.get(dayIndex);
+      if (workingDayIndex !== undefined) {
         actualData[workingDayIndex] = entry.pointsRemaining;
       }
     });
 
-    // If we have progress entries, connect the line by filling gaps
     if (chart.progressEntries.length > 0) {
       let lastKnownValue = chart.totalPoints;
       let lastKnownIndex = 0;
-      
-      // Find the last working day with data
+
       let lastDataIndex = 0;
       for (let i = 0; i < labels.length; i++) {
         if (actualData[i] !== null) {
           lastDataIndex = i;
         }
       }
-      
-      // Fill gaps with the last known value up to the last data point
+
       for (let i = 1; i < labels.length; i++) {
         if (actualData[i] !== null) {
-          // Update the last known value and index
           lastKnownValue = actualData[i] as number;
           lastKnownIndex = i;
         } else if (i > lastDataIndex) {
-          // Don't show data after the last known data point
           actualData[i] = null;
         } else {
-          // Fill gap with the last known value
           actualData[i] = lastKnownValue;
         }
       }

@@ -22,10 +22,6 @@ export class ReminderScheduler {
 
     console.log('[ReminderScheduler] Starting reminder scheduler...');
 
-    // Load existing reminders
-    await this.storage.getActiveReminders();
-
-    // Start the interval
     this.intervalId = setInterval(() => {
       this.checkReminders().catch(error => {
         console.error('[ReminderScheduler] Error checking reminders:', error);
@@ -56,9 +52,7 @@ export class ReminderScheduler {
 
       for (const reminder of activeReminders) {
         if (dayjs(reminder.nextTriggerTime).isBefore(now) || dayjs(reminder.nextTriggerTime).isSame(now, 'minute')) {
-          // Check if reminder should trigger today (day filter)
           if (!this.shouldTriggerToday(reminder)) {
-            // Skip to next valid day for daily reminders
             if (reminder.type === 'daily') {
               await this.processRecurringReminder(reminder);
             }
@@ -82,7 +76,6 @@ export class ReminderScheduler {
     const dayOfWeek = now.getDay(); // 0=Sunday, 6=Saturday
     const filter = reminder.dayFilter;
 
-    // Check skip weekends
     if (filter.skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
       return false;
     }
@@ -102,7 +95,6 @@ export class ReminderScheduler {
       nextTime = nextTime.add(1, 'day');
     }
 
-    // Apply day filter if present
     if (reminder.dayFilter) {
       nextTime = this.findNextValidDay(nextTime, reminder.dayFilter);
     }
@@ -118,14 +110,12 @@ export class ReminderScheduler {
     while (attempts < maxAttempts) {
       const dayOfWeek = currentTime.day();
 
-      // Check skip weekends
       if (dayFilter.skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
         currentTime = currentTime.add(1, 'day');
         attempts++;
         continue;
       }
 
-      // Valid day found
       break;
     }
 
@@ -146,7 +136,6 @@ export class ReminderScheduler {
 
       console.log(`[ReminderScheduler] Triggered reminder: ${reminder.title} for user ${reminder.userId}`);
 
-      // Handle post-trigger processing
       if (reminder.type === 'once') {
         await this.deactivateReminder(reminder);
       } else {
@@ -158,7 +147,6 @@ export class ReminderScheduler {
   }
 
   async processRecurringReminder(reminder: Reminder): Promise<void> {
-    // Update for next occurrence
     const updatedReminder: Reminder = {
       ...reminder,
       nextTriggerTime: this.calculateNextTriggerTime(reminder),
@@ -187,7 +175,6 @@ export class ReminderScheduler {
       .setTimestamp()
       .setFooter({ text: 'Scrum Owl Reminder' });
 
-    // Add type information for daily reminders
     if (reminder.type === 'daily') {
       embed.addFields(
         { name: 'Type', value: 'Daily reminder', inline: true }

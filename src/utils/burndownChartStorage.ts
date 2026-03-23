@@ -11,14 +11,9 @@ export class BurndownChartStorage {
 
   async loadCharts(): Promise<BurndownChart[]> {
     try {
-      if (!fs.existsSync(this.dataPath)) {
-        return [];
-      }
-
-      const data = fs.readFileSync(this.dataPath, 'utf8');
+      const data = await fs.promises.readFile(this.dataPath, 'utf8');
       const charts = JSON.parse(data);
 
-      // Convert date strings back to Date objects
       return charts.map((chart: any) => ({
         ...chart,
         startDate: new Date(chart.startDate),
@@ -30,7 +25,10 @@ export class BurndownChartStorage {
           date: new Date(entry.date)
         }))
       }));
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        return [];
+      }
       console.error('Error loading burndown charts:', error);
       return [];
     }
@@ -39,11 +37,8 @@ export class BurndownChartStorage {
   async saveCharts(charts: BurndownChart[]): Promise<void> {
     try {
       const dir = path.dirname(this.dataPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-
-      fs.writeFileSync(this.dataPath, JSON.stringify(charts, null, 2), 'utf8');
+      await fs.promises.mkdir(dir, { recursive: true });
+      await fs.promises.writeFile(this.dataPath, JSON.stringify(charts, null, 2), 'utf8');
     } catch (error) {
       console.error('Error saving burndown charts:', error);
       throw error;

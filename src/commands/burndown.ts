@@ -9,10 +9,20 @@ import { Command } from '../command';
 import { BurndownChartService } from '../services/burndownChartService';
 import { QuickChartService } from '../services/quickChartService';
 import { CreateBurndownChartData, UpdateProgressData } from '../models/burndownChart';
+import { safeReply } from '../utils/interactionHelpers';
 import dayjs from 'dayjs';
 
 const burndownService = new BurndownChartService();
 const quickChartService = new QuickChartService();
+
+function progressPercentage(totalPoints: number, currentPoints: number): string {
+  return ((totalPoints - currentPoints) / totalPoints * 100).toFixed(1);
+}
+
+async function handleError(interaction: ChatInputCommandInteraction, context: string, error: unknown): Promise<void> {
+  console.error(`[Burndown] Error ${context}:`, error);
+  await safeReply(interaction, `Error ${context}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+}
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -120,7 +130,6 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
     const startDate = interaction.options.getString('start_date', true);
     const endDate = interaction.options.getString('end_date', true);
 
-    // Validate that we're in a guild
     if (!interaction.guild || !interaction.channel) {
       await interaction.reply({
         content: 'This command can only be used in a server channel.',
@@ -129,7 +138,6 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
       return;
     }
 
-    // Validate channel type
     if (interaction.channel.type !== ChannelType.GuildText) {
       await interaction.reply({
         content: 'This command can only be used in text channels.',
@@ -163,11 +171,7 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } catch (error) {
-    console.error('Error creating burndown chart:', error);
-    await interaction.reply({
-      content: `Error creating burndown chart: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      flags: MessageFlags.Ephemeral,
-    });
+    await handleError(interaction, 'creating burndown chart', error);
   }
 }
 
@@ -177,7 +181,6 @@ async function handleUpdate(interaction: ChatInputCommandInteraction) {
     const pointsBurned = interaction.options.getInteger('points_burned', true);
     const note = interaction.options.getString('note');
 
-    // Check if chart exists and belongs to user
     const existingChart = await burndownService.getChartById(chartId);
     if (!existingChart) {
       await interaction.reply({
@@ -202,7 +205,6 @@ async function handleUpdate(interaction: ChatInputCommandInteraction) {
     };
 
     const updatedChart = await burndownService.updateProgress(updateData);
-    const progressPercentage = ((updatedChart.totalPoints - updatedChart.currentPoints) / updatedChart.totalPoints) * 100;
 
     const embed = new EmbedBuilder()
       .setColor('#FFA500')
@@ -211,7 +213,7 @@ async function handleUpdate(interaction: ChatInputCommandInteraction) {
       .addFields(
         { name: 'Points Burned', value: pointsBurned.toString(), inline: true },
         { name: 'Points Remaining', value: updatedChart.currentPoints.toString(), inline: true },
-        { name: 'Progress', value: `${progressPercentage.toFixed(1)}%`, inline: true }
+        { name: 'Progress', value: `${progressPercentage(updatedChart.totalPoints, updatedChart.currentPoints)}%`, inline: true }
       );
 
     if (note) {
@@ -222,11 +224,7 @@ async function handleUpdate(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } catch (error) {
-    console.error('Error updating burndown chart:', error);
-    await interaction.reply({
-      content: `Error updating burndown chart: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      flags: MessageFlags.Ephemeral,
-    });
+    await handleError(interaction, 'updating burndown chart', error);
   }
 }
 
@@ -244,9 +242,6 @@ async function handleView(interaction: ChatInputCommandInteraction) {
       return;
     }
 
-    const progressPercentage = ((chart.totalPoints - chart.currentPoints) / chart.totalPoints) * 100;
-
-    // Generate chart image URL using QuickChart
     const chartImageUrl = quickChartService.generateBurndownChartUrl(chart, includeWeekends);
 
     const embed = new EmbedBuilder()
@@ -262,11 +257,10 @@ async function handleView(interaction: ChatInputCommandInteraction) {
         { name: 'End Date', value: dayjs(chart.endDate).format('YYYY-MM-DD'), inline: true },
         { name: '\u200B', value: '\u200B', inline: true },
         { name: 'Status', value: chart.isActive ? '🟢 Active' : '🔴 Inactive', inline: true },
-        { name: 'Progress', value: `${progressPercentage.toFixed(1)}% Complete`, inline: true }
+        { name: 'Progress', value: `${progressPercentage(chart.totalPoints, chart.currentPoints)}% Complete`, inline: true }
       )
       .setImage(chartImageUrl);
 
-    // Add recent progress entries
     if (chart.progressEntries.length > 0) {
       const recentEntries = chart.progressEntries
         .slice(-3)
@@ -279,11 +273,7 @@ async function handleView(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } catch (error) {
-    console.error('Error viewing burndown chart:', error);
-    await interaction.reply({
-      content: `Error viewing burndown chart: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      flags: MessageFlags.Ephemeral,
-    });
+    await handleError(interaction, 'viewing burndown chart', error);
   }
 }
 
@@ -305,11 +295,10 @@ async function handleList(interaction: ChatInputCommandInteraction) {
       .setDescription(`You have ${charts.length} burndown chart(s):`);
 
     charts.forEach(chart => {
-      const progressPercentage = ((chart.totalPoints - chart.currentPoints) / chart.totalPoints) * 100;
       const status = chart.isActive ? '🟢' : '🔴';
       embed.addFields({
         name: `${status} ${chart.title}`,
-        value: `ID: \`${chart.id}\`\nProgress: ${progressPercentage.toFixed(1)}% (${chart.currentPoints}/${chart.totalPoints} points remaining)\nPeriod: ${dayjs(chart.startDate).format('MM/DD')} - ${dayjs(chart.endDate).format('MM/DD')}`,
+        value: `ID: \`${chart.id}\`\nProgress: ${progressPercentage(chart.totalPoints, chart.currentPoints)}% (${chart.currentPoints}/${chart.totalPoints} points remaining)\nPeriod: ${dayjs(chart.startDate).format('MM/DD')} - ${dayjs(chart.endDate).format('MM/DD')}`,
         inline: false
       });
     });
@@ -318,11 +307,7 @@ async function handleList(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } catch (error) {
-    console.error('Error listing burndown charts:', error);
-    await interaction.reply({
-      content: `Error listing burndown charts: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      flags: MessageFlags.Ephemeral,
-    });
+    await handleError(interaction, 'listing burndown charts', error);
   }
 }
 
@@ -330,7 +315,6 @@ async function handleDelete(interaction: ChatInputCommandInteraction) {
   try {
     const chartId = interaction.options.getString('chart_id', true);
 
-    // Check if chart exists and belongs to user
     const chart = await burndownService.getChartById(chartId);
     if (!chart) {
       await interaction.reply({
@@ -358,11 +342,7 @@ async function handleDelete(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] });
   } catch (error) {
-    console.error('Error deleting burndown chart:', error);
-    await interaction.reply({
-      content: `Error deleting burndown chart: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      flags: MessageFlags.Ephemeral,
-    });
+    await handleError(interaction, 'deleting burndown chart', error);
   }
 }
 

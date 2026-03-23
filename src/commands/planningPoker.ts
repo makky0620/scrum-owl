@@ -12,10 +12,8 @@ import {
 } from 'discord.js';
 import { Command } from '../command';
 
-// Fibonacci sequence commonly used in planning poker
 const pointValues: string[] = ['0', '1', '2', '3', '5', '8', '13', '21', '?'];
 
-// Interface for vote data
 interface Vote {
   user: string;
   value: string;
@@ -47,7 +45,6 @@ const command: Command = {
       .setTimestamp()
       .setFooter({ text: 'Vote by clicking on a point value below' });
 
-    // Create buttons for each point value
     const rows: ActionRowBuilder<ButtonBuilder>[] = [];
     let currentRow = new ActionRowBuilder<ButtonBuilder>();
 
@@ -66,12 +63,10 @@ const command: Command = {
       );
     }
 
-    // Add the last row if it has any buttons
     if (currentRow.components.length > 0) {
       rows.push(currentRow);
     }
 
-    // Add a "Show Results" button
     const controlRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId('show_results')
@@ -85,17 +80,14 @@ const command: Command = {
 
     rows.push(controlRow);
 
-    // Send the initial message with the embed and buttons
     const message = (await interaction.reply({
       embeds: [embed],
       components: rows,
       fetchReply: true,
     })) as Message;
 
-    // Store votes
     const votes = new Map<string, Vote>();
 
-    // Create a collector for button interactions
     const collector = message.createMessageComponentCollector({
       componentType: ComponentType.Button,
       time: 15 * 60 * 1000, // 15 minutes
@@ -104,12 +96,10 @@ const command: Command = {
     collector.on('collect', async (i: ButtonInteraction) => {
       const customId = i.customId;
 
-      // Handle vote buttons
       if (customId.startsWith('vote_')) {
         const value = customId.replace('vote_', '');
         votes.set(i.user.id, { user: i.user.username, value });
 
-        // Update the participants field
         const participants = Array.from(votes.values())
           .map((vote) => `${vote.user}: ${vote.value === '?' ? '?' : '🎴'}`)
           .join('\n');
@@ -125,20 +115,17 @@ const command: Command = {
           components: rows,
         });
 
-        // Acknowledge the interaction
         if (!i.replied) {
           await i.reply({ content: `You voted: ${value}`, flags: MessageFlags.Ephemeral });
         }
       }
 
-      // Handle show results button
       else if (customId === 'show_results') {
         if (votes.size === 0) {
           await i.reply({ content: 'No votes have been cast yet!', flags: MessageFlags.Ephemeral });
           return;
         }
 
-        // Calculate results
         const results: Record<string, string[]> = {};
         let consensus = true;
         let firstValue: string | null = null;
@@ -156,13 +143,11 @@ const command: Command = {
           }
         }
 
-        // Create a results string
         let resultsText = '';
         for (const [value, users] of Object.entries(results)) {
           resultsText += `**${value}**: ${users.join(', ')}\n`;
         }
 
-        // Calculate average of all numeric points
         let totalPoints = 0;
         let numericVotes = 0;
 
@@ -173,13 +158,11 @@ const command: Command = {
           }
         }
 
-        // Add average to results if there are numeric votes
         if (numericVotes > 0) {
           const average = (totalPoints / numericVotes).toFixed(1);
           resultsText += `\n**Average**: ${average} points`;
         }
 
-        // Update the embed
         embed.spliceFields(0, 1, {
           name: 'Results',
           value: resultsText,
@@ -206,7 +189,6 @@ const command: Command = {
         });
       }
 
-      // Handle end session button
       else if (customId === 'end_session') {
         collector.stop();
         embed.setColor('#FF0000');

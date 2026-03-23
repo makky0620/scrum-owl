@@ -11,14 +11,9 @@ export class ReminderStorage {
 
   async loadReminders(): Promise<Reminder[]> {
     try {
-      if (!fs.existsSync(this.dataPath)) {
-        return [];
-      }
-
-      const data = fs.readFileSync(this.dataPath, 'utf8');
+      const data = await fs.promises.readFile(this.dataPath, 'utf8');
       const reminders = JSON.parse(data);
 
-      // Convert date strings back to Date objects
       return reminders.map((reminder: any) => ({
         ...reminder,
         nextTriggerTime: new Date(reminder.nextTriggerTime),
@@ -29,7 +24,10 @@ export class ReminderStorage {
           endDate: reminder.recurringConfig.endDate ? new Date(reminder.recurringConfig.endDate) : undefined
         } : undefined
       }));
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        return [];
+      }
       console.error('Error loading reminders:', error);
       return [];
     }
@@ -38,11 +36,8 @@ export class ReminderStorage {
   async saveReminders(reminders: Reminder[]): Promise<void> {
     try {
       const dir = path.dirname(this.dataPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-
-      fs.writeFileSync(this.dataPath, JSON.stringify(reminders, null, 2), 'utf8');
+      await fs.promises.mkdir(dir, { recursive: true });
+      await fs.promises.writeFile(this.dataPath, JSON.stringify(reminders, null, 2), 'utf8');
     } catch (error) {
       console.error('Error saving reminders:', error);
       throw error;
@@ -58,7 +53,7 @@ export class ReminderStorage {
   async updateReminder(updatedReminder: Reminder): Promise<void> {
     const reminders = await this.loadReminders();
     const index = reminders.findIndex(r => r.id === updatedReminder.id);
-    
+
     if (index === -1) {
       throw new Error(`Reminder with id ${updatedReminder.id} not found`);
     }
@@ -70,7 +65,7 @@ export class ReminderStorage {
   async deleteReminder(id: string): Promise<void> {
     const reminders = await this.loadReminders();
     const index = reminders.findIndex(r => r.id === id);
-    
+
     if (index === -1) {
       throw new Error(`Reminder with id ${id} not found`);
     }

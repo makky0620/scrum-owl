@@ -26,7 +26,6 @@ const command: Command = {
     ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
-    // Get the participants from the command options
     const participantsInput = interaction.options.getString('participants', true);
     const participants = participantsInput
       .split(',')
@@ -42,7 +41,6 @@ const command: Command = {
       return;
     }
 
-    // Create an embed for the facilitator selection
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle('Facilitator Selection')
@@ -51,7 +49,6 @@ const command: Command = {
       .setTimestamp()
       .setFooter({ text: 'Click the button to start the selection' });
 
-    // Create a button to start the selection
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId('start_selection')
@@ -64,14 +61,12 @@ const command: Command = {
         .setStyle(ButtonStyle.Danger),
     );
 
-    // Send the initial message with the embed and button
     const message = await interaction.reply({
       embeds: [embed],
       components: [row],
       fetchReply: true,
     });
 
-    // Create a collector for button interactions
     const collector = message.createMessageComponentCollector({
       componentType: ComponentType.Button,
       time: 5 * 60 * 1000, // 5 minutes
@@ -81,7 +76,6 @@ const command: Command = {
       const customId = i.customId;
 
       if (customId === 'start_selection') {
-        // Disable the buttons
         const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
             .setCustomId('start_selection')
@@ -107,10 +101,8 @@ const command: Command = {
         const spinningInterval = 500; // Milliseconds between spins
 
         for (let spin = 0; spin < spinningTimes; spin++) {
-          // Shuffle the participants for each spin
-          const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+            const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
 
-          // Update the embed with the current "spin"
           const spinEmbed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle('Facilitator Selection')
@@ -128,15 +120,12 @@ const command: Command = {
             components: [disabledRow],
           });
 
-          // Wait for the next spin
           await new Promise((resolve) => setTimeout(resolve, spinningInterval));
         }
 
-        // Select a random facilitator
         const selectedIndex = Math.floor(Math.random() * participants.length);
         const selectedFacilitator = participants[selectedIndex];
 
-        // Create the final result embed
         const resultEmbed = new EmbedBuilder()
           .setColor('#00FF00')
           .setTitle('🎉 Facilitator Selected! 🎉')
@@ -145,16 +134,13 @@ const command: Command = {
           .setTimestamp()
           .setFooter({ text: 'Thanks for using the Facilitator Selector!' });
 
-        // Update the message with the result
         await interaction.editReply({
           embeds: [resultEmbed],
-          components: [], // Remove all buttons
+          components: [],
         });
 
-        // End the collector
         collector.stop();
       } else if (customId === 'cancel_selection') {
-        // Cancel the selection
         const cancelEmbed = new EmbedBuilder()
           .setColor('#FF0000')
           .setTitle('Facilitator Selection')
@@ -163,10 +149,9 @@ const command: Command = {
 
         await i.update({
           embeds: [cancelEmbed],
-          components: [], // Remove all buttons
+          components: [],
         });
 
-        // End the collector
         collector.stop();
       }
     });

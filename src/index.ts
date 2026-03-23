@@ -5,6 +5,7 @@ import { ReminderStorage } from './utils/storage';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { safeReply } from './utils/interactionHelpers';
 
 // Load environment variables
 dotenv.config();
@@ -60,14 +61,7 @@ client.on(Events.InteractionCreate, async interaction => {
       await command.execute(interaction);
     } catch (error) {
       console.error(`[ERROR] Error executing command ${interaction.commandName}:`, error);
-
-      const errorMessage = { content: 'There was an error while executing this command!', ephemeral: true };
-
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(errorMessage);
-      } else {
-        await interaction.reply(errorMessage);
-      }
+      await safeReply(interaction, 'There was an error while executing this command!');
     }
     return;
   }
@@ -104,14 +98,7 @@ client.on(Events.InteractionCreate, async interaction => {
       await command.handleModalSubmit(interaction);
     } catch (error) {
       console.error(`[ERROR] Error handling modal submission for ${commandName}:`, error);
-
-      const errorMessage = { content: 'There was an error while processing your submission!', ephemeral: true };
-
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(errorMessage);
-      } else {
-        await interaction.reply(errorMessage);
-      }
+      await safeReply(interaction, 'There was an error while processing your submission!');
     }
     return;
   }

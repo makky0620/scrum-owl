@@ -4,14 +4,22 @@ import dayjs from 'dayjs';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Mock fs module
-jest.mock('fs');
-const mockedFs = fs as jest.Mocked<typeof fs>;
+jest.mock('fs', () => ({
+  promises: {
+    readFile: jest.fn(),
+    writeFile: jest.fn(),
+    mkdir: jest.fn(),
+  }
+}));
+
+const mockReadFile = jest.mocked(fs.promises.readFile);
+const mockWriteFile = jest.mocked(fs.promises.writeFile);
+const mockMkdir = jest.mocked(fs.promises.mkdir);
 
 describe('ReminderStorage', () => {
   let storage: ReminderStorage;
   const testDataPath = path.join(__dirname, '../../data/test-reminders.json');
-  
+
   const mockReminder: Reminder = {
     id: 'test-id-1',
     userId: 'user123',
@@ -33,32 +41,30 @@ describe('ReminderStorage', () => {
 
   describe('loadReminders', () => {
     it('should return empty array when file does not exist', async () => {
-      mockedFs.existsSync.mockReturnValue(false);
-      
+      const enoentError = Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+      mockReadFile.mockRejectedValue(enoentError);
+
       const reminders = await storage.loadReminders();
-      
+
       expect(reminders).toEqual([]);
-      expect(mockedFs.existsSync).toHaveBeenCalledWith(testDataPath);
     });
 
     it('should load reminders from existing file', async () => {
       const mockData = [mockReminder];
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockData));
-      
+      mockReadFile.mockResolvedValue(JSON.stringify(mockData) as any);
+
       const reminders = await storage.loadReminders();
-      
+
       expect(reminders).toHaveLength(1);
       expect(reminders[0].id).toBe('test-id-1');
-      expect(mockedFs.readFileSync).toHaveBeenCalledWith(testDataPath, 'utf8');
+      expect(mockReadFile).toHaveBeenCalledWith(testDataPath, 'utf8');
     });
 
     it('should handle corrupted JSON file gracefully', async () => {
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue('invalid json');
-      
+      mockReadFile.mockResolvedValue('invalid json' as any);
+
       const reminders = await storage.loadReminders();
-      
+
       expect(reminders).toEqual([]);
     });
 
@@ -69,12 +75,11 @@ describe('ReminderStorage', () => {
         createdAt: mockReminder.createdAt.toISOString(),
         updatedAt: mockReminder.updatedAt.toISOString()
       }];
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(mockDataWithStringDates));
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(mockDataWithStringDates) as any);
+
       const reminders = await storage.loadReminders();
-      
+
       expect(reminders[0].nextTriggerTime).toBeInstanceOf(Date);
       expect(reminders[0].createdAt).toBeInstanceOf(Date);
       expect(reminders[0].updatedAt).toBeInstanceOf(Date);
@@ -82,25 +87,15 @@ describe('ReminderStorage', () => {
   });
 
   describe('saveReminders', () => {
-    it('should create directory if it does not exist', async () => {
+    it('should create directory and save reminders', async () => {
       const reminders = [mockReminder];
-      mockedFs.existsSync.mockReturnValue(false);
-      mockedFs.mkdirSync.mockImplementation();
-      mockedFs.writeFileSync.mockImplementation();
-      
-      await storage.saveReminders(reminders);
-      
-      expect(mockedFs.mkdirSync).toHaveBeenCalledWith(path.dirname(testDataPath), { recursive: true });
-    });
+      mockMkdir.mockResolvedValue(undefined as any);
+      mockWriteFile.mockResolvedValue(undefined);
 
-    it('should save reminders to file', async () => {
-      const reminders = [mockReminder];
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.writeFileSync.mockImplementation();
-      
       await storage.saveReminders(reminders);
-      
-      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+
+      expect(mockMkdir).toHaveBeenCalledWith(path.dirname(testDataPath), { recursive: true });
+      expect(mockWriteFile).toHaveBeenCalledWith(
         testDataPath,
         JSON.stringify(reminders, null, 2),
         'utf8'
@@ -109,11 +104,9 @@ describe('ReminderStorage', () => {
 
     it('should handle write errors gracefully', async () => {
       const reminders = [mockReminder];
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.writeFileSync.mockImplementation(() => {
-        throw new Error('Write failed');
-      });
-      
+      mockMkdir.mockResolvedValue(undefined as any);
+      mockWriteFile.mockRejectedValue(new Error('Write failed'));
+
       await expect(storage.saveReminders(reminders)).rejects.toThrow('Write failed');
     });
   });
@@ -126,14 +119,14 @@ describe('ReminderStorage', () => {
         id: 'test-id-2',
         title: 'New Reminder'
       };
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(existingReminders));
-      mockedFs.writeFileSync.mockImplementation();
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
+      mockMkdir.mockResolvedValue(undefined as any);
+      mockWriteFile.mockResolvedValue(undefined);
+
       await storage.addReminder(newReminder);
-      
-      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
         testDataPath,
         expect.stringContaining('"id": "test-id-2"'),
         'utf8'
@@ -149,14 +142,14 @@ describe('ReminderStorage', () => {
         title: 'Updated Title',
         updatedAt: new Date()
       };
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(existingReminders));
-      mockedFs.writeFileSync.mockImplementation();
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
+      mockMkdir.mockResolvedValue(undefined as any);
+      mockWriteFile.mockResolvedValue(undefined);
+
       await storage.updateReminder(updatedReminder);
-      
-      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
         testDataPath,
         expect.stringContaining('"title": "Updated Title"'),
         'utf8'
@@ -169,10 +162,9 @@ describe('ReminderStorage', () => {
         ...mockReminder,
         id: 'non-existent-id'
       };
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(existingReminders));
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
+
       await expect(storage.updateReminder(nonExistentReminder))
         .rejects.toThrow('Reminder with id non-existent-id not found');
     });
@@ -181,14 +173,14 @@ describe('ReminderStorage', () => {
   describe('deleteReminder', () => {
     it('should delete an existing reminder', async () => {
       const existingReminders = [mockReminder];
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(existingReminders));
-      mockedFs.writeFileSync.mockImplementation();
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
+      mockMkdir.mockResolvedValue(undefined as any);
+      mockWriteFile.mockResolvedValue(undefined);
+
       await storage.deleteReminder('test-id-1');
-      
-      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
         testDataPath,
         '[]',
         'utf8'
@@ -197,10 +189,9 @@ describe('ReminderStorage', () => {
 
     it('should throw error if reminder not found', async () => {
       const existingReminders = [mockReminder];
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(existingReminders));
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
+
       await expect(storage.deleteReminder('non-existent-id'))
         .rejects.toThrow('Reminder with id non-existent-id not found');
     });
@@ -212,12 +203,11 @@ describe('ReminderStorage', () => {
         mockReminder,
         { ...mockReminder, id: 'test-id-2', userId: 'user456' }
       ];
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(reminders));
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(reminders) as any);
+
       const userReminders = await storage.getRemindersByUser('user123');
-      
+
       expect(userReminders).toHaveLength(1);
       expect(userReminders[0].userId).toBe('user123');
     });
@@ -229,12 +219,11 @@ describe('ReminderStorage', () => {
         mockReminder,
         { ...mockReminder, id: 'test-id-2', isActive: false }
       ];
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(reminders));
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(reminders) as any);
+
       const activeReminders = await storage.getActiveReminders();
-      
+
       expect(activeReminders).toHaveLength(1);
       expect(activeReminders[0].isActive).toBe(true);
     });
@@ -244,16 +233,15 @@ describe('ReminderStorage', () => {
     it('should return reminders for specific user and guild', async () => {
       const reminders = [
         mockReminder, // user123, guild123
-        { ...mockReminder, id: 'test-id-2', userId: 'user456', guildId: 'guild123' }, // different user, same guild
-        { ...mockReminder, id: 'test-id-3', userId: 'user123', guildId: 'guild456' }, // same user, different guild
-        { ...mockReminder, id: 'test-id-4', userId: 'user456', guildId: 'guild456' }  // different user, different guild
+        { ...mockReminder, id: 'test-id-2', userId: 'user456', guildId: 'guild123' },
+        { ...mockReminder, id: 'test-id-3', userId: 'user123', guildId: 'guild456' },
+        { ...mockReminder, id: 'test-id-4', userId: 'user456', guildId: 'guild456' }
       ];
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(reminders));
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(reminders) as any);
+
       const userGuildReminders = await storage.getRemindersByUserAndGuild('user123', 'guild123');
-      
+
       expect(userGuildReminders).toHaveLength(1);
       expect(userGuildReminders[0].userId).toBe('user123');
       expect(userGuildReminders[0].guildId).toBe('guild123');
@@ -264,12 +252,11 @@ describe('ReminderStorage', () => {
       const reminders = [
         { ...mockReminder, userId: 'user456', guildId: 'guild456' }
       ];
-      
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.readFileSync.mockReturnValue(JSON.stringify(reminders));
-      
+
+      mockReadFile.mockResolvedValue(JSON.stringify(reminders) as any);
+
       const userGuildReminders = await storage.getRemindersByUserAndGuild('user123', 'guild123');
-      
+
       expect(userGuildReminders).toHaveLength(0);
     });
   });

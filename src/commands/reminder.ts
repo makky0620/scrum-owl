@@ -12,6 +12,7 @@ import {
 } from 'discord.js';
 import { Command } from '../command';
 import { ReminderService, CreateReminderData, UpdateReminderData } from '../services/reminderService';
+import { safeReply } from '../utils/interactionHelpers';
 
 const reminderService = new ReminderService();
 
@@ -119,39 +120,17 @@ const command: Command = {
     } catch (error) {
       console.error('[Reminder Command] Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({
-          content: `Error: ${errorMessage}`,
-          flags: MessageFlags.Ephemeral,
-        });
-      } else {
-        await interaction.reply({
-          content: `Error: ${errorMessage}`,
-          flags: MessageFlags.Ephemeral,
-        });
-      }
+      await safeReply(interaction, `Error: ${errorMessage}`);
     }
   },
 
   async handleModalSubmit(interaction: ModalSubmitInteraction) {
     try {
-      await handleModalSubmit(interaction);
+      await processModalSubmit(interaction);
     } catch (error) {
       console.error('[Reminder Command] Modal Submit Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({
-          content: `Error: ${errorMessage}`,
-          flags: MessageFlags.Ephemeral,
-        });
-      } else {
-        await interaction.reply({
-          content: `Error: ${errorMessage}`,
-          flags: MessageFlags.Ephemeral,
-        });
-      }
+      await safeReply(interaction, `Error: ${errorMessage}`);
     }
   },
 };
@@ -364,7 +343,7 @@ async function handleEdit(interaction: ChatInputCommandInteraction) {
   await interaction.showModal(modal);
 }
 
-async function handleModalSubmit(interaction: ModalSubmitInteraction) {
+async function processModalSubmit(interaction: ModalSubmitInteraction) {
   // Extract reminder ID from custom ID
   const customId = interaction.customId;
   if (!customId.startsWith('edit-reminder-modal:')) {
