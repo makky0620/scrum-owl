@@ -1,6 +1,7 @@
 import { Reminder, ReminderType, DayFilter } from '../models/reminder';
 import { ReminderStorage } from '../utils/storage';
 import dayjs from 'dayjs';
+import type { ManipulateType } from 'dayjs';
 import { randomUUID } from 'crypto';
 
 export interface CreateReminderData {
@@ -51,7 +52,7 @@ export class ReminderService {
     let dayFilter: DayFilter | undefined;
     if (data.type === 'daily') {
       dayFilter = {
-        skipWeekends: data.skipWeekends || false
+        skipWeekends: data.skipWeekends || false,
       };
     }
 
@@ -68,7 +69,7 @@ export class ReminderService {
       dayFilter,
       isActive: true,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
     await this.storage.addReminder(reminder);
@@ -83,7 +84,7 @@ export class ReminderService {
 
     const updatedReminder: Reminder = {
       ...existingReminder,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     // Update individual fields
@@ -125,8 +126,8 @@ export class ReminderService {
 
     if (relativeMatch) {
       const [, amount, unit] = relativeMatch;
-      const unitMap = { m: 'minute', h: 'hour', d: 'day' };
-      return dayjs().add(parseInt(amount), unitMap[unit as keyof typeof unitMap] as any).toDate();
+      const unitMap: Record<string, ManipulateType> = { m: 'minute', h: 'hour', d: 'day' };
+      return dayjs().add(parseInt(amount), unitMap[unit]).toDate();
     }
 
     // Handle absolute datetime (e.g., "2024-07-15 14:30")
@@ -141,7 +142,11 @@ export class ReminderService {
 
     if (timeMatch) {
       const [, hours, minutes] = timeMatch;
-      let targetTime = dayjs().hour(parseInt(hours)).minute(parseInt(minutes)).second(0).millisecond(0);
+      let targetTime = dayjs()
+        .hour(parseInt(hours))
+        .minute(parseInt(minutes))
+        .second(0)
+        .millisecond(0);
 
       // If the time has already passed today, schedule for tomorrow
       if (targetTime.isBefore(dayjs())) {
@@ -154,7 +159,7 @@ export class ReminderService {
     throw new Error('Invalid time format');
   }
 
-  validateDayFilter(dayFilter: DayFilter): void {
+  validateDayFilter(_dayFilter: DayFilter): void {
     // Basic validation for day filter - currently only validates skipWeekends
     // Future extensions can add more validation logic here
   }

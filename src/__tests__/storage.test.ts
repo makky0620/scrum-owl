@@ -9,7 +9,7 @@ jest.mock('fs', () => ({
     readFile: jest.fn(),
     writeFile: jest.fn(),
     mkdir: jest.fn(),
-  }
+  },
 }));
 
 const mockReadFile = jest.mocked(fs.promises.readFile);
@@ -31,7 +31,7 @@ describe('ReminderStorage', () => {
     type: 'once',
     isActive: true,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   beforeEach(() => {
@@ -51,7 +51,7 @@ describe('ReminderStorage', () => {
 
     it('should load reminders from existing file', async () => {
       const mockData = [mockReminder];
-      mockReadFile.mockResolvedValue(JSON.stringify(mockData) as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockData));
 
       const reminders = await storage.loadReminders();
 
@@ -61,7 +61,7 @@ describe('ReminderStorage', () => {
     });
 
     it('should handle corrupted JSON file gracefully', async () => {
-      mockReadFile.mockResolvedValue('invalid json' as any);
+      mockReadFile.mockResolvedValue('invalid json');
 
       const reminders = await storage.loadReminders();
 
@@ -69,14 +69,16 @@ describe('ReminderStorage', () => {
     });
 
     it('should convert date strings back to Date objects', async () => {
-      const mockDataWithStringDates = [{
-        ...mockReminder,
-        nextTriggerTime: mockReminder.nextTriggerTime.toISOString(),
-        createdAt: mockReminder.createdAt.toISOString(),
-        updatedAt: mockReminder.updatedAt.toISOString()
-      }];
+      const mockDataWithStringDates = [
+        {
+          ...mockReminder,
+          nextTriggerTime: mockReminder.nextTriggerTime.toISOString(),
+          createdAt: mockReminder.createdAt.toISOString(),
+          updatedAt: mockReminder.updatedAt.toISOString(),
+        },
+      ];
 
-      mockReadFile.mockResolvedValue(JSON.stringify(mockDataWithStringDates) as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockDataWithStringDates));
 
       const reminders = await storage.loadReminders();
 
@@ -89,7 +91,7 @@ describe('ReminderStorage', () => {
   describe('saveReminders', () => {
     it('should create directory and save reminders', async () => {
       const reminders = [mockReminder];
-      mockMkdir.mockResolvedValue(undefined as any);
+      mockMkdir.mockResolvedValue(undefined);
       mockWriteFile.mockResolvedValue(undefined);
 
       await storage.saveReminders(reminders);
@@ -98,13 +100,13 @@ describe('ReminderStorage', () => {
       expect(mockWriteFile).toHaveBeenCalledWith(
         testDataPath,
         JSON.stringify(reminders, null, 2),
-        'utf8'
+        'utf8',
       );
     });
 
     it('should handle write errors gracefully', async () => {
       const reminders = [mockReminder];
-      mockMkdir.mockResolvedValue(undefined as any);
+      mockMkdir.mockResolvedValue(undefined);
       mockWriteFile.mockRejectedValue(new Error('Write failed'));
 
       await expect(storage.saveReminders(reminders)).rejects.toThrow('Write failed');
@@ -117,11 +119,11 @@ describe('ReminderStorage', () => {
       const newReminder: Reminder = {
         ...mockReminder,
         id: 'test-id-2',
-        title: 'New Reminder'
+        title: 'New Reminder',
       };
 
-      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
-      mockMkdir.mockResolvedValue(undefined as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders));
+      mockMkdir.mockResolvedValue(undefined);
       mockWriteFile.mockResolvedValue(undefined);
 
       await storage.addReminder(newReminder);
@@ -129,7 +131,7 @@ describe('ReminderStorage', () => {
       expect(mockWriteFile).toHaveBeenCalledWith(
         testDataPath,
         expect.stringContaining('"id": "test-id-2"'),
-        'utf8'
+        'utf8',
       );
     });
   });
@@ -140,11 +142,11 @@ describe('ReminderStorage', () => {
       const updatedReminder: Reminder = {
         ...mockReminder,
         title: 'Updated Title',
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
-      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
-      mockMkdir.mockResolvedValue(undefined as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders));
+      mockMkdir.mockResolvedValue(undefined);
       mockWriteFile.mockResolvedValue(undefined);
 
       await storage.updateReminder(updatedReminder);
@@ -152,7 +154,7 @@ describe('ReminderStorage', () => {
       expect(mockWriteFile).toHaveBeenCalledWith(
         testDataPath,
         expect.stringContaining('"title": "Updated Title"'),
-        'utf8'
+        'utf8',
       );
     });
 
@@ -160,13 +162,14 @@ describe('ReminderStorage', () => {
       const existingReminders = [mockReminder];
       const nonExistentReminder: Reminder = {
         ...mockReminder,
-        id: 'non-existent-id'
+        id: 'non-existent-id',
       };
 
-      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders));
 
-      await expect(storage.updateReminder(nonExistentReminder))
-        .rejects.toThrow('Reminder with id non-existent-id not found');
+      await expect(storage.updateReminder(nonExistentReminder)).rejects.toThrow(
+        'Reminder with id non-existent-id not found',
+      );
     });
   });
 
@@ -174,37 +177,31 @@ describe('ReminderStorage', () => {
     it('should delete an existing reminder', async () => {
       const existingReminders = [mockReminder];
 
-      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
-      mockMkdir.mockResolvedValue(undefined as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders));
+      mockMkdir.mockResolvedValue(undefined);
       mockWriteFile.mockResolvedValue(undefined);
 
       await storage.deleteReminder('test-id-1');
 
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        testDataPath,
-        '[]',
-        'utf8'
-      );
+      expect(mockWriteFile).toHaveBeenCalledWith(testDataPath, '[]', 'utf8');
     });
 
     it('should throw error if reminder not found', async () => {
       const existingReminders = [mockReminder];
 
-      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders) as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(existingReminders));
 
-      await expect(storage.deleteReminder('non-existent-id'))
-        .rejects.toThrow('Reminder with id non-existent-id not found');
+      await expect(storage.deleteReminder('non-existent-id')).rejects.toThrow(
+        'Reminder with id non-existent-id not found',
+      );
     });
   });
 
   describe('getRemindersByUser', () => {
     it('should return reminders for specific user', async () => {
-      const reminders = [
-        mockReminder,
-        { ...mockReminder, id: 'test-id-2', userId: 'user456' }
-      ];
+      const reminders = [mockReminder, { ...mockReminder, id: 'test-id-2', userId: 'user456' }];
 
-      mockReadFile.mockResolvedValue(JSON.stringify(reminders) as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(reminders));
 
       const userReminders = await storage.getRemindersByUser('user123');
 
@@ -215,12 +212,9 @@ describe('ReminderStorage', () => {
 
   describe('getActiveReminders', () => {
     it('should return only active reminders', async () => {
-      const reminders = [
-        mockReminder,
-        { ...mockReminder, id: 'test-id-2', isActive: false }
-      ];
+      const reminders = [mockReminder, { ...mockReminder, id: 'test-id-2', isActive: false }];
 
-      mockReadFile.mockResolvedValue(JSON.stringify(reminders) as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(reminders));
 
       const activeReminders = await storage.getActiveReminders();
 
@@ -235,10 +229,10 @@ describe('ReminderStorage', () => {
         mockReminder, // user123, guild123
         { ...mockReminder, id: 'test-id-2', userId: 'user456', guildId: 'guild123' },
         { ...mockReminder, id: 'test-id-3', userId: 'user123', guildId: 'guild456' },
-        { ...mockReminder, id: 'test-id-4', userId: 'user456', guildId: 'guild456' }
+        { ...mockReminder, id: 'test-id-4', userId: 'user456', guildId: 'guild456' },
       ];
 
-      mockReadFile.mockResolvedValue(JSON.stringify(reminders) as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(reminders));
 
       const userGuildReminders = await storage.getRemindersByUserAndGuild('user123', 'guild123');
 
@@ -249,11 +243,9 @@ describe('ReminderStorage', () => {
     });
 
     it('should return empty array when no reminders match user and guild', async () => {
-      const reminders = [
-        { ...mockReminder, userId: 'user456', guildId: 'guild456' }
-      ];
+      const reminders = [{ ...mockReminder, userId: 'user456', guildId: 'guild456' }];
 
-      mockReadFile.mockResolvedValue(JSON.stringify(reminders) as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(reminders));
 
       const userGuildReminders = await storage.getRemindersByUserAndGuild('user123', 'guild123');
 

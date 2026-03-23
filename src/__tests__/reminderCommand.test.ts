@@ -17,7 +17,14 @@ jest.mock('../services/reminderService', () => {
   };
 });
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const command = require('../commands/reminder');
+
+interface MockChannel {
+  id: string;
+  type: ChannelType;
+  guild: { id: string };
+}
 
 describe('Reminder Command', () => {
   describe('Command Structure', () => {
@@ -35,13 +42,13 @@ describe('Reminder Command', () => {
 
   describe('Channel Specification', () => {
     let mockInteraction: Partial<ChatInputCommandInteraction>;
-    let mockChannel: any;
+    let mockChannel: MockChannel;
 
     beforeEach(() => {
       mockChannel = {
         id: 'test-channel-123',
         type: ChannelType.GuildText,
-        guild: { id: 'test-guild-123' }
+        guild: { id: 'test-guild-123' },
       };
 
       mockInteraction = {
@@ -49,21 +56,26 @@ describe('Reminder Command', () => {
           getSubcommand: jest.fn().mockReturnValue('create'),
           getString: jest.fn((name: string) => {
             switch (name) {
-              case 'title': return 'Test Reminder';
-              case 'message': return 'Test message';
-              case 'time': return '14:30';
-              case 'type': return 'once';
-              default: return null;
+              case 'title':
+                return 'Test Reminder';
+              case 'message':
+                return 'Test message';
+              case 'time':
+                return '14:30';
+              case 'type':
+                return 'once';
+              default:
+                return null;
             }
           }),
           getChannel: jest.fn().mockReturnValue(mockChannel),
-          getBoolean: jest.fn().mockReturnValue(false)
+          getBoolean: jest.fn().mockReturnValue(false),
         },
         user: { id: 'test-user-123' },
         channelId: 'current-channel-123',
         guildId: 'test-guild-123',
-        reply: jest.fn()
-      } as any;
+        reply: jest.fn(),
+      } as unknown as Partial<ChatInputCommandInteraction>;
     });
 
     it('should use specified channel when channel option is provided', async () => {
@@ -87,9 +99,9 @@ describe('Reminder Command', () => {
 
     it('should validate that specified channel is a text channel', async () => {
       // Mock a voice channel instead of text channel
-      const voiceChannel = {
+      const voiceChannel: MockChannel = {
         ...mockChannel,
-        type: ChannelType.GuildVoice
+        type: ChannelType.GuildVoice,
       };
       (mockInteraction.options?.getChannel as jest.Mock).mockReturnValue(voiceChannel);
 
@@ -99,8 +111,8 @@ describe('Reminder Command', () => {
       expect(mockInteraction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: expect.stringContaining('text channel'),
-          flags: expect.any(Number)
-        })
+          flags: expect.any(Number),
+        }),
       );
     });
   });
@@ -114,36 +126,36 @@ describe('Reminder Command', () => {
       jest.clearAllMocks();
 
       // Set up mock reminder data
-      const mockReminder = {
+      const mockReminderData = {
         id: 'test-reminder-id',
         userId: 'test-user-123',
         title: 'Original Title',
         message: 'Original Message',
         nextTriggerTime: new Date('2024-01-01T15:30:00'),
-        isActive: true
+        isActive: true,
       };
 
-      mockGetUserReminders.mockResolvedValue([mockReminder]);
+      mockGetUserReminders.mockResolvedValue([mockReminderData]);
       mockUpdateReminder.mockResolvedValue({
-        ...mockReminder,
+        ...mockReminderData,
         title: 'Updated Title',
         message: 'Updated Message',
         nextTriggerTime: new Date('2024-01-01T15:30:00'),
-        isActive: true
+        isActive: true,
       });
 
       mockInteraction = {
         options: {
           getSubcommand: jest.fn().mockReturnValue('edit'),
           getString: jest.fn().mockReturnValue('test-reminder-id'),
-          getBoolean: jest.fn().mockReturnValue(null)
+          getBoolean: jest.fn().mockReturnValue(null),
         },
         user: { id: 'test-user-123' },
         channelId: 'test-channel-123',
         guildId: 'test-guild-123',
         showModal: jest.fn(),
-        reply: jest.fn()
-      } as any;
+        reply: jest.fn(),
+      } as unknown as Partial<ChatInputCommandInteraction>;
 
       mockModalSubmitInteraction = {
         customId: 'edit-reminder-modal:test-reminder-id',
@@ -151,30 +163,25 @@ describe('Reminder Command', () => {
         fields: {
           getTextInputValue: jest.fn((customId: string) => {
             switch (customId) {
-              case 'title': return 'Updated Title';
-              case 'message': return 'Updated Message';
-              case 'time': return '15:30';
-              case 'active': return 'true';
-              default: return '';
+              case 'title':
+                return 'Updated Title';
+              case 'message':
+                return 'Updated Message';
+              case 'time':
+                return '15:30';
+              case 'active':
+                return 'true';
+              default:
+                return '';
             }
-          })
+          }),
         },
         reply: jest.fn(),
-        deferReply: jest.fn()
-      } as any;
+        deferReply: jest.fn(),
+      } as unknown as Partial<ModalSubmitInteraction>;
     });
 
     it('should show modal when edit subcommand is called with valid reminder ID', async () => {
-      // Mock ReminderService to return a valid reminder
-      const mockReminder = {
-        id: 'test-reminder-id',
-        userId: 'test-user-123',
-        title: 'Original Title',
-        message: 'Original Message',
-        nextTriggerTime: new Date('2024-01-01T15:30:00'),
-        isActive: true
-      };
-
       // This test will fail initially since we haven't implemented modal functionality yet
       await command.execute(mockInteraction as ChatInputCommandInteraction);
 
@@ -192,22 +199,13 @@ describe('Reminder Command', () => {
       expect(mockInteraction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: expect.stringContaining('not found'),
-          flags: expect.any(Number)
-        })
+          flags: expect.any(Number),
+        }),
       );
       expect(mockInteraction.showModal).not.toHaveBeenCalled();
     });
 
     it('should pre-populate modal fields with current reminder data', async () => {
-      const mockReminder = {
-        id: 'test-reminder-id',
-        userId: 'test-user-123',
-        title: 'Original Title',
-        message: 'Original Message',
-        nextTriggerTime: new Date('2024-01-01T15:30:00'),
-        isActive: true
-      };
-
       await command.execute(mockInteraction as ChatInputCommandInteraction);
 
       // Verify modal was shown - this confirms the modal functionality works
@@ -219,7 +217,7 @@ describe('Reminder Command', () => {
       // We'll need to implement a modal submit handler
 
       // Mock the modal submission handling
-      const result = await command.handleModalSubmit?.(mockModalSubmitInteraction as ModalSubmitInteraction);
+      await command.handleModalSubmit?.(mockModalSubmitInteraction as ModalSubmitInteraction);
 
       // Verify that reply was called and updateReminder was called
       expect(mockModalSubmitInteraction.reply).toHaveBeenCalled();
@@ -228,58 +226,69 @@ describe('Reminder Command', () => {
         title: 'Updated Title',
         message: 'Updated Message',
         time: '15:30',
-        isActive: true
+        isActive: true,
       });
     });
 
     it('should validate modal input fields', async () => {
       // Mock invalid input
-      (mockModalSubmitInteraction.fields?.getTextInputValue as jest.Mock).mockImplementation((customId: string) => {
-        switch (customId) {
-          case 'title': return ''; // Empty title should be invalid
-          case 'message': return 'Valid message';
-          case 'time': return 'invalid-time-format';
-          case 'active': return 'true';
-          default: return '';
-        }
-      });
+      (mockModalSubmitInteraction.fields?.getTextInputValue as jest.Mock).mockImplementation(
+        (customId: string) => {
+          switch (customId) {
+            case 'title':
+              return ''; // Empty title should be invalid
+            case 'message':
+              return 'Valid message';
+            case 'time':
+              return 'invalid-time-format';
+            case 'active':
+              return 'true';
+            default:
+              return '';
+          }
+        },
+      );
 
-      const result = await command.handleModalSubmit?.(mockModalSubmitInteraction as ModalSubmitInteraction);
+      await command.handleModalSubmit?.(mockModalSubmitInteraction as ModalSubmitInteraction);
 
       expect(mockModalSubmitInteraction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: 'Title cannot be empty.',
-          flags: expect.any(Number)
-        })
+          flags: expect.any(Number),
+        }),
       );
     });
 
     it('should preserve reminder ownership during edit', async () => {
       // Mock different user trying to edit
-      mockModalSubmitInteraction.user = { id: 'different-user-123' } as any;
+      mockModalSubmitInteraction.user = {
+        id: 'different-user-123',
+      } as unknown as ModalSubmitInteraction['user'];
 
       // Mock getUserReminders to return empty array for different user
       mockGetUserReminders.mockImplementation((userId: string) => {
         if (userId === 'test-user-123') {
-          return Promise.resolve([{
-            id: 'test-reminder-id',
-            userId: 'test-user-123',
-            title: 'Original Title',
-            message: 'Original Message',
-            nextTriggerTime: new Date('2024-01-01T15:30:00'),
-            isActive: true
-          }]);
+          return Promise.resolve([
+            {
+              id: 'test-reminder-id',
+              userId: 'test-user-123',
+              title: 'Original Title',
+              message: 'Original Message',
+              nextTriggerTime: new Date('2024-01-01T15:30:00'),
+              isActive: true,
+            },
+          ]);
         }
         return Promise.resolve([]); // Different user gets no reminders
       });
 
-      const result = await command.handleModalSubmit?.(mockModalSubmitInteraction as ModalSubmitInteraction);
+      await command.handleModalSubmit?.(mockModalSubmitInteraction as ModalSubmitInteraction);
 
       expect(mockModalSubmitInteraction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: expect.stringContaining('permission'),
-          flags: expect.any(Number)
-        })
+          flags: expect.any(Number),
+        }),
       );
     });
   });

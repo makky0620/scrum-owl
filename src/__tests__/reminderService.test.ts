@@ -1,6 +1,6 @@
 import { ReminderService } from '../services/reminderService';
 import { ReminderStorage } from '../utils/storage';
-import { Reminder } from '../models/reminder';
+import { Reminder, ReminderType } from '../models/reminder';
 import dayjs from 'dayjs';
 
 // Mock the storage
@@ -22,7 +22,7 @@ describe('ReminderService', () => {
     type: 'once',
     isActive: true,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   beforeEach(() => {
@@ -41,7 +41,7 @@ describe('ReminderService', () => {
         title: 'Test Reminder',
         message: 'This is a test reminder',
         time: futureTime,
-        type: 'once' as const
+        type: 'once' as const,
       };
 
       mockStorage.addReminder.mockResolvedValue();
@@ -52,10 +52,12 @@ describe('ReminderService', () => {
       expect(result.title).toBe('Test Reminder');
       expect(result.type).toBe('once');
       expect(result.isActive).toBe(true);
-      expect(mockStorage.addReminder).toHaveBeenCalledWith(expect.objectContaining({
-        title: 'Test Reminder',
-        type: 'once'
-      }));
+      expect(mockStorage.addReminder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Test Reminder',
+          type: 'once',
+        }),
+      );
     });
 
     it('should create a daily reminder with skip weekends option', async () => {
@@ -67,7 +69,7 @@ describe('ReminderService', () => {
         message: 'Time for standup!',
         time: '09:00',
         type: 'daily' as const,
-        skipWeekends: true
+        skipWeekends: true,
       };
 
       mockStorage.addReminder.mockResolvedValue();
@@ -86,7 +88,7 @@ describe('ReminderService', () => {
         title: 'Daily Report',
         message: 'Time to write daily report!',
         time: '17:00',
-        type: 'daily' as const
+        type: 'daily' as const,
       };
 
       mockStorage.addReminder.mockResolvedValue();
@@ -105,11 +107,12 @@ describe('ReminderService', () => {
         title: 'Weekly Meeting',
         message: 'Time for weekly meeting!',
         time: '09:00',
-        type: 'weekly' as any
+        type: 'weekly' as unknown as ReminderType,
       };
 
-      await expect(reminderService.createReminder(weeklyReminderData))
-        .rejects.toThrow('Invalid reminder type. Only "once" and "daily" are supported.');
+      await expect(reminderService.createReminder(weeklyReminderData)).rejects.toThrow(
+        'Invalid reminder type. Only "once" and "daily" are supported.',
+      );
     });
 
     it('should validate required fields', async () => {
@@ -120,11 +123,12 @@ describe('ReminderService', () => {
         title: '',
         message: 'Test message',
         time: '2024-07-15 14:30',
-        type: 'once' as const
+        type: 'once' as const,
       };
 
-      await expect(reminderService.createReminder(invalidData))
-        .rejects.toThrow('Title is required');
+      await expect(reminderService.createReminder(invalidData)).rejects.toThrow(
+        'Title is required',
+      );
     });
 
     it('should validate time format', async () => {
@@ -135,11 +139,12 @@ describe('ReminderService', () => {
         title: 'Test',
         message: 'Test message',
         time: 'invalid-time',
-        type: 'once' as const
+        type: 'once' as const,
       };
 
-      await expect(reminderService.createReminder(invalidData))
-        .rejects.toThrow('Invalid time format');
+      await expect(reminderService.createReminder(invalidData)).rejects.toThrow(
+        'Invalid time format',
+      );
     });
 
     it('should validate past time for one-time reminders', async () => {
@@ -151,13 +156,13 @@ describe('ReminderService', () => {
         title: 'Test',
         message: 'Test message',
         time: pastTime,
-        type: 'once' as const
+        type: 'once' as const,
       };
 
-      await expect(reminderService.createReminder(invalidData))
-        .rejects.toThrow('Cannot set reminder for past time');
+      await expect(reminderService.createReminder(invalidData)).rejects.toThrow(
+        'Cannot set reminder for past time',
+      );
     });
-
   });
 
   describe('updateReminder', () => {
@@ -165,7 +170,7 @@ describe('ReminderService', () => {
       const updatedData = {
         id: 'test-id-1',
         title: 'Updated Title',
-        message: 'Updated message'
+        message: 'Updated message',
       };
 
       mockStorage.getReminderById.mockResolvedValue(mockReminder);
@@ -182,8 +187,9 @@ describe('ReminderService', () => {
     it('should throw error if reminder not found', async () => {
       mockStorage.getReminderById.mockResolvedValue(undefined);
 
-      await expect(reminderService.updateReminder({ id: 'non-existent' }))
-        .rejects.toThrow('Reminder not found');
+      await expect(reminderService.updateReminder({ id: 'non-existent' })).rejects.toThrow(
+        'Reminder not found',
+      );
     });
   });
 
@@ -264,15 +270,14 @@ describe('ReminderService', () => {
     });
 
     it('should throw error for invalid time format', () => {
-      expect(() => reminderService.parseTimeString('invalid'))
-        .toThrow('Invalid time format');
+      expect(() => reminderService.parseTimeString('invalid')).toThrow('Invalid time format');
     });
   });
 
   describe('validateDayFilter', () => {
     it('should validate day filter with skipWeekends', () => {
       const validFilter = {
-        skipWeekends: true
+        skipWeekends: true,
       };
 
       expect(() => reminderService.validateDayFilter(validFilter)).not.toThrow();
@@ -280,7 +285,7 @@ describe('ReminderService', () => {
 
     it('should validate day filter without skipWeekends', () => {
       const validFilter = {
-        skipWeekends: false
+        skipWeekends: false,
       };
 
       expect(() => reminderService.validateDayFilter(validFilter)).not.toThrow();

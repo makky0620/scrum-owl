@@ -13,7 +13,7 @@ describe('ReminderScheduler', () => {
   let scheduler: ReminderScheduler;
   let mockStorage: jest.Mocked<ReminderStorage>;
   let mockClient: jest.Mocked<Client>;
-  let mockChannel: any;
+  let mockChannel: { send: jest.Mock; guild: { id: string } };
 
   const mockReminder: Reminder = {
     id: 'test-id-1',
@@ -26,7 +26,7 @@ describe('ReminderScheduler', () => {
     type: 'once',
     isActive: true,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   beforeEach(() => {
@@ -34,14 +34,14 @@ describe('ReminderScheduler', () => {
 
     mockChannel = {
       send: jest.fn().mockResolvedValue({}),
-      guild: { id: 'guild123' }
+      guild: { id: 'guild123' },
     };
 
     mockClient = {
       channels: {
-        fetch: jest.fn().mockResolvedValue(mockChannel)
-      }
-    } as any;
+        fetch: jest.fn().mockResolvedValue(mockChannel),
+      },
+    } as unknown as jest.Mocked<Client>;
 
     scheduler = new ReminderScheduler(mockClient, mockStorage);
     jest.clearAllMocks();
@@ -82,7 +82,7 @@ describe('ReminderScheduler', () => {
     it('should trigger reminders that are due', async () => {
       const dueReminder = {
         ...mockReminder,
-        nextTriggerTime: dayjs().subtract(1, 'minute').toDate()
+        nextTriggerTime: dayjs().subtract(1, 'minute').toDate(),
       };
 
       mockStorage.getActiveReminders.mockResolvedValue([dueReminder]);
@@ -96,7 +96,7 @@ describe('ReminderScheduler', () => {
     it('should not trigger reminders that are not due', async () => {
       const futureReminder = {
         ...mockReminder,
-        nextTriggerTime: dayjs().add(1, 'hour').toDate()
+        nextTriggerTime: dayjs().add(1, 'hour').toDate(),
       };
 
       mockStorage.getActiveReminders.mockResolvedValue([futureReminder]);
@@ -110,7 +110,7 @@ describe('ReminderScheduler', () => {
     it('should handle channel fetch errors gracefully', async () => {
       const dueReminder = {
         ...mockReminder,
-        nextTriggerTime: dayjs().subtract(1, 'minute').toDate()
+        nextTriggerTime: dayjs().subtract(1, 'minute').toDate(),
       };
 
       mockStorage.getActiveReminders.mockResolvedValue([dueReminder]);
@@ -132,12 +132,13 @@ describe('ReminderScheduler', () => {
         ...mockReminder,
         type: 'daily' as const,
         dayFilter: {
-          skipWeekends: true
-        }
+          skipWeekends: true,
+        },
       };
 
       // Mock Saturday (6) and Sunday (0)
-      jest.spyOn(Date.prototype, 'getDay')
+      jest
+        .spyOn(Date.prototype, 'getDay')
         .mockReturnValueOnce(6) // Saturday
         .mockReturnValueOnce(0); // Sunday
 
@@ -150,8 +151,8 @@ describe('ReminderScheduler', () => {
         ...mockReminder,
         type: 'daily' as const,
         dayFilter: {
-          skipWeekends: true
-        }
+          skipWeekends: true,
+        },
       };
 
       // Mock Monday (1)
@@ -159,14 +160,13 @@ describe('ReminderScheduler', () => {
 
       expect(scheduler.shouldTriggerToday(weekdayReminder)).toBe(true);
     });
-
   });
 
   describe('calculateNextTriggerTime', () => {
     it('should calculate next daily trigger time', () => {
       const dailyReminder = {
         ...mockReminder,
-        type: 'daily' as const
+        type: 'daily' as const,
       };
 
       const result = scheduler.calculateNextTriggerTime(dailyReminder);
@@ -175,15 +175,14 @@ describe('ReminderScheduler', () => {
       expect(dayjs(result).isSame(expected, 'minute')).toBe(true);
     });
 
-
     it('should skip to next valid day when day filter is applied', () => {
       const weekdayOnlyReminder = {
         ...mockReminder,
         type: 'daily' as const,
         nextTriggerTime: dayjs().day(5).toDate(), // Friday
         dayFilter: {
-          skipWeekends: true
-        }
+          skipWeekends: true,
+        },
       };
 
       const result = scheduler.calculateNextTriggerTime(weekdayOnlyReminder);
@@ -198,7 +197,7 @@ describe('ReminderScheduler', () => {
     it('should update daily reminder for next occurrence', async () => {
       const dailyReminder = {
         ...mockReminder,
-        type: 'daily' as const
+        type: 'daily' as const,
       };
 
       mockStorage.updateReminder.mockResolvedValue();
@@ -208,8 +207,8 @@ describe('ReminderScheduler', () => {
       expect(mockStorage.updateReminder).toHaveBeenCalledWith(
         expect.objectContaining({
           nextTriggerTime: expect.any(Date),
-          updatedAt: expect.any(Date)
-        })
+          updatedAt: expect.any(Date),
+        }),
       );
     });
   });
@@ -223,8 +222,8 @@ describe('ReminderScheduler', () => {
 
       expect(mockStorage.updateReminder).toHaveBeenCalledWith(
         expect.objectContaining({
-          isActive: false
-        })
+          isActive: false,
+        }),
       );
     });
   });
@@ -240,7 +239,7 @@ describe('ReminderScheduler', () => {
     it('should include daily information for daily reminders', () => {
       const dailyReminder = {
         ...mockReminder,
-        type: 'daily' as const
+        type: 'daily' as const,
       };
 
       const result = scheduler.formatReminderMessage(dailyReminder);
@@ -248,7 +247,7 @@ describe('ReminderScheduler', () => {
       expect(result.data.fields).toBeDefined();
 
       const fields = result.data.fields;
-      const typeField = fields?.find(f => f.name === 'Type');
+      const typeField = fields?.find((f) => f.name === 'Type');
 
       expect(typeField?.value).toContain('Daily reminder');
     });

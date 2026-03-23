@@ -2,6 +2,7 @@ import { Client, TextChannel, EmbedBuilder } from 'discord.js';
 import { ReminderStorage } from '../utils/storage';
 import { Reminder, DayFilter } from '../models/reminder';
 import dayjs from 'dayjs';
+import { logger } from '../utils/logger';
 
 export class ReminderScheduler {
   private client: Client;
@@ -20,16 +21,16 @@ export class ReminderScheduler {
       return;
     }
 
-    console.log('[ReminderScheduler] Starting reminder scheduler...');
+    logger.log('[ReminderScheduler] Starting reminder scheduler...');
 
     this.intervalId = setInterval(() => {
-      this.checkReminders().catch(error => {
-        console.error('[ReminderScheduler] Error checking reminders:', error);
+      this.checkReminders().catch((error) => {
+        logger.error('[ReminderScheduler] Error checking reminders:', error);
       });
     }, this.checkInterval);
 
     this.isSchedulerRunning = true;
-    console.log('[ReminderScheduler] Reminder scheduler started');
+    logger.log('[ReminderScheduler] Reminder scheduler started');
   }
 
   stop(): void {
@@ -38,7 +39,7 @@ export class ReminderScheduler {
       this.intervalId = null;
     }
     this.isSchedulerRunning = false;
-    console.log('[ReminderScheduler] Reminder scheduler stopped');
+    logger.log('[ReminderScheduler] Reminder scheduler stopped');
   }
 
   isRunning(): boolean {
@@ -51,7 +52,10 @@ export class ReminderScheduler {
       const now = new Date();
 
       for (const reminder of activeReminders) {
-        if (dayjs(reminder.nextTriggerTime).isBefore(now) || dayjs(reminder.nextTriggerTime).isSame(now, 'minute')) {
+        if (
+          dayjs(reminder.nextTriggerTime).isBefore(now) ||
+          dayjs(reminder.nextTriggerTime).isSame(now, 'minute')
+        ) {
           if (!this.shouldTriggerToday(reminder)) {
             if (reminder.type === 'daily') {
               await this.processRecurringReminder(reminder);
@@ -63,7 +67,7 @@ export class ReminderScheduler {
         }
       }
     } catch (error) {
-      console.error('[ReminderScheduler] Error in checkReminders:', error);
+      logger.error('[ReminderScheduler] Error in checkReminders:', error);
     }
   }
 
@@ -124,17 +128,19 @@ export class ReminderScheduler {
 
   async triggerReminder(reminder: Reminder): Promise<void> {
     try {
-      const channel = await this.client.channels.fetch(reminder.channelId) as TextChannel;
+      const channel = (await this.client.channels.fetch(reminder.channelId)) as TextChannel;
 
       if (!channel) {
-        console.error(`[ReminderScheduler] Channel ${reminder.channelId} not found`);
+        logger.error(`[ReminderScheduler] Channel ${reminder.channelId} not found`);
         return;
       }
 
       const message = this.formatReminderMessage(reminder);
-      await channel.send({ embeds: [ message ] });
+      await channel.send({ embeds: [message] });
 
-      console.log(`[ReminderScheduler] Triggered reminder: ${reminder.title} for user ${reminder.userId}`);
+      logger.log(
+        `[ReminderScheduler] Triggered reminder: ${reminder.title} for user ${reminder.userId}`,
+      );
 
       if (reminder.type === 'once') {
         await this.deactivateReminder(reminder);
@@ -142,7 +148,7 @@ export class ReminderScheduler {
         await this.processRecurringReminder(reminder);
       }
     } catch (error) {
-      console.error(`[ReminderScheduler] Error triggering reminder ${reminder.id}:`, error);
+      logger.error(`[ReminderScheduler] Error triggering reminder ${reminder.id}:`, error);
     }
   }
 
@@ -164,7 +170,7 @@ export class ReminderScheduler {
     };
 
     await this.storage.updateReminder(updatedReminder);
-    console.log(`[ReminderScheduler] Deactivated reminder: ${reminder.title}`);
+    logger.log(`[ReminderScheduler] Deactivated reminder: ${reminder.title}`);
   }
 
   formatReminderMessage(reminder: Reminder): EmbedBuilder {
@@ -176,9 +182,7 @@ export class ReminderScheduler {
       .setFooter({ text: 'Scrum Owl Reminder' });
 
     if (reminder.type === 'daily') {
-      embed.addFields(
-        { name: 'Type', value: 'Daily reminder', inline: true }
-      );
+      embed.addFields({ name: 'Type', value: 'Daily reminder', inline: true });
     }
 
     return embed;

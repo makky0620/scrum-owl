@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, ChannelType } from 'discord.js';
+import { ChannelType } from 'discord.js';
 import dayjs from 'dayjs';
 
 const mockCreateChart = jest.fn();
@@ -24,6 +24,7 @@ jest.mock('../services/quickChartService', () => ({
   })),
 }));
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const command = require('../commands/burndown');
 
 const mockChart = {
@@ -42,17 +43,37 @@ const mockChart = {
   updatedAt: new Date(),
 };
 
-function makeInteraction(subcommand: string, overrides: Record<string, any> = {}): any {
+interface MockOptions {
+  getSubcommand: jest.Mock;
+  getString: jest.Mock;
+  getInteger: jest.Mock;
+  getBoolean: jest.Mock;
+}
+
+interface MockInteraction {
+  options: MockOptions;
+  user: { id: string };
+  guild: { id: string } | null;
+  channel: { id: string; type: ChannelType } | null;
+  channelId: string;
+  guildId: string;
+  reply: jest.Mock;
+}
+
+function makeInteraction(
+  subcommand: string,
+  overrides: Partial<MockInteraction> = {},
+): MockInteraction {
   return {
     options: {
       getSubcommand: jest.fn().mockReturnValue(subcommand),
       getString: jest.fn().mockReturnValue(null),
       getInteger: jest.fn().mockReturnValue(null),
       getBoolean: jest.fn().mockReturnValue(null),
-    } as any,
-    user: { id: 'user123' } as any,
-    guild: { id: 'guild123' } as any,
-    channel: { id: 'channel123', type: ChannelType.GuildText } as any,
+    },
+    user: { id: 'user123' },
+    guild: { id: 'guild123' },
+    channel: { id: 'channel123', type: ChannelType.GuildText },
     channelId: 'channel123',
     guildId: 'guild123',
     reply: jest.fn().mockResolvedValue(undefined),
@@ -80,8 +101,10 @@ describe('Burndown Command', () => {
   describe('create subcommand', () => {
     it('should create a chart with valid inputs', async () => {
       const interaction = makeInteraction('create');
-      (interaction.options!.getString as jest.Mock)
-        .mockImplementation((name: string) => ({ title: 'Sprint 1', start_date: '2024-01-01', end_date: '2024-01-14' }[name] ?? null));
+      (interaction.options!.getString as jest.Mock).mockImplementation(
+        (name: string) =>
+          ({ title: 'Sprint 1', start_date: '2024-01-01', end_date: '2024-01-14' })[name] ?? null,
+      );
       (interaction.options!.getInteger as jest.Mock).mockReturnValue(50);
       mockCreateChart.mockResolvedValue(mockChart);
 
@@ -89,45 +112,56 @@ describe('Burndown Command', () => {
 
       expect(mockCreateChart).toHaveBeenCalled();
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ embeds: expect.any(Array) })
+        expect.objectContaining({ embeds: expect.any(Array) }),
       );
     });
 
     it('should reject when not in a guild', async () => {
-      const interaction = makeInteraction('create', { guild: null as any });
+      const interaction = makeInteraction('create', { guild: null });
 
       await command.execute(interaction);
 
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: expect.stringContaining('server'), flags: expect.any(Number) })
+        expect.objectContaining({
+          content: expect.stringContaining('server'),
+          flags: expect.any(Number),
+        }),
       );
       expect(mockCreateChart).not.toHaveBeenCalled();
     });
 
     it('should reject when not in a text channel', async () => {
       const interaction = makeInteraction('create', {
-        channel: { id: 'channel123', type: ChannelType.GuildVoice } as any,
+        channel: { id: 'channel123', type: ChannelType.GuildVoice },
       });
 
       await command.execute(interaction);
 
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: expect.stringContaining('text channel'), flags: expect.any(Number) })
+        expect.objectContaining({
+          content: expect.stringContaining('text channel'),
+          flags: expect.any(Number),
+        }),
       );
       expect(mockCreateChart).not.toHaveBeenCalled();
     });
 
     it('should reply with error embed when service throws', async () => {
       const interaction = makeInteraction('create');
-      (interaction.options!.getString as jest.Mock)
-        .mockImplementation((name: string) => ({ title: 'Sprint 1', start_date: 'bad', end_date: '2024-01-14' }[name] ?? null));
+      (interaction.options!.getString as jest.Mock).mockImplementation(
+        (name: string) =>
+          ({ title: 'Sprint 1', start_date: 'bad', end_date: '2024-01-14' })[name] ?? null,
+      );
       (interaction.options!.getInteger as jest.Mock).mockReturnValue(50);
       mockCreateChart.mockRejectedValue(new Error('Invalid start date format'));
 
       await command.execute(interaction);
 
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: expect.stringContaining('Invalid start date format'), flags: expect.any(Number) })
+        expect.objectContaining({
+          content: expect.stringContaining('Invalid start date format'),
+          flags: expect.any(Number),
+        }),
       );
     });
   });
@@ -135,8 +169,9 @@ describe('Burndown Command', () => {
   describe('update subcommand', () => {
     it('should update progress for own chart', async () => {
       const interaction = makeInteraction('update');
-      (interaction.options!.getString as jest.Mock)
-        .mockImplementation((name: string) => (name === 'chart_id' ? 'chart-id-1' : null));
+      (interaction.options!.getString as jest.Mock).mockImplementation((name: string) =>
+        name === 'chart_id' ? 'chart-id-1' : null,
+      );
       (interaction.options!.getInteger as jest.Mock).mockReturnValue(20);
       mockGetChartById.mockResolvedValue(mockChart);
       mockUpdateProgress.mockResolvedValue({ ...mockChart, currentPoints: 60 });
@@ -145,7 +180,7 @@ describe('Burndown Command', () => {
 
       expect(mockUpdateProgress).toHaveBeenCalled();
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ embeds: expect.any(Array) })
+        expect.objectContaining({ embeds: expect.any(Array) }),
       );
     });
 
@@ -158,13 +193,16 @@ describe('Burndown Command', () => {
       await command.execute(interaction);
 
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: 'Burndown chart not found.', flags: expect.any(Number) })
+        expect.objectContaining({
+          content: 'Burndown chart not found.',
+          flags: expect.any(Number),
+        }),
       );
       expect(mockUpdateProgress).not.toHaveBeenCalled();
     });
 
     it('should reject when user does not own the chart', async () => {
-      const interaction = makeInteraction('update', { user: { id: 'other-user' } as any });
+      const interaction = makeInteraction('update', { user: { id: 'other-user' } });
       (interaction.options!.getString as jest.Mock).mockReturnValue('chart-id-1');
       (interaction.options!.getInteger as jest.Mock).mockReturnValue(10);
       mockGetChartById.mockResolvedValue(mockChart); // owned by user123
@@ -172,7 +210,10 @@ describe('Burndown Command', () => {
       await command.execute(interaction);
 
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: expect.stringContaining('own'), flags: expect.any(Number) })
+        expect.objectContaining({
+          content: expect.stringContaining('own'),
+          flags: expect.any(Number),
+        }),
       );
       expect(mockUpdateProgress).not.toHaveBeenCalled();
     });
@@ -189,7 +230,7 @@ describe('Burndown Command', () => {
 
       expect(mockGenerateBurndownChartUrl).toHaveBeenCalledWith(mockChart, false);
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ embeds: expect.any(Array) })
+        expect.objectContaining({ embeds: expect.any(Array) }),
       );
     });
 
@@ -202,7 +243,10 @@ describe('Burndown Command', () => {
       await command.execute(interaction);
 
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: 'Burndown chart not found.', flags: expect.any(Number) })
+        expect.objectContaining({
+          content: 'Burndown chart not found.',
+          flags: expect.any(Number),
+        }),
       );
     });
 
@@ -227,7 +271,7 @@ describe('Burndown Command', () => {
 
       expect(mockGetUserCharts).toHaveBeenCalledWith('user123');
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ embeds: expect.any(Array) })
+        expect.objectContaining({ embeds: expect.any(Array) }),
       );
     });
 
@@ -238,7 +282,10 @@ describe('Burndown Command', () => {
       await command.execute(interaction);
 
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: expect.stringContaining('no burndown charts'), flags: expect.any(Number) })
+        expect.objectContaining({
+          content: expect.stringContaining('no burndown charts'),
+          flags: expect.any(Number),
+        }),
       );
     });
   });
@@ -254,7 +301,7 @@ describe('Burndown Command', () => {
 
       expect(mockDeleteChart).toHaveBeenCalledWith('chart-id-1');
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ embeds: expect.any(Array) })
+        expect.objectContaining({ embeds: expect.any(Array) }),
       );
     });
 
@@ -266,20 +313,26 @@ describe('Burndown Command', () => {
       await command.execute(interaction);
 
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: 'Burndown chart not found.', flags: expect.any(Number) })
+        expect.objectContaining({
+          content: 'Burndown chart not found.',
+          flags: expect.any(Number),
+        }),
       );
       expect(mockDeleteChart).not.toHaveBeenCalled();
     });
 
     it('should reject when user does not own the chart', async () => {
-      const interaction = makeInteraction('delete', { user: { id: 'other-user' } as any });
+      const interaction = makeInteraction('delete', { user: { id: 'other-user' } });
       (interaction.options!.getString as jest.Mock).mockReturnValue('chart-id-1');
       mockGetChartById.mockResolvedValue(mockChart); // owned by user123
 
       await command.execute(interaction);
 
       expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({ content: expect.stringContaining('own'), flags: expect.any(Number) })
+        expect.objectContaining({
+          content: expect.stringContaining('own'),
+          flags: expect.any(Number),
+        }),
       );
       expect(mockDeleteChart).not.toHaveBeenCalled();
     });

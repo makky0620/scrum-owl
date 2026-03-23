@@ -10,90 +10,105 @@ import { BurndownChartService } from '../services/burndownChartService';
 import { QuickChartService } from '../services/quickChartService';
 import { CreateBurndownChartData, UpdateProgressData } from '../models/burndownChart';
 import { safeReply } from '../utils/interactionHelpers';
+import { logger } from '../utils/logger';
 import dayjs from 'dayjs';
 
 const burndownService = new BurndownChartService();
 const quickChartService = new QuickChartService();
 
 function progressPercentage(totalPoints: number, currentPoints: number): string {
-  return ((totalPoints - currentPoints) / totalPoints * 100).toFixed(1);
+  return (((totalPoints - currentPoints) / totalPoints) * 100).toFixed(1);
 }
 
-async function handleError(interaction: ChatInputCommandInteraction, context: string, error: unknown): Promise<void> {
-  console.error(`[Burndown] Error ${context}:`, error);
-  await safeReply(interaction, `Error ${context}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+async function handleError(
+  interaction: ChatInputCommandInteraction,
+  context: string,
+  error: unknown,
+): Promise<void> {
+  logger.error(`[Burndown] Error ${context}:`, error);
+  await safeReply(
+    interaction,
+    `Error ${context}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+  );
 }
 
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName('burndown')
     .setDescription('Manage burndown charts for sprint tracking')
-    .addSubcommand(subcommand =>
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('create')
         .setDescription('Create a new burndown chart')
-        .addStringOption(option =>
-          option.setName('title')
-            .setDescription('Title of the burndown chart')
-            .setRequired(true))
-        .addIntegerOption(option =>
-          option.setName('total_points')
+        .addStringOption((option) =>
+          option.setName('title').setDescription('Title of the burndown chart').setRequired(true),
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName('total_points')
             .setDescription('Total story points for the sprint')
             .setRequired(true)
-            .setMinValue(1))
-        .addStringOption(option =>
-          option.setName('start_date')
-            .setDescription('Start date (YYYY-MM-DD)')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('end_date')
-            .setDescription('End date (YYYY-MM-DD)')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('description')
-            .setDescription('Optional description')
-            .setRequired(false)))
-    .addSubcommand(subcommand =>
+            .setMinValue(1),
+        )
+        .addStringOption((option) =>
+          option.setName('start_date').setDescription('Start date (YYYY-MM-DD)').setRequired(true),
+        )
+        .addStringOption((option) =>
+          option.setName('end_date').setDescription('End date (YYYY-MM-DD)').setRequired(true),
+        )
+        .addStringOption((option) =>
+          option.setName('description').setDescription('Optional description').setRequired(false),
+        ),
+    )
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('update')
         .setDescription('Update progress on a burndown chart')
-        .addStringOption(option =>
-          option.setName('chart_id')
-            .setDescription('ID of the burndown chart')
-            .setRequired(true))
-        .addIntegerOption(option =>
-          option.setName('points_burned')
+        .addStringOption((option) =>
+          option.setName('chart_id').setDescription('ID of the burndown chart').setRequired(true),
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName('points_burned')
             .setDescription('Number of points burned/completed')
             .setRequired(true)
-            .setMinValue(0))
-        .addStringOption(option =>
-          option.setName('note')
+            .setMinValue(0),
+        )
+        .addStringOption((option) =>
+          option
+            .setName('note')
             .setDescription('Optional note about the progress')
-            .setRequired(false)))
-    .addSubcommand(subcommand =>
+            .setRequired(false),
+        ),
+    )
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('view')
         .setDescription('View a burndown chart')
-        .addStringOption(option =>
-          option.setName('chart_id')
-            .setDescription('ID of the burndown chart')
-            .setRequired(true))
-        .addBooleanOption(option =>
-          option.setName('include_weekends')
+        .addStringOption((option) =>
+          option.setName('chart_id').setDescription('ID of the burndown chart').setRequired(true),
+        )
+        .addBooleanOption((option) =>
+          option
+            .setName('include_weekends')
             .setDescription('Include weekends in the chart (default: false)')
-            .setRequired(false)))
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('list')
-        .setDescription('List all your burndown charts'))
-    .addSubcommand(subcommand =>
+            .setRequired(false),
+        ),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand.setName('list').setDescription('List all your burndown charts'),
+    )
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('delete')
         .setDescription('Delete a burndown chart')
-        .addStringOption(option =>
-          option.setName('chart_id')
+        .addStringOption((option) =>
+          option
+            .setName('chart_id')
             .setDescription('ID of the burndown chart to delete')
-            .setRequired(true))) as SlashCommandBuilder,
+            .setRequired(true),
+        ),
+    ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
     const subcommand = interaction.options.getSubcommand();
@@ -165,7 +180,11 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
       .addFields(
         { name: 'Chart ID', value: chart.id, inline: true },
         { name: 'Total Points', value: chart.totalPoints.toString(), inline: true },
-        { name: 'Duration', value: `${dayjs(chart.startDate).format('MM/DD')} - ${dayjs(chart.endDate).format('MM/DD')}`, inline: true }
+        {
+          name: 'Duration',
+          value: `${dayjs(chart.startDate).format('MM/DD')} - ${dayjs(chart.endDate).format('MM/DD')}`,
+          inline: true,
+        },
       )
       .setTimestamp();
 
@@ -213,7 +232,11 @@ async function handleUpdate(interaction: ChatInputCommandInteraction) {
       .addFields(
         { name: 'Points Burned', value: pointsBurned.toString(), inline: true },
         { name: 'Points Remaining', value: updatedChart.currentPoints.toString(), inline: true },
-        { name: 'Progress', value: `${progressPercentage(updatedChart.totalPoints, updatedChart.currentPoints)}%`, inline: true }
+        {
+          name: 'Progress',
+          value: `${progressPercentage(updatedChart.totalPoints, updatedChart.currentPoints)}%`,
+          inline: true,
+        },
       );
 
     if (note) {
@@ -257,14 +280,21 @@ async function handleView(interaction: ChatInputCommandInteraction) {
         { name: 'End Date', value: dayjs(chart.endDate).format('YYYY-MM-DD'), inline: true },
         { name: '\u200B', value: '\u200B', inline: true },
         { name: 'Status', value: chart.isActive ? '🟢 Active' : '🔴 Inactive', inline: true },
-        { name: 'Progress', value: `${progressPercentage(chart.totalPoints, chart.currentPoints)}% Complete`, inline: true }
+        {
+          name: 'Progress',
+          value: `${progressPercentage(chart.totalPoints, chart.currentPoints)}% Complete`,
+          inline: true,
+        },
       )
       .setImage(chartImageUrl);
 
     if (chart.progressEntries.length > 0) {
       const recentEntries = chart.progressEntries
         .slice(-3)
-        .map(entry => `${dayjs(entry.date).format('MM/DD')} - Burned ${entry.pointsBurned} points${entry.note ? ` (${entry.note})` : ''}`)
+        .map(
+          (entry) =>
+            `${dayjs(entry.date).format('MM/DD')} - Burned ${entry.pointsBurned} points${entry.note ? ` (${entry.note})` : ''}`,
+        )
         .join('\n');
       embed.addFields({ name: 'Recent Progress', value: recentEntries });
     }
@@ -294,12 +324,12 @@ async function handleList(interaction: ChatInputCommandInteraction) {
       .setTitle('📊 Your Burndown Charts')
       .setDescription(`You have ${charts.length} burndown chart(s):`);
 
-    charts.forEach(chart => {
+    charts.forEach((chart) => {
       const status = chart.isActive ? '🟢' : '🔴';
       embed.addFields({
         name: `${status} ${chart.title}`,
         value: `ID: \`${chart.id}\`\nProgress: ${progressPercentage(chart.totalPoints, chart.currentPoints)}% (${chart.currentPoints}/${chart.totalPoints} points remaining)\nPeriod: ${dayjs(chart.startDate).format('MM/DD')} - ${dayjs(chart.endDate).format('MM/DD')}`,
-        inline: false
+        inline: false,
       });
     });
 

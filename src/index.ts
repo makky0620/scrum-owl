@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { safeReply } from './utils/interactionHelpers';
+import { logger } from './utils/logger';
 
 // Load environment variables
 dotenv.config();
@@ -22,45 +23,50 @@ const reminderScheduler = new ReminderScheduler(client, reminderStorage);
 
 // Load commands from the commands directory
 const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
+const commandFiles = fs
+  .readdirSync(commandsPath)
+  .filter((file) => file.endsWith('.js') || file.endsWith('.ts'));
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const command = require(filePath);
 
   // Set a new item in the Collection with the key as the command name and the value as the exported module
   if ('data' in command && 'execute' in command) {
     client.commands.set(command.data.name, command);
-    console.log(`[INFO] Loaded command: ${command.data.name}`);
+    logger.log(`[INFO] Loaded command: ${command.data.name}`);
   } else {
-    console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+    logger.log(
+      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
+    );
   }
 }
 
 // When the client is ready, run this code (only once)
-client.once(Events.ClientReady, readyClient => {
-  console.log(`[INFO] Ready! Logged in as ${readyClient.user.tag}`);
+client.once(Events.ClientReady, (readyClient) => {
+  logger.log(`[INFO] Ready! Logged in as ${readyClient.user.tag}`);
 
   // Start the reminder scheduler
   reminderScheduler.start();
-  console.log('[INFO] Reminder scheduler started');
+  logger.log('[INFO] Reminder scheduler started');
 });
 
 // Handle interactions
-client.on(Events.InteractionCreate, async interaction => {
+client.on(Events.InteractionCreate, async (interaction) => {
   // Handle slash command interactions
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
 
     if (!command) {
-      console.error(`[ERROR] No command matching ${interaction.commandName} was found.`);
+      logger.error(`[ERROR] No command matching ${interaction.commandName} was found.`);
       return;
     }
 
     try {
       await command.execute(interaction);
     } catch (error) {
-      console.error(`[ERROR] Error executing command ${interaction.commandName}:`, error);
+      logger.error(`[ERROR] Error executing command ${interaction.commandName}:`, error);
       await safeReply(interaction, 'There was an error while executing this command!');
     }
     return;
@@ -78,26 +84,26 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     if (!commandName) {
-      console.error(`[ERROR] Could not determine command for modal submission: ${customId}`);
+      logger.error(`[ERROR] Could not determine command for modal submission: ${customId}`);
       return;
     }
 
     const command = client.commands.get(commandName);
 
     if (!command) {
-      console.error(`[ERROR] No command matching ${commandName} was found for modal submission.`);
+      logger.error(`[ERROR] No command matching ${commandName} was found for modal submission.`);
       return;
     }
 
     if (!command.handleModalSubmit) {
-      console.error(`[ERROR] Command ${commandName} does not support modal submissions.`);
+      logger.error(`[ERROR] Command ${commandName} does not support modal submissions.`);
       return;
     }
 
     try {
       await command.handleModalSubmit(interaction);
     } catch (error) {
-      console.error(`[ERROR] Error handling modal submission for ${commandName}:`, error);
+      logger.error(`[ERROR] Error handling modal submission for ${commandName}:`, error);
       await safeReply(interaction, 'There was an error while processing your submission!');
     }
     return;
@@ -109,13 +115,13 @@ client.login(process.env.DISCORD_TOKEN);
 
 // Graceful shutdown handling
 process.on('SIGINT', () => {
-  console.log('[INFO] Received SIGINT, shutting down gracefully...');
+  logger.log('[INFO] Received SIGINT, shutting down gracefully...');
   reminderScheduler.stop();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log('[INFO] Received SIGTERM, shutting down gracefully...');
+  logger.log('[INFO] Received SIGTERM, shutting down gracefully...');
   reminderScheduler.stop();
   process.exit(0);
 });

@@ -1,10 +1,12 @@
 import { SlashCommandBuilder } from 'discord.js';
+import { Command } from '../command';
 
 describe('Facilitator Command', () => {
-  let command: any;
+  let command: Command;
 
   beforeAll(() => {
     // Import the command
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     command = require('../commands/facilitator');
   });
 
@@ -17,7 +19,9 @@ describe('Facilitator Command', () => {
 
   test('should have correct command name and description', () => {
     expect(command.data.name).toBe('facilitator');
-    expect(command.data.description).toBe('Randomly select a facilitator from a list of participants');
+    expect(command.data.description).toBe(
+      'Randomly select a facilitator from a list of participants',
+    );
   });
 
   test('should have required participants option', () => {
@@ -25,7 +29,7 @@ describe('Facilitator Command', () => {
     expect(commandData.options).toBeDefined();
     expect(commandData.options).toHaveLength(1);
 
-    const participantsOption = commandData.options[0];
+    const participantsOption = commandData.options![0];
     expect(participantsOption.name).toBe('participants');
     expect(participantsOption.description).toBe('Comma-separated list of participant names');
     expect(participantsOption.required).toBe(true);

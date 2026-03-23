@@ -1,4 +1,4 @@
-import { Reminder, ReminderType } from '../models/reminder';
+import { Reminder } from '../models/reminder';
 import dayjs from 'dayjs';
 
 describe('Reminder Model', () => {
@@ -15,7 +15,7 @@ describe('Reminder Model', () => {
         type: 'once',
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       expect(reminder.id).toBe('test-id-1');
@@ -35,18 +35,16 @@ describe('Reminder Model', () => {
         nextTriggerTime: dayjs().add(1, 'day').toDate(),
         type: 'daily',
         dayFilter: {
-          skipWeekends: true
+          skipWeekends: true,
         },
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       expect(reminder.type).toBe('daily');
       expect(reminder.dayFilter).toBeDefined();
       expect(reminder.dayFilter?.skipWeekends).toBe(true);
     });
-
-
   });
 });

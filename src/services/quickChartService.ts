@@ -26,7 +26,7 @@ export class QuickChartService {
             borderWidth: 2,
             borderDash: [5, 5],
             fill: false,
-            tension: 0
+            tension: 0,
           },
           {
             label: 'Actual Burndown',
@@ -35,9 +35,9 @@ export class QuickChartService {
             backgroundColor: 'rgba(78, 205, 196, 0.1)',
             borderWidth: 3,
             fill: false,
-            tension: 0.1
-          }
-        ]
+            tension: 0.1,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -47,43 +47,43 @@ export class QuickChartService {
             text: chart.title,
             font: {
               size: 16,
-              weight: 'bold'
-            }
+              weight: 'bold',
+            },
           },
           legend: {
             display: true,
-            position: 'top'
-          }
+            position: 'top',
+          },
         },
         scales: {
           x: {
             title: {
               display: true,
-              text: 'Date'
+              text: 'Date',
             },
             grid: {
-              display: true
-            }
+              display: true,
+            },
           },
           y: {
             title: {
               display: true,
-              text: 'Story Points Remaining'
+              text: 'Story Points Remaining',
             },
             beginAtZero: true,
             max: chart.totalPoints,
             grid: {
-              display: true
-            }
-          }
+              display: true,
+            },
+          },
         },
         elements: {
           point: {
             radius: 4,
-            hoverRadius: 6
-          }
-        }
-      }
+            hoverRadius: 6,
+          },
+        },
+      },
     };
   }
 
@@ -127,7 +127,7 @@ export class QuickChartService {
 
     const dayIndexToWorkingIndex = new Map(workingDayIndices.map((dayIdx, i) => [dayIdx, i]));
 
-    chart.progressEntries.forEach(entry => {
+    chart.progressEntries.forEach((entry) => {
       const entryDate = dayjs(entry.date);
       const dayIndex = entryDate.diff(startDate, 'day');
       const workingDayIndex = dayIndexToWorkingIndex.get(dayIndex);
@@ -138,7 +138,6 @@ export class QuickChartService {
 
     if (chart.progressEntries.length > 0) {
       let lastKnownValue = chart.totalPoints;
-      let lastKnownIndex = 0;
 
       let lastDataIndex = 0;
       for (let i = 0; i < labels.length; i++) {
@@ -150,7 +149,6 @@ export class QuickChartService {
       for (let i = 1; i < labels.length; i++) {
         if (actualData[i] !== null) {
           lastKnownValue = actualData[i] as number;
-          lastKnownIndex = i;
         } else if (i > lastDataIndex) {
           actualData[i] = null;
         } else {

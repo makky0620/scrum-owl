@@ -11,8 +11,13 @@ import {
   ModalSubmitInteraction,
 } from 'discord.js';
 import { Command } from '../command';
-import { ReminderService, CreateReminderData, UpdateReminderData } from '../services/reminderService';
+import {
+  ReminderService,
+  CreateReminderData,
+  UpdateReminderData,
+} from '../services/reminderService';
 import { safeReply } from '../utils/interactionHelpers';
+import { logger } from '../utils/logger';
 
 const reminderService = new ReminderService();
 
@@ -20,78 +25,62 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName('reminder')
     .setDescription('Manage reminders')
-    .addSubcommand(subcommand =>
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('create')
         .setDescription('Create a new reminder')
-        .addStringOption(option =>
-          option
-            .setName('title')
-            .setDescription('Title of the reminder')
-            .setRequired(true)
+        .addStringOption((option) =>
+          option.setName('title').setDescription('Title of the reminder').setRequired(true),
         )
-        .addStringOption(option =>
+        .addStringOption((option) =>
           option
             .setName('message')
             .setDescription('Message content of the reminder')
-            .setRequired(true)
+            .setRequired(true),
         )
-        .addStringOption(option =>
+        .addStringOption((option) =>
           option
             .setName('time')
             .setDescription('When to trigger (e.g., "14:30", "2h", "2024-07-15 14:30")')
-            .setRequired(true)
+            .setRequired(true),
         )
-        .addStringOption(option =>
+        .addStringOption((option) =>
           option
             .setName('type')
             .setDescription('Type of reminder')
             .setRequired(true)
-            .addChoices(
-              { name: 'Once', value: 'once' },
-              { name: 'Daily', value: 'daily' }
-            )
+            .addChoices({ name: 'Once', value: 'once' }, { name: 'Daily', value: 'daily' }),
         )
-        .addBooleanOption(option =>
+        .addBooleanOption((option) =>
           option
             .setName('skip_weekends')
             .setDescription('Skip weekends for daily reminders')
-            .setRequired(false)
+            .setRequired(false),
         )
-        .addChannelOption(option =>
+        .addChannelOption((option) =>
           option
             .setName('channel')
             .setDescription('Channel to send the reminder to (defaults to current channel)')
             .setRequired(false)
-            .addChannelTypes(ChannelType.GuildText)
-        )
+            .addChannelTypes(ChannelType.GuildText),
+        ),
     )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('list')
-        .setDescription('List your reminders')
-    )
-    .addSubcommand(subcommand =>
+    .addSubcommand((subcommand) => subcommand.setName('list').setDescription('List your reminders'))
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('delete')
         .setDescription('Delete a reminder')
-        .addStringOption(option =>
-          option
-            .setName('id')
-            .setDescription('ID of the reminder to delete')
-            .setRequired(true)
-        )
+        .addStringOption((option) =>
+          option.setName('id').setDescription('ID of the reminder to delete').setRequired(true),
+        ),
     )
-    .addSubcommand(subcommand =>
+    .addSubcommand((subcommand) =>
       subcommand
         .setName('edit')
         .setDescription('Edit a reminder using a modal')
-        .addStringOption(option =>
-          option
-            .setName('id')
-            .setDescription('ID of the reminder to edit')
-            .setRequired(true)
-        )
+        .addStringOption((option) =>
+          option.setName('id').setDescription('ID of the reminder to edit').setRequired(true),
+        ),
     ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -118,7 +107,7 @@ const command: Command = {
           });
       }
     } catch (error) {
-      console.error('[Reminder Command] Error:', error);
+      logger.error('[Reminder Command] Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       await safeReply(interaction, `Error: ${errorMessage}`);
     }
@@ -128,7 +117,7 @@ const command: Command = {
     try {
       await processModalSubmit(interaction);
     } catch (error) {
-      console.error('[Reminder Command] Modal Submit Error:', error);
+      logger.error('[Reminder Command] Modal Submit Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       await safeReply(interaction, `Error: ${errorMessage}`);
     }
@@ -186,7 +175,7 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
       { name: 'Message', value: reminder.message, inline: false },
       { name: 'Next Trigger', value: reminder.nextTriggerTime.toLocaleString(), inline: false },
       { name: 'Type', value: reminder.type, inline: false },
-      { name: 'ID', value: reminder.id, inline: false }
+      { name: 'ID', value: reminder.id, inline: false },
     )
     .setTimestamp()
     .setFooter({ text: 'Scrum Owl Reminder' });
@@ -208,7 +197,10 @@ async function handleList(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  const reminders = await reminderService.getUserRemindersInGuild(interaction.user.id, interaction.guildId);
+  const reminders = await reminderService.getUserRemindersInGuild(
+    interaction.user.id,
+    interaction.guildId,
+  );
 
   if (reminders.length === 0) {
     await interaction.reply({
@@ -224,24 +216,29 @@ async function handleList(interaction: ChatInputCommandInteraction) {
     .setTimestamp()
     .setFooter({ text: 'Scrum Owl Reminder' });
 
-  const activeReminders = reminders.filter(r => r.isActive);
-  const inactiveReminders = reminders.filter(r => !r.isActive);
+  const activeReminders = reminders.filter((r) => r.isActive);
+  const inactiveReminders = reminders.filter((r) => !r.isActive);
 
   if (activeReminders.length > 0) {
-    const activeList = activeReminders.map(r => {
-      const nextTrigger = r.nextTriggerTime.toLocaleString();
-      const typeInfo = r.type === 'daily' ? ' (daily)' : '';
-      const skipWeekendsInfo = r.type === 'daily' && r.dayFilter?.skipWeekends ? ' - Skip weekends' : '';
-      return `**${r.title}**${typeInfo}${skipWeekendsInfo}\nID: \`${r.id}\`\nNext: ${nextTrigger}`;
-    }).join('\n\n');
+    const activeList = activeReminders
+      .map((r) => {
+        const nextTrigger = r.nextTriggerTime.toLocaleString();
+        const typeInfo = r.type === 'daily' ? ' (daily)' : '';
+        const skipWeekendsInfo =
+          r.type === 'daily' && r.dayFilter?.skipWeekends ? ' - Skip weekends' : '';
+        return `**${r.title}**${typeInfo}${skipWeekendsInfo}\nID: \`${r.id}\`\nNext: ${nextTrigger}`;
+      })
+      .join('\n\n');
 
     embed.addFields({ name: '🟢 Active Reminders', value: activeList, inline: false });
   }
 
   if (inactiveReminders.length > 0) {
-    const inactiveList = inactiveReminders.map(r => {
-      return `**${r.title}**\nID: \`${r.id}\``;
-    }).join('\n\n');
+    const inactiveList = inactiveReminders
+      .map((r) => {
+        return `**${r.title}**\nID: \`${r.id}\``;
+      })
+      .join('\n\n');
 
     embed.addFields({ name: '🔴 Inactive Reminders', value: inactiveList, inline: false });
   }
@@ -254,7 +251,7 @@ async function handleDelete(interaction: ChatInputCommandInteraction) {
 
   // Check if reminder exists and belongs to user
   const reminders = await reminderService.getUserReminders(interaction.user.id);
-  const reminder = reminders.find(r => r.id === id);
+  const reminder = reminders.find((r) => r.id === id);
 
   if (!reminder) {
     await interaction.reply({
@@ -281,7 +278,7 @@ async function handleEdit(interaction: ChatInputCommandInteraction) {
 
   // Check if reminder exists and belongs to user
   const reminders = await reminderService.getUserReminders(interaction.user.id);
-  const reminder = reminders.find(r => r.id === id);
+  const reminder = reminders.find((r) => r.id === id);
 
   if (!reminder) {
     await interaction.reply({
@@ -358,7 +355,7 @@ async function processModalSubmit(interaction: ModalSubmitInteraction) {
 
   // Check if reminder exists and belongs to user
   const reminders = await reminderService.getUserReminders(interaction.user.id);
-  const reminder = reminders.find(r => r.id === id);
+  const reminder = reminders.find((r) => r.id === id);
 
   if (!reminder) {
     await interaction.reply({
@@ -416,7 +413,7 @@ async function processModalSubmit(interaction: ModalSubmitInteraction) {
       title,
       message,
       time,
-      isActive
+      isActive,
     };
 
     const updatedReminder = await reminderService.updateReminder(updateData);
@@ -427,8 +424,12 @@ async function processModalSubmit(interaction: ModalSubmitInteraction) {
       .setDescription(`**${updatedReminder.title}** has been updated successfully.`)
       .addFields(
         { name: 'Message', value: updatedReminder.message, inline: false },
-        { name: 'Next Trigger', value: updatedReminder.nextTriggerTime.toLocaleString(), inline: false },
-        { name: 'Status', value: updatedReminder.isActive ? 'Active' : 'Inactive', inline: false }
+        {
+          name: 'Next Trigger',
+          value: updatedReminder.nextTriggerTime.toLocaleString(),
+          inline: false,
+        },
+        { name: 'Status', value: updatedReminder.isActive ? 'Active' : 'Inactive', inline: false },
       )
       .setTimestamp()
       .setFooter({ text: 'Scrum Owl Reminder' });
