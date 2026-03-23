@@ -1,6 +1,48 @@
 import type { BurndownChart } from '../models/burndownChart';
 import dayjs from 'dayjs';
 
+interface ChartDataset {
+  label: string;
+  data: (number | null)[];
+  borderColor: string;
+  backgroundColor: string;
+  borderWidth: number;
+  borderDash?: number[];
+  fill: boolean;
+  tension: number;
+}
+
+interface ChartConfig {
+  type: string;
+  data: {
+    labels: string[];
+    datasets: ChartDataset[];
+  };
+  options: {
+    responsive: boolean;
+    plugins: {
+      title: { display: boolean; text: string; font: { size: number; weight: string } };
+      legend: { display: boolean; position: string };
+    };
+    scales: {
+      x: { title: { display: boolean; text: string }; grid: { display: boolean } };
+      y: {
+        title: { display: boolean; text: string };
+        beginAtZero: boolean;
+        max: number;
+        grid: { display: boolean };
+      };
+    };
+    elements: { point: { radius: number; hoverRadius: number } };
+  };
+}
+
+interface ChartData {
+  labels: string[];
+  idealData: number[];
+  actualData: (number | null)[];
+}
+
 export class QuickChartService {
   private readonly baseUrl = 'https://quickchart.io/chart';
 
@@ -10,7 +52,7 @@ export class QuickChartService {
     return `${this.baseUrl}?c=${encodedConfig}&width=600&height=400`;
   }
 
-  private buildChartConfig(chart: BurndownChart, includeWeekends: boolean = false) {
+  private buildChartConfig(chart: BurndownChart, includeWeekends: boolean = false): ChartConfig {
     const { labels, idealData, actualData } = this.prepareChartData(chart, includeWeekends);
 
     return {
@@ -87,7 +129,7 @@ export class QuickChartService {
     };
   }
 
-  private prepareChartData(chart: BurndownChart, includeWeekends: boolean = false) {
+  private prepareChartData(chart: BurndownChart, includeWeekends: boolean = false): ChartData {
     const startDate = dayjs(chart.startDate);
     const endDate = dayjs(chart.endDate);
     const totalDays = endDate.diff(startDate, 'day');

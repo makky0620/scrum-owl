@@ -139,7 +139,7 @@ const command: Command = {
   },
 };
 
-async function handleCreate(interaction: ChatInputCommandInteraction) {
+async function handleCreate(interaction: ChatInputCommandInteraction): Promise<void> {
   try {
     const title = interaction.options.getString('title', true);
     const totalPoints = interaction.options.getInteger('total_points', true);
@@ -195,7 +195,7 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
   }
 }
 
-async function handleUpdate(interaction: ChatInputCommandInteraction) {
+async function handleUpdate(interaction: ChatInputCommandInteraction): Promise<void> {
   try {
     const chartId = interaction.options.getString('chart_id', true);
     const pointsBurned = interaction.options.getInteger('points_burned', true);
@@ -252,7 +252,7 @@ async function handleUpdate(interaction: ChatInputCommandInteraction) {
   }
 }
 
-async function handleView(interaction: ChatInputCommandInteraction) {
+async function handleView(interaction: ChatInputCommandInteraction): Promise<void> {
   try {
     const chartId = interaction.options.getString('chart_id', true);
     const includeWeekends = interaction.options.getBoolean('include_weekends') ?? false;
@@ -308,7 +308,7 @@ async function handleView(interaction: ChatInputCommandInteraction) {
   }
 }
 
-async function handleList(interaction: ChatInputCommandInteraction) {
+async function handleList(interaction: ChatInputCommandInteraction): Promise<void> {
   try {
     const charts = await burndownService.getUserCharts(interaction.user.id);
 
@@ -342,7 +342,7 @@ async function handleList(interaction: ChatInputCommandInteraction) {
   }
 }
 
-async function handleDelete(interaction: ChatInputCommandInteraction) {
+async function handleDelete(interaction: ChatInputCommandInteraction): Promise<void> {
   try {
     const chartId = interaction.options.getString('chart_id', true);
 

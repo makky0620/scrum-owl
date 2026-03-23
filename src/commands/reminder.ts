@@ -126,7 +126,7 @@ const command: Command = {
   },
 };
 
-async function handleCreate(interaction: ChatInputCommandInteraction) {
+async function handleCreate(interaction: ChatInputCommandInteraction): Promise<void> {
   const title = interaction.options.getString('title', true);
   const message = interaction.options.getString('message', true);
   const time = interaction.options.getString('time', true);
@@ -189,7 +189,7 @@ async function handleCreate(interaction: ChatInputCommandInteraction) {
   await interaction.reply({ embeds: [embed] });
 }
 
-async function handleList(interaction: ChatInputCommandInteraction) {
+async function handleList(interaction: ChatInputCommandInteraction): Promise<void> {
   // Handle DM context where guildId might be null
   if (!interaction.guildId) {
     await interaction.reply({
@@ -248,7 +248,7 @@ async function handleList(interaction: ChatInputCommandInteraction) {
   await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 }
 
-async function handleDelete(interaction: ChatInputCommandInteraction) {
+async function handleDelete(interaction: ChatInputCommandInteraction): Promise<void> {
   const id = interaction.options.getString('id', true);
 
   // Check if reminder exists and belongs to user
@@ -275,7 +275,7 @@ async function handleDelete(interaction: ChatInputCommandInteraction) {
   await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 }
 
-async function handleEdit(interaction: ChatInputCommandInteraction) {
+async function handleEdit(interaction: ChatInputCommandInteraction): Promise<void> {
   const id = interaction.options.getString('id', true);
 
   // Check if reminder exists and belongs to user
@@ -342,7 +342,7 @@ async function handleEdit(interaction: ChatInputCommandInteraction) {
   await interaction.showModal(modal);
 }
 
-async function processModalSubmit(interaction: ModalSubmitInteraction) {
+async function processModalSubmit(interaction: ModalSubmitInteraction): Promise<void> {
   // Extract reminder ID from custom ID
   const customId = interaction.customId;
   if (!customId.startsWith('edit-reminder-modal:')) {
