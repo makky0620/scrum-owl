@@ -68,4 +68,16 @@ export class FacilitatorTemplateStorage {
     const templates = await this.loadTemplates();
     return templates.find((t) => t.guildId === guildId && t.name === name);
   }
+
+  async deleteTemplate(guildId: string, name: string): Promise<void> {
+    const templates = await this.loadTemplates();
+    const index = templates.findIndex((t) => t.guildId === guildId && t.name === name);
+
+    if (index === -1) {
+      throw new Error(`Template "${name}" not found in this server`);
+    }
+
+    templates.splice(index, 1);
+    await this.saveTemplates(templates);
+  }
 }

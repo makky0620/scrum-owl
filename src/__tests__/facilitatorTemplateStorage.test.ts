@@ -188,4 +188,27 @@ describe('FacilitatorTemplateStorage', () => {
       expect(result).toBeUndefined();
     });
   });
+
+  describe('deleteTemplate', () => {
+    it('should remove the template matching guildId and name', async () => {
+      const stored = [
+        { ...mockTemplate, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+      ];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      await storage.deleteTemplate('guild123', 'sprint-team');
+
+      expect(mockWriteFile).toHaveBeenCalledWith(testDataPath, '[]', 'utf8');
+    });
+
+    it('should throw when template is not found', async () => {
+      mockReadFile.mockResolvedValue('[]');
+
+      await expect(storage.deleteTemplate('guild123', 'nonexistent')).rejects.toThrow(
+        'Template "nonexistent" not found in this server',
+      );
+    });
+  });
 });
