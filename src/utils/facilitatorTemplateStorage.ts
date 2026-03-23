@@ -39,4 +39,33 @@ export class FacilitatorTemplateStorage {
       throw error;
     }
   }
+
+  async upsertTemplate(template: FacilitatorTemplate): Promise<void> {
+    const templates = await this.loadTemplates();
+    const existingIndex = templates.findIndex(
+      (t) => t.guildId === template.guildId && t.name === template.name,
+    );
+
+    if (existingIndex === -1) {
+      templates.push(template);
+    } else {
+      templates[existingIndex] = {
+        ...template,
+        id: templates[existingIndex].id,              // preserve original id
+        createdAt: templates[existingIndex].createdAt, // preserve original createdAt
+      };
+    }
+
+    await this.saveTemplates(templates);
+  }
+
+  async getTemplatesByGuild(guildId: string): Promise<FacilitatorTemplate[]> {
+    const templates = await this.loadTemplates();
+    return templates.filter((t) => t.guildId === guildId);
+  }
+
+  async getTemplateByName(guildId: string, name: string): Promise<FacilitatorTemplate | undefined> {
+    const templates = await this.loadTemplates();
+    return templates.find((t) => t.guildId === guildId && t.name === name);
+  }
 }

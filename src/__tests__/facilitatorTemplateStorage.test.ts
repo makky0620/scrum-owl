@@ -1,6 +1,6 @@
 // src/__tests__/facilitatorTemplateStorage.test.ts
 import { FacilitatorTemplateStorage } from '../utils/facilitatorTemplateStorage';
-import type { FacilitatorTemplate } from '../models/facilitatorTemplate';
+import type { FacilitatorTemplate, StoredFacilitatorTemplate } from '../models/facilitatorTemplate';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -98,6 +98,94 @@ describe('FacilitatorTemplateStorage', () => {
       mockWriteFile.mockRejectedValue(new Error('Write failed'));
 
       await expect(storage.saveTemplates([mockTemplate])).rejects.toThrow('Write failed');
+    });
+  });
+
+  describe('upsertTemplate', () => {
+    it('should add a new template when name does not exist', async () => {
+      mockReadFile.mockResolvedValue('[]');
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      await storage.upsertTemplate(mockTemplate);
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        testDataPath,
+        expect.stringContaining('"name": "sprint-team"'),
+        'utf8',
+      );
+    });
+
+    it('should overwrite existing template preserving createdAt and id', async () => {
+      const originalCreatedAt = '2026-01-01T00:00:00.000Z';
+      const stored = [{ ...mockTemplate, createdAt: originalCreatedAt, updatedAt: originalCreatedAt }];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      const updated: FacilitatorTemplate = {
+        ...mockTemplate,
+        participants: ['Alice', 'Bob', 'Dave'],
+        updatedAt: new Date('2026-02-01T00:00:00.000Z'),
+      };
+
+      await storage.upsertTemplate(updated);
+
+      const writtenData = JSON.parse(
+        (mockWriteFile.mock.calls[0][1] as string)
+      ) as StoredFacilitatorTemplate[];
+      expect(writtenData).toHaveLength(1);
+      expect(writtenData[0].participants).toEqual(['Alice', 'Bob', 'Dave']);
+      expect(writtenData[0].createdAt).toBe(originalCreatedAt);
+      expect(writtenData[0].id).toBe('test-id-1'); // original id preserved
+    });
+  });
+
+  describe('getTemplatesByGuild', () => {
+    it('should return only templates for the given guild', async () => {
+      const stored = [
+        { ...mockTemplate, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+        { ...mockTemplate, id: 'test-id-2', guildId: 'guild456', name: 'other-team', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+      ];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+
+      const result = await storage.getTemplatesByGuild('guild123');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].guildId).toBe('guild123');
+    });
+  });
+
+  describe('getTemplateByName', () => {
+    it('should return the template matching guildId and name', async () => {
+      const stored = [
+        { ...mockTemplate, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+      ];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+
+      const result = await storage.getTemplateByName('guild123', 'sprint-team');
+
+      expect(result).toBeDefined();
+      expect(result!.name).toBe('sprint-team');
+    });
+
+    it('should return undefined when not found', async () => {
+      mockReadFile.mockResolvedValue('[]');
+
+      const result = await storage.getTemplateByName('guild123', 'nonexistent');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should not return templates from other guilds with the same name', async () => {
+      const stored = [
+        { ...mockTemplate, guildId: 'guild456', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+      ];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+
+      const result = await storage.getTemplateByName('guild123', 'sprint-team');
+
+      expect(result).toBeUndefined();
     });
   });
 });
