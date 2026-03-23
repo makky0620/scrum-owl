@@ -1,5 +1,5 @@
 import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
-import { Command } from './command';
+import type { Command } from './command';
 import { ReminderScheduler } from './services/reminderScheduler';
 import { ReminderStorage } from './utils/storage';
 import * as fs from 'fs';
@@ -27,91 +27,93 @@ const commandFiles = fs
   .readdirSync(commandsPath)
   .filter((file) => file.endsWith('.js') || file.endsWith('.ts'));
 
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const command = require(filePath);
+async function main(): Promise<void> {
+  // Load commands
+  for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = (await import(filePath)).default;
 
-  // Set a new item in the Collection with the key as the command name and the value as the exported module
-  if ('data' in command && 'execute' in command) {
-    client.commands.set(command.data.name, command);
-    logger.log(`[INFO] Loaded command: ${command.data.name}`);
-  } else {
-    logger.log(
-      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
-    );
+    if ('data' in command && 'execute' in command) {
+      client.commands.set(command.data.name, command);
+      logger.log(`[INFO] Loaded command: ${command.data.name}`);
+    } else {
+      logger.log(
+        `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
+      );
+    }
   }
+
+  // When the client is ready, run this code (only once)
+  client.once(Events.ClientReady, (readyClient) => {
+    logger.log(`[INFO] Ready! Logged in as ${readyClient.user.tag}`);
+    reminderScheduler.start();
+    logger.log('[INFO] Reminder scheduler started');
+  });
+
+  // Handle interactions
+  client.on(Events.InteractionCreate, async (interaction) => {
+    // Handle slash command interactions
+    if (interaction.isChatInputCommand()) {
+      const command = client.commands.get(interaction.commandName);
+
+      if (!command) {
+        logger.error(`[ERROR] No command matching ${interaction.commandName} was found.`);
+        return;
+      }
+
+      try {
+        await command.execute(interaction);
+      } catch (error) {
+        logger.error(`[ERROR] Error executing command ${interaction.commandName}:`, error);
+        await safeReply(interaction, 'There was an error while executing this command!');
+      }
+      return;
+    }
+
+    // Handle modal submit interactions
+    if (interaction.isModalSubmit()) {
+      const customId = interaction.customId;
+      let commandName = '';
+
+      if (customId.startsWith('edit-reminder-modal:')) {
+        commandName = 'reminder';
+      }
+
+      if (!commandName) {
+        logger.error(`[ERROR] Could not determine command for modal submission: ${customId}`);
+        return;
+      }
+
+      const command = client.commands.get(commandName);
+
+      if (!command) {
+        logger.error(`[ERROR] No command matching ${commandName} was found for modal submission.`);
+        return;
+      }
+
+      if (!command.handleModalSubmit) {
+        logger.error(`[ERROR] Command ${commandName} does not support modal submissions.`);
+        return;
+      }
+
+      try {
+        await command.handleModalSubmit(interaction);
+      } catch (error) {
+        logger.error(`[ERROR] Error handling modal submission for ${commandName}:`, error);
+        await safeReply(interaction, 'There was an error while processing your submission!');
+      }
+      return;
+    }
+  });
+
+  // Log in to Discord with your client's token
+  client.login(process.env.DISCORD_TOKEN);
 }
 
-// When the client is ready, run this code (only once)
-client.once(Events.ClientReady, (readyClient) => {
-  logger.log(`[INFO] Ready! Logged in as ${readyClient.user.tag}`);
-
-  // Start the reminder scheduler
-  reminderScheduler.start();
-  logger.log('[INFO] Reminder scheduler started');
+main().catch((error: unknown) => {
+  logger.error('[ERROR] Failed to initialize bot:', error);
+  process.exit(1);
 });
-
-// Handle interactions
-client.on(Events.InteractionCreate, async (interaction) => {
-  // Handle slash command interactions
-  if (interaction.isChatInputCommand()) {
-    const command = client.commands.get(interaction.commandName);
-
-    if (!command) {
-      logger.error(`[ERROR] No command matching ${interaction.commandName} was found.`);
-      return;
-    }
-
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      logger.error(`[ERROR] Error executing command ${interaction.commandName}:`, error);
-      await safeReply(interaction, 'There was an error while executing this command!');
-    }
-    return;
-  }
-
-  // Handle modal submit interactions
-  if (interaction.isModalSubmit()) {
-    // Extract command name from modal custom ID (format: "commandName-modal:data")
-    const customId = interaction.customId;
-    let commandName = '';
-
-    // Check for reminder edit modal
-    if (customId.startsWith('edit-reminder-modal:')) {
-      commandName = 'reminder';
-    }
-
-    if (!commandName) {
-      logger.error(`[ERROR] Could not determine command for modal submission: ${customId}`);
-      return;
-    }
-
-    const command = client.commands.get(commandName);
-
-    if (!command) {
-      logger.error(`[ERROR] No command matching ${commandName} was found for modal submission.`);
-      return;
-    }
-
-    if (!command.handleModalSubmit) {
-      logger.error(`[ERROR] Command ${commandName} does not support modal submissions.`);
-      return;
-    }
-
-    try {
-      await command.handleModalSubmit(interaction);
-    } catch (error) {
-      logger.error(`[ERROR] Error handling modal submission for ${commandName}:`, error);
-      await safeReply(interaction, 'There was an error while processing your submission!');
-    }
-    return;
-  }
-});
-
-// Log in to Discord with your client's token
-client.login(process.env.DISCORD_TOKEN);
 
 // Graceful shutdown handling
 process.on('SIGINT', () => {
