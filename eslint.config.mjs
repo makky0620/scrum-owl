@@ -10,16 +10,18 @@ export default [
   {
     languageOptions: {
       globals: {
-        ...globals.browser,
         ...globals.node,
       },
     },
     rules: {
       'no-unused-vars': 'off',
-      'no-console': 'warn',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-require-imports': 'warn',
+      'no-console': 'error',
+      'eqeqeq': ['error', 'always'],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-require-imports': 'error',
+      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/explicit-function-return-type': ['error', { allowExpressions: true }],
     },
   },
   {
