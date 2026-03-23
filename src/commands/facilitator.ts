@@ -293,6 +293,14 @@ async function handleTemplateUse(interaction: ChatInputCommandInteraction): Prom
     return;
   }
 
+  if (template.participants.length === 0) {
+    await interaction.reply({
+      content: 'Please provide at least one participant name.',
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
   await runRoulette(interaction, template.participants);
 }
 
@@ -306,6 +314,8 @@ async function handleTemplateDelete(interaction: ChatInputCommandInteraction): P
       flags: MessageFlags.Ephemeral,
     });
   } catch (error) {
+    // Note: matches the exact error message thrown by FacilitatorTemplateStorage.deleteTemplate.
+    // If that message changes, update this string too.
     if (error instanceof Error && error.message === `Template "${name}" not found in this server`) {
       await interaction.reply({
         content: `Template **${name}** not found. Use \`/facilitator template list\` to see available templates.`,
@@ -339,7 +349,7 @@ async function handleTemplateList(interaction: ChatInputCommandInteraction): Pro
     const suffix = t.participants.length > 3 ? '...' : '';
     embed.addFields({
       name: t.name,
-      value: `${t.participants.length} participants: ${preview}${suffix}`,
+      value: `${t.participants.length} ${t.participants.length === 1 ? 'participant' : 'participants'}: ${preview}${suffix}`,
       inline: false,
     });
   }
