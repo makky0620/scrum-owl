@@ -7,7 +7,7 @@ import { logger } from './utils/logger';
 // Load environment variables
 dotenv.config();
 
-const commands = [];
+const commands: object[] = [];
 
 // Load commands from the commands directory
 const commandsPath = path.join(__dirname, 'commands');
@@ -15,26 +15,25 @@ const commandFiles = fs
   .readdirSync(commandsPath)
   .filter((file) => file.endsWith('.js') || file.endsWith('.ts'));
 
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const command = require(filePath);
-
-  if ('data' in command && 'execute' in command) {
-    commands.push(command.data.toJSON());
-    logger.log(`[INFO] Loaded command for deployment: ${command.data.name}`);
-  } else {
-    logger.log(
-      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
-    );
-  }
-}
-
 // Construct and prepare an instance of the REST module
 const rest = new REST().setToken(process.env.DISCORD_TOKEN!);
 
 // Deploy commands
 (async () => {
+  for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const command = (await import(filePath)).default;
+
+    if ('data' in command && 'execute' in command) {
+      commands.push(command.data.toJSON());
+      logger.log(`[INFO] Loaded command for deployment: ${command.data.name}`);
+    } else {
+      logger.log(
+        `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
+      );
+    }
+  }
+
   try {
     logger.log(`[INFO] Started refreshing ${commands.length} application (/) commands.`);
 
