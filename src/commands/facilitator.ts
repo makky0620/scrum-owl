@@ -213,6 +213,7 @@ const command: Command = {
       } else if (subcommand === 'list') {
         await handleTemplateList(interaction);
       }
+      // No else needed: Discord enforces valid subcommand values via the builder
     } else {
       // subcommand === 'run'
       await handleRun(interaction);
@@ -292,14 +293,6 @@ async function handleTemplateUse(interaction: ChatInputCommandInteraction): Prom
     return;
   }
 
-  if (template.participants.length === 0) {
-    await interaction.reply({
-      content: 'Please provide at least one participant name.',
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
   await runRoulette(interaction, template.participants);
 }
 
@@ -312,11 +305,15 @@ async function handleTemplateDelete(interaction: ChatInputCommandInteraction): P
       content: `Template **${name}** has been deleted.`,
       flags: MessageFlags.Ephemeral,
     });
-  } catch {
-    await interaction.reply({
-      content: `Template **${name}** not found. Use \`/facilitator template list\` to see available templates.`,
-      flags: MessageFlags.Ephemeral,
-    });
+  } catch (error) {
+    if (error instanceof Error && error.message === `Template "${name}" not found in this server`) {
+      await interaction.reply({
+        content: `Template **${name}** not found. Use \`/facilitator template list\` to see available templates.`,
+        flags: MessageFlags.Ephemeral,
+      });
+    } else {
+      throw error;
+    }
   }
 }
 
