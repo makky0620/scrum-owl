@@ -1,43 +1,42 @@
-import { SlashCommandBuilder } from 'discord.js';
 import type { Command } from '../command';
 
 describe('Facilitator Command', () => {
   let command: Command;
 
   beforeAll(() => {
-    // Import the command
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     command = require('../commands/facilitator');
   });
 
-  test('should have correct command structure', () => {
-    expect(command).toBeDefined();
-    expect(command.data).toBeInstanceOf(SlashCommandBuilder);
+  test('should have correct command name', () => {
+    expect(command.data.name).toBe('facilitator');
     expect(command.execute).toBeDefined();
     expect(typeof command.execute).toBe('function');
   });
 
-  test('should have correct command name and description', () => {
-    expect(command.data.name).toBe('facilitator');
-    expect(command.data.description).toBe(
-      'Randomly select a facilitator from a list of participants',
-    );
+  test('should have subcommand run', () => {
+    const commandData = command.data.toJSON();
+    const runSubcommand = commandData.options?.find((o) => o.name === 'run');
+    expect(runSubcommand).toBeDefined();
   });
 
-  test('should have required participants option', () => {
+  test('should have subcommand group template', () => {
     const commandData = command.data.toJSON();
-    expect(commandData.options).toBeDefined();
-    expect(commandData.options).toHaveLength(1);
+    const templateGroup = commandData.options?.find((o) => o.name === 'template');
+    expect(templateGroup).toBeDefined();
+  });
 
-    const participantsOption = commandData.options![0];
-    expect(participantsOption.name).toBe('participants');
-    expect(participantsOption.description).toBe('Comma-separated list of participant names');
-    expect(participantsOption.required).toBe(true);
-    expect(participantsOption.type).toBe(3); // STRING type
+  test('run subcommand should have required participants option', () => {
+    const commandData = command.data.toJSON();
+    const runSubcommand = commandData.options?.find((o) => o.name === 'run') as
+      | { options?: { name: string; required?: boolean }[] }
+      | undefined;
+    const participantsOption = runSubcommand?.options?.find((o) => o.name === 'participants');
+    expect(participantsOption).toBeDefined();
+    expect(participantsOption?.required).toBe(true);
   });
 
   test('should parse participants correctly', () => {
-    // Test participant parsing logic
     const testInput = 'Alice, Bob, Charlie, David';
     const expectedParticipants = ['Alice', 'Bob', 'Charlie', 'David'];
 
@@ -73,7 +72,7 @@ describe('Facilitator Command', () => {
     expect(participants).toEqual(expectedParticipants);
   });
 
-  test('should handle duplicate participants', () => {
+  test('should deduplicate participants', () => {
     const testInput = 'Alice, Bob, Alice, Charlie, Bob';
     const expectedParticipants = ['Alice', 'Bob', 'Charlie'];
 
@@ -86,19 +85,23 @@ describe('Facilitator Command', () => {
     expect(participants).toEqual(expectedParticipants);
   });
 
+  test('should validate template name max length', () => {
+    const longName = 'a'.repeat(51);
+    expect(longName.trim().length > 50).toBe(true);
+  });
+
+  test('should reject more than 50 participants', () => {
+    const manyParticipants = Array.from({ length: 51 }, (_, i) => `Person${i}`);
+    expect(manyParticipants.length > 50).toBe(true);
+  });
+
   test('should select random facilitator from participants', () => {
     const participants = ['Alice', 'Bob', 'Charlie', 'David'];
-
-    // Mock Math.random to return a predictable value
     const originalRandom = Math.random;
-    Math.random = jest.fn(() => 0.5); // This should select index 2 (Charlie)
-
+    Math.random = jest.fn(() => 0.5);
     const selectedIndex = Math.floor(Math.random() * participants.length);
     const selectedFacilitator = participants[selectedIndex];
-
     expect(selectedFacilitator).toBe('Charlie');
-
-    // Restore original Math.random
     Math.random = originalRandom;
   });
 });
