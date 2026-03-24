@@ -30,7 +30,7 @@ async function runRoulette(
 ): Promise<void> {
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
-    .setTitle('Facilitator Selection')
+    .setTitle('Rotation Selection')
     .setDescription('Selecting a random facilitator...')
     .addFields({ name: 'Participants', value: participants.join('\n'), inline: false })
     .setTimestamp()
@@ -86,7 +86,7 @@ async function runRoulette(
         const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
         const spinEmbed = new EmbedBuilder()
           .setColor('#0099ff')
-          .setTitle('Facilitator Selection')
+          .setTitle('Rotation Selection')
           .setDescription(`Selecting... ${emojis[spin % emojis.length]}`)
           .addFields({ name: 'Participants', value: shuffledParticipants.join('\n'), inline: false })
           .setTimestamp()
@@ -101,11 +101,11 @@ async function runRoulette(
 
       const resultEmbed = new EmbedBuilder()
         .setColor('#00FF00')
-        .setTitle('🎉 Facilitator Selected! 🎉')
-        .setDescription(`**${selectedFacilitator}** has been selected as the facilitator!`)
+        .setTitle('🎉 Selected! 🎉')
+        .setDescription(`**${selectedFacilitator}** has been selected!`)
         .addFields({ name: 'All Participants', value: participants.join('\n'), inline: false })
         .setTimestamp()
-        .setFooter({ text: 'Thanks for using the Facilitator Selector!' });
+        .setFooter({ text: 'Thanks for using the Rotation Selector!' });
 
       await interaction.editReply({ embeds: [resultEmbed], components: [] });
       selectionMade = true;
@@ -113,7 +113,7 @@ async function runRoulette(
     } else if (i.customId === 'cancel_selection') {
       const cancelEmbed = new EmbedBuilder()
         .setColor('#FF0000')
-        .setTitle('Facilitator Selection')
+        .setTitle('Rotation Selection')
         .setDescription('Selection cancelled.')
         .setTimestamp();
 
@@ -127,7 +127,7 @@ async function runRoulette(
     if (!selectionMade) {
       const timeoutEmbed = new EmbedBuilder()
         .setColor('#FF0000')
-        .setTitle('Facilitator Selection')
+        .setTitle('Rotation Selection')
         .setDescription('Selection timed out.')
         .setTimestamp();
 
@@ -138,8 +138,8 @@ async function runRoulette(
 
 const command: Command = {
   data: new SlashCommandBuilder()
-    .setName('facilitator')
-    .setDescription('Facilitator selection tools')
+    .setName('rotate')
+    .setDescription('Rotation selection tools')
     .setDMPermission(false)
     .addSubcommand((subcommand) =>
       subcommand
@@ -287,7 +287,7 @@ async function handleTemplateUse(interaction: ChatInputCommandInteraction): Prom
 
   if (!template) {
     await interaction.reply({
-      content: `Template **${name}** not found. Use \`/facilitator template list\` to see available templates.`,
+      content: `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -318,7 +318,7 @@ async function handleTemplateDelete(interaction: ChatInputCommandInteraction): P
     // If that message changes, update this string too.
     if (error instanceof Error && error.message === `Template "${name}" not found in this server`) {
       await interaction.reply({
-        content: `Template **${name}** not found. Use \`/facilitator template list\` to see available templates.`,
+        content: `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
         flags: MessageFlags.Ephemeral,
       });
     } else {
@@ -333,7 +333,7 @@ async function handleTemplateList(interaction: ChatInputCommandInteraction): Pro
   if (templates.length === 0) {
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle('Facilitator Templates')
+      .setTitle('Rotation Templates')
       .setDescription('No templates saved yet.')
       .setTimestamp();
 
@@ -342,7 +342,7 @@ async function handleTemplateList(interaction: ChatInputCommandInteraction): Pro
   }
 
   const displayTemplates = templates.slice(0, 25);
-  const embed = new EmbedBuilder().setColor('#0099ff').setTitle('Facilitator Templates').setTimestamp();
+  const embed = new EmbedBuilder().setColor('#0099ff').setTitle('Rotation Templates').setTimestamp();
 
   for (const t of displayTemplates) {
     const preview = t.participants.slice(0, 3).join(', ');

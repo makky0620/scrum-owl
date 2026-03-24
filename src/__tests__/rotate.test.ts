@@ -5,11 +5,11 @@ describe('Facilitator Command', () => {
 
   beforeAll(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    command = require('../commands/facilitator');
+    command = require('../commands/rotate');
   });
 
   test('should have correct command name', () => {
-    expect(command.data.name).toBe('facilitator');
+    expect(command.data.name).toBe('rotate');
     expect(command.execute).toBeDefined();
     expect(typeof command.execute).toBe('function');
   });
@@ -95,13 +95,4 @@ describe('Facilitator Command', () => {
     expect(manyParticipants.length > 50).toBe(true);
   });
 
-  test('should select random facilitator from participants', () => {
-    const participants = ['Alice', 'Bob', 'Charlie', 'David'];
-    const originalRandom = Math.random;
-    Math.random = jest.fn(() => 0.5);
-    const selectedIndex = Math.floor(Math.random() * participants.length);
-    const selectedFacilitator = participants[selectedIndex];
-    expect(selectedFacilitator).toBe('Charlie');
-    Math.random = originalRandom;
-  });
 });
