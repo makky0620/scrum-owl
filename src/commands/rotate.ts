@@ -31,7 +31,7 @@ async function runRoulette(
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
     .setTitle('Rotation Selection')
-    .setDescription('Selecting a random facilitator...')
+    .setDescription('Selecting random participants...')
     .addFields({ name: 'Participants', value: participants.join('\n'), inline: false })
     .setTimestamp()
     .setFooter({ text: 'Click the button to start the selection' });
@@ -144,7 +144,7 @@ const command: Command = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('run')
-        .setDescription('Randomly select a facilitator from a list of participants')
+        .setDescription('Randomly select participants from a list')
         .addStringOption((option) =>
           option
             .setName('participants')

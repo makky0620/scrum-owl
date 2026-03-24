@@ -1,6 +1,6 @@
 import type { Command } from '../command';
 
-describe('Facilitator Command', () => {
+describe('Rotate Command', () => {
   let command: Command;
 
   beforeAll(() => {
