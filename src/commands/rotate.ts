@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 import type { Command } from '../command';
 import { FacilitatorTemplateStorage } from '../utils/facilitatorTemplateStorage';
 import { safeReply } from '../utils/interactionHelpers';
+import { selectParticipants } from '../utils/rotateHelpers';
 
 const emojis = ['🎲', '🎯', '🎮', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎺', '🎸', '🎹', '🎻', '🎼'];
 
@@ -27,6 +28,7 @@ function parseParticipants(input: string): string[] {
 async function runRoulette(
   interaction: ChatInputCommandInteraction,
   participants: string[],
+  count: number = 1,
 ): Promise<void> {
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
@@ -96,13 +98,22 @@ async function runRoulette(
         await new Promise((resolve) => setTimeout(resolve, spinningInterval));
       }
 
-      const selectedIndex = Math.floor(Math.random() * participants.length);
-      const selectedFacilitator = participants[selectedIndex];
+      const selected = selectParticipants(participants, count);
+
+      let resultTitle: string;
+      let resultDescription: string;
+      if (count === 1) {
+        resultTitle = '🎉 Selected! 🎉';
+        resultDescription = `**${selected[0]}** has been selected!`;
+      } else {
+        resultTitle = `🎉 Selected (${count})! 🎉`;
+        resultDescription = selected.map((name, i) => `${i + 1}. ${name}`).join('\n');
+      }
 
       const resultEmbed = new EmbedBuilder()
         .setColor('#00FF00')
-        .setTitle('🎉 Selected! 🎉')
-        .setDescription(`**${selectedFacilitator}** has been selected!`)
+        .setTitle(resultTitle)
+        .setDescription(resultDescription)
         .addFields({ name: 'All Participants', value: participants.join('\n'), inline: false })
         .setTimestamp()
         .setFooter({ text: 'Thanks for using the Rotation Selector!' });
@@ -150,6 +161,13 @@ const command: Command = {
             .setName('participants')
             .setDescription('Comma-separated list of participant names')
             .setRequired(true),
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName('count')
+            .setDescription('Number of participants to select (default: 1)')
+            .setRequired(false)
+            .setMinValue(1),
         ),
     )
     .addSubcommandGroup((group) =>
@@ -221,13 +239,22 @@ const command: Command = {
 async function handleRun(interaction: ChatInputCommandInteraction): Promise<void> {
   const participantsInput = interaction.options.getString('participants', true);
   const participants = parseParticipants(participantsInput);
+  const count = interaction.options.getInteger('count', false) ?? 1;
 
   if (participants.length === 0) {
     await safeReply(interaction, 'Please provide at least one participant name.');
     return;
   }
 
-  await runRoulette(interaction, participants);
+  if (count >= participants.length) {
+    await safeReply(
+      interaction,
+      `count must be less than the number of participants (got count=${count} with ${participants.length} participants).`,
+    );
+    return;
+  }
+
+  await runRoulette(interaction, participants, count);
 }
 
 async function handleTemplateSave(interaction: ChatInputCommandInteraction): Promise<void> {
