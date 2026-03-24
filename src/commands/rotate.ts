@@ -6,11 +6,11 @@ import {
   ButtonStyle,
   EmbedBuilder,
   ComponentType,
-  MessageFlags,
 } from 'discord.js';
 import { randomUUID } from 'crypto';
 import type { Command } from '../command';
 import { FacilitatorTemplateStorage } from '../utils/facilitatorTemplateStorage';
+import { safeReply } from '../utils/interactionHelpers';
 
 const emojis = ['🎲', '🎯', '🎮', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎺', '🎸', '🎹', '🎻', '🎼'];
 
@@ -193,10 +193,7 @@ const command: Command = {
 
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guildId) {
-      await interaction.reply({
-        content: 'This command can only be used in a server.',
-        flags: MessageFlags.Ephemeral,
-      });
+      await safeReply(interaction, 'This command can only be used in a server.');
       return;
     }
 
@@ -226,10 +223,7 @@ async function handleRun(interaction: ChatInputCommandInteraction): Promise<void
   const participants = parseParticipants(participantsInput);
 
   if (participants.length === 0) {
-    await interaction.reply({
-      content: 'Please provide at least one participant name.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await safeReply(interaction, 'Please provide at least one participant name.');
     return;
   }
 
@@ -242,26 +236,17 @@ async function handleTemplateSave(interaction: ChatInputCommandInteraction): Pro
   const participants = parseParticipants(participantsInput);
 
   if (name.length === 0 || name.length > 50) {
-    await interaction.reply({
-      content: 'Template name must be between 1 and 50 characters.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await safeReply(interaction, 'Template name must be between 1 and 50 characters.');
     return;
   }
 
   if (participants.length === 0) {
-    await interaction.reply({
-      content: 'Please provide at least one participant name.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await safeReply(interaction, 'Please provide at least one participant name.');
     return;
   }
 
   if (participants.length > 50) {
-    await interaction.reply({
-      content: 'A template can have at most 50 participants.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await safeReply(interaction, 'A template can have at most 50 participants.');
     return;
   }
 
@@ -275,10 +260,7 @@ async function handleTemplateSave(interaction: ChatInputCommandInteraction): Pro
     updatedAt: now,
   });
 
-  await interaction.reply({
-    content: `Template **${name}** saved with ${participants.length} participant(s).`,
-    flags: MessageFlags.Ephemeral,
-  });
+  await safeReply(interaction, `Template **${name}** saved with ${participants.length} participant(s).`);
 }
 
 async function handleTemplateUse(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -286,18 +268,15 @@ async function handleTemplateUse(interaction: ChatInputCommandInteraction): Prom
   const template = await templateStorage.getTemplateByName(interaction.guildId!, name);
 
   if (!template) {
-    await interaction.reply({
-      content: `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
-      flags: MessageFlags.Ephemeral,
-    });
+    await safeReply(
+      interaction,
+      `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
+    );
     return;
   }
 
   if (template.participants.length === 0) {
-    await interaction.reply({
-      content: 'Please provide at least one participant name.',
-      flags: MessageFlags.Ephemeral,
-    });
+    await safeReply(interaction, 'Please provide at least one participant name.');
     return;
   }
 
@@ -309,18 +288,13 @@ async function handleTemplateDelete(interaction: ChatInputCommandInteraction): P
 
   try {
     await templateStorage.deleteTemplate(interaction.guildId!, name);
-    await interaction.reply({
-      content: `Template **${name}** has been deleted.`,
-      flags: MessageFlags.Ephemeral,
-    });
+    await safeReply(interaction, `Template **${name}** has been deleted.`);
   } catch (error) {
-    // Note: matches the exact error message thrown by FacilitatorTemplateStorage.deleteTemplate.
-    // If that message changes, update this string too.
     if (error instanceof Error && error.message === `Template "${name}" not found in this server`) {
-      await interaction.reply({
-        content: `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
-        flags: MessageFlags.Ephemeral,
-      });
+      await safeReply(
+        interaction,
+        `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
+      );
     } else {
       throw error;
     }
