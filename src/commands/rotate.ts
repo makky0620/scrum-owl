@@ -194,6 +194,13 @@ const command: Command = {
             .setDescription('Run the roulette using a saved template')
             .addStringOption((option) =>
               option.setName('name').setDescription('Template name').setRequired(true),
+            )
+            .addIntegerOption((option) =>
+              option
+                .setName('count')
+                .setDescription('Number of participants to select (default: 1)')
+                .setRequired(false)
+                .setMinValue(1),
             ),
         )
         .addSubcommand((subcommand) =>
@@ -292,6 +299,7 @@ async function handleTemplateSave(interaction: ChatInputCommandInteraction): Pro
 
 async function handleTemplateUse(interaction: ChatInputCommandInteraction): Promise<void> {
   const name = interaction.options.getString('name', true).trim();
+  const count = interaction.options.getInteger('count', false) ?? 1;
   const template = await templateStorage.getTemplateByName(interaction.guildId!, name);
 
   if (!template) {
@@ -307,7 +315,15 @@ async function handleTemplateUse(interaction: ChatInputCommandInteraction): Prom
     return;
   }
 
-  await runRoulette(interaction, template.participants);
+  if (count >= template.participants.length) {
+    await safeReply(
+      interaction,
+      `count must be less than the number of participants (got count=${count} with ${template.participants.length} participants).`,
+    );
+    return;
+  }
+
+  await runRoulette(interaction, template.participants, count);
 }
 
 async function handleTemplateDelete(interaction: ChatInputCommandInteraction): Promise<void> {

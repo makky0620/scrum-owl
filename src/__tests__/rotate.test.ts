@@ -124,6 +124,26 @@ describe('Rotate Command', () => {
     result.forEach((p) => expect(participants).toContain(p));
   });
 
+  test('template use subcommand should have optional count integer option', () => {
+    const commandData = command.data.toJSON();
+    const templateGroup = commandData.options?.find((o) => o.name === 'template') as
+      | {
+          options?: {
+            name: string;
+            options?: { name: string; required?: boolean; type: number; min_value?: number }[];
+          }[];
+        }
+      | undefined;
+    const useSubcommand = templateGroup?.options?.find((o) => o.name === 'use') as
+      | { options?: { name: string; required?: boolean; type: number; min_value?: number }[] }
+      | undefined;
+    const countOption = useSubcommand?.options?.find((o) => o.name === 'count');
+    expect(countOption).toBeDefined();
+    expect(countOption?.required).toBeFalsy();
+    expect(countOption?.type).toBe(4);
+    expect(countOption?.min_value).toBe(1);
+  });
+
   test('count >= participants.length produces correct error message', () => {
     const count = 3;
     const participantCount = 3;
