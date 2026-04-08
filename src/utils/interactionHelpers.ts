@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction, ModalSubmitInteraction} from 'discord.js';
+import type { ChatInputCommandInteraction, ModalSubmitInteraction } from 'discord.js';
 import { MessageFlags } from 'discord.js';
 
 type RepliableInteraction = ChatInputCommandInteraction | ModalSubmitInteraction;

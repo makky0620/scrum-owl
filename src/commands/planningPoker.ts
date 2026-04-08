@@ -1,7 +1,4 @@
-import type {
-  ChatInputCommandInteraction,
-  ButtonInteraction,
-  Message} from 'discord.js';
+import type { ChatInputCommandInteraction, ButtonInteraction, Message } from 'discord.js';
 import {
   SlashCommandBuilder,
   ActionRowBuilder,
