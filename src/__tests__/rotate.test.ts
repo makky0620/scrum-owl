@@ -109,19 +109,50 @@ describe('Rotate Command', () => {
     expect(countOption?.min_value).toBe(1);
   });
 
-  test('selectParticipants with count=1 returns 1 participant', () => {
-    const participants = ['Alice', 'Bob', 'Charlie'];
-    const result = selectParticipants(participants, 1);
-    expect(result).toHaveLength(1);
-    expect(participants).toContain(result[0]);
-  });
+  describe('selectParticipants', () => {
+    test('returns the requested number of participants', () => {
+      const result = selectParticipants(['Alice', 'Bob', 'Charlie'], 2, {});
+      expect(result).toHaveLength(2);
+    });
 
-  test('selectParticipants with count=2 returns 2 distinct participants', () => {
-    const participants = ['Alice', 'Bob', 'Charlie', 'David'];
-    const result = selectParticipants(participants, 2);
-    expect(result).toHaveLength(2);
-    expect(new Set(result).size).toBe(2);
-    result.forEach((p) => expect(participants).toContain(p));
+    test('all returned participants are from the input list', () => {
+      const participants = ['Alice', 'Bob', 'Charlie', 'David'];
+      const result = selectParticipants(participants, 2, {});
+      result.forEach((p) => expect(participants).toContain(p));
+    });
+
+    test('returns distinct participants (no duplicates)', () => {
+      const participants = ['Alice', 'Bob', 'Charlie', 'David'];
+      const result = selectParticipants(participants, 3, {});
+      expect(new Set(result).size).toBe(3);
+    });
+
+    test('works with no selectionCounts argument (defaults to equal weights)', () => {
+      const result = selectParticipants(['Alice', 'Bob', 'Charlie'], 1);
+      expect(result).toHaveLength(1);
+      expect(['Alice', 'Bob', 'Charlie']).toContain(result[0]);
+    });
+
+    test('participant with count=0 has higher weight than participant with count=5', () => {
+      // With Alice at 5 picks and Bob at 0, Bob should have a much higher weight.
+      // Weights: Alice = 1/(5+1) = 0.167, Bob = 1/(0+1) = 1.0, total = 1.167
+      // random * total = 0.9 * 1.167 = 1.05
+      // 1.05 - 0.167 = 0.883 (skip Alice)
+      // 0.883 - 1.0 = -0.117 <= 0 → Bob selected
+      const spy = jest.spyOn(Math, 'random').mockReturnValue(0.9);
+      const result = selectParticipants(['Alice', 'Bob'], 1, { Alice: 5, Bob: 0 });
+      spy.mockRestore();
+      expect(result).toEqual(['Bob']);
+    });
+
+    test('participant with count=0 is selected when Math.random is low', () => {
+      // random * total = 0.05 * 1.167 = 0.058
+      // 0.058 - 0.167 = -0.109 <= 0 → Alice selected (first in list)
+      const spy = jest.spyOn(Math, 'random').mockReturnValue(0.05);
+      const result = selectParticipants(['Alice', 'Bob'], 1, { Alice: 5, Bob: 0 });
+      spy.mockRestore();
+      expect(result).toEqual(['Alice']);
+    });
   });
 
   test('template use subcommand should have optional count integer option', () => {
