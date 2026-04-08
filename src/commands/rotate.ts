@@ -29,7 +29,8 @@ async function runRoulette(
   interaction: ChatInputCommandInteraction,
   participants: string[],
   count: number = 1,
-): Promise<void> {
+  selectionCounts: { [name: string]: number } = {},
+): Promise<string[] | null> {
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
     .setTitle('Rotation Selection')
@@ -56,94 +57,103 @@ async function runRoulette(
     fetchReply: true,
   });
 
-  let selectionMade = false;
+  return new Promise<string[] | null>((resolve) => {
+    let selectionMade = false;
 
-  const collector = message.createMessageComponentCollector({
-    componentType: ComponentType.Button,
-    time: 5 * 60 * 1000,
-  });
+    const collector = message.createMessageComponentCollector({
+      componentType: ComponentType.Button,
+      time: 5 * 60 * 1000,
+    });
 
-  collector.on('collect', async (i: ButtonInteraction) => {
-    if (i.customId === 'start_selection') {
-      const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId('start_selection')
-          .setLabel('Selection in progress...')
-          .setStyle(ButtonStyle.Primary)
-          .setEmoji('🎲')
-          .setDisabled(true),
-        new ButtonBuilder()
-          .setCustomId('cancel_selection')
-          .setLabel('Cancel')
-          .setStyle(ButtonStyle.Danger)
-          .setDisabled(true),
-      );
+    collector.on('collect', async (i: ButtonInteraction) => {
+      if (i.customId === 'start_selection') {
+        const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId('start_selection')
+            .setLabel('Selection in progress...')
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('🎲')
+            .setDisabled(true),
+          new ButtonBuilder()
+            .setCustomId('cancel_selection')
+            .setLabel('Cancel')
+            .setStyle(ButtonStyle.Danger)
+            .setDisabled(true),
+        );
 
-      await i.update({ embeds: [embed], components: [disabledRow] });
+        await i.update({ embeds: [embed], components: [disabledRow] });
 
-      const spinningTimes = 10;
-      const spinningInterval = 500;
+        const spinningTimes = 10;
+        const spinningInterval = 500;
 
-      for (let spin = 0; spin < spinningTimes; spin++) {
-        const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
-        const spinEmbed = new EmbedBuilder()
-          .setColor('#0099ff')
-          .setTitle('Rotation Selection')
-          .setDescription(`Selecting... ${emojis[spin % emojis.length]}`)
-          .addFields({ name: 'Participants', value: shuffledParticipants.join('\n'), inline: false })
+        for (let spin = 0; spin < spinningTimes; spin++) {
+          const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+          const spinEmbed = new EmbedBuilder()
+            .setColor('#0099ff')
+            .setTitle('Rotation Selection')
+            .setDescription(`Selecting... ${emojis[spin % emojis.length]}`)
+            .addFields({
+              name: 'Participants',
+              value: shuffledParticipants.join('\n'),
+              inline: false,
+            })
+            .setTimestamp()
+            .setFooter({ text: 'Selection in progress...' });
+
+          await interaction.editReply({ embeds: [spinEmbed], components: [disabledRow] });
+          await new Promise((res) => setTimeout(res, spinningInterval));
+        }
+
+        const selected = selectParticipants(participants, count, selectionCounts);
+
+        let resultTitle: string;
+        let resultDescription: string;
+        if (count === 1) {
+          resultTitle = '🎉 Selected! 🎉';
+          resultDescription = `**${selected[0]}** has been selected!`;
+        } else {
+          resultTitle = `🎉 Selected (${count})! 🎉`;
+          resultDescription = selected.map((name, idx) => `${idx + 1}. ${name}`).join('\n');
+        }
+
+        const resultEmbed = new EmbedBuilder()
+          .setColor('#00FF00')
+          .setTitle(resultTitle)
+          .setDescription(resultDescription)
+          .addFields({ name: 'All Participants', value: participants.join('\n'), inline: false })
           .setTimestamp()
-          .setFooter({ text: 'Selection in progress...' });
+          .setFooter({ text: 'Thanks for using the Rotation Selector!' });
 
-        await interaction.editReply({ embeds: [spinEmbed], components: [disabledRow] });
-        await new Promise((resolve) => setTimeout(resolve, spinningInterval));
+        await interaction.editReply({ embeds: [resultEmbed], components: [] });
+        selectionMade = true;
+        collector.stop();
+        resolve(selected);
+      } else if (i.customId === 'cancel_selection') {
+        const cancelEmbed = new EmbedBuilder()
+          .setColor('#FF0000')
+          .setTitle('Rotation Selection')
+          .setDescription('Selection cancelled.')
+          .setTimestamp();
+
+        await i.update({ embeds: [cancelEmbed], components: [] });
+        selectionMade = true;
+        collector.stop();
+        resolve(null);
       }
+    });
 
-      const selected = selectParticipants(participants, count);
+    collector.on('end', async () => {
+      if (!selectionMade) {
+        const timeoutEmbed = new EmbedBuilder()
+          .setColor('#FF0000')
+          .setTitle('Rotation Selection')
+          .setDescription('Selection timed out.')
+          .setTimestamp();
 
-      let resultTitle: string;
-      let resultDescription: string;
-      if (count === 1) {
-        resultTitle = '🎉 Selected! 🎉';
-        resultDescription = `**${selected[0]}** has been selected!`;
-      } else {
-        resultTitle = `🎉 Selected (${count})! 🎉`;
-        resultDescription = selected.map((name, i) => `${i + 1}. ${name}`).join('\n');
+        await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
+        resolve(null);
       }
-
-      const resultEmbed = new EmbedBuilder()
-        .setColor('#00FF00')
-        .setTitle(resultTitle)
-        .setDescription(resultDescription)
-        .addFields({ name: 'All Participants', value: participants.join('\n'), inline: false })
-        .setTimestamp()
-        .setFooter({ text: 'Thanks for using the Rotation Selector!' });
-
-      await interaction.editReply({ embeds: [resultEmbed], components: [] });
-      selectionMade = true;
-      collector.stop();
-    } else if (i.customId === 'cancel_selection') {
-      const cancelEmbed = new EmbedBuilder()
-        .setColor('#FF0000')
-        .setTitle('Rotation Selection')
-        .setDescription('Selection cancelled.')
-        .setTimestamp();
-
-      await i.update({ embeds: [cancelEmbed], components: [] });
-      selectionMade = true;
-      collector.stop();
-    }
-  });
-
-  collector.on('end', async () => {
-    if (!selectionMade) {
-      const timeoutEmbed = new EmbedBuilder()
-        .setColor('#FF0000')
-        .setTitle('Rotation Selection')
-        .setDescription('Selection timed out.')
-        .setTimestamp();
-
-      await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
-    }
+    });
   });
 }
 
@@ -179,7 +189,10 @@ const command: Command = {
             .setName('save')
             .setDescription('Save a participant list as a named template')
             .addStringOption((option) =>
-              option.setName('name').setDescription('Template name (max 50 characters)').setRequired(true),
+              option
+                .setName('name')
+                .setDescription('Template name (max 50 characters)')
+                .setRequired(true),
             )
             .addStringOption((option) =>
               option
@@ -295,7 +308,10 @@ async function handleTemplateSave(interaction: ChatInputCommandInteraction): Pro
     updatedAt: now,
   });
 
-  await safeReply(interaction, `Template **${name}** saved with ${participants.length} participant(s).`);
+  await safeReply(
+    interaction,
+    `Template **${name}** saved with ${participants.length} participant(s).`,
+  );
 }
 
 async function handleTemplateUse(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -324,7 +340,19 @@ async function handleTemplateUse(interaction: ChatInputCommandInteraction): Prom
     return;
   }
 
-  await runRoulette(interaction, template.participants, count);
+  const selected = await runRoulette(
+    interaction,
+    template.participants,
+    count,
+    template.selectionCounts,
+  );
+
+  if (selected) {
+    for (const participant of selected) {
+      template.selectionCounts[participant] = (template.selectionCounts[participant] ?? 0) + 1;
+    }
+    await templateStorage.upsertTemplate(template);
+  }
 }
 
 async function handleTemplateDelete(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -360,7 +388,10 @@ async function handleTemplateList(interaction: ChatInputCommandInteraction): Pro
   }
 
   const displayTemplates = templates.slice(0, 25);
-  const embed = new EmbedBuilder().setColor('#0099ff').setTitle('Rotation Templates').setTimestamp();
+  const embed = new EmbedBuilder()
+    .setColor('#0099ff')
+    .setTitle('Rotation Templates')
+    .setTimestamp();
 
   for (const t of displayTemplates) {
     const preview = t.participants.slice(0, 3).join(', ');
