@@ -17,6 +17,7 @@ export class FacilitatorTemplateStorage {
       const stored = JSON.parse(data) as StoredFacilitatorTemplate[];
       return stored.map((t) => ({
         ...t,
+        selectionCounts: t.selectionCounts ?? {},
         createdAt: new Date(t.createdAt),
         updatedAt: new Date(t.updatedAt),
       }));

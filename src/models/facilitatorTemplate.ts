@@ -3,6 +3,7 @@ export interface FacilitatorTemplate {
   guildId: string;
   name: string;         // unique per guild, max 50 chars
   participants: string[]; // min 1, max 50 entries
+  selectionCounts: { [participantName: string]: number };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -12,6 +13,7 @@ export interface StoredFacilitatorTemplate {
   guildId: string;
   name: string;
   participants: string[];
+  selectionCounts?: { [participantName: string]: number };
   createdAt: string;
   updatedAt: string;
 }
