@@ -290,6 +290,7 @@ async function handleTemplateSave(interaction: ChatInputCommandInteraction): Pro
     guildId: interaction.guildId!,
     name,
     participants,
+    selectionCounts: {},
     createdAt: now,
     updatedAt: now,
   });

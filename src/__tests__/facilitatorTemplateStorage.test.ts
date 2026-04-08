@@ -77,6 +77,25 @@ describe('FacilitatorTemplateStorage', () => {
 
       expect(templates).toEqual([]);
     });
+
+    it('should default selectionCounts to {} when missing from stored record', async () => {
+      const stored = [
+        {
+          id: 'test-id-1',
+          guildId: 'guild123',
+          name: 'sprint-team',
+          participants: ['Alice', 'Bob'],
+          // no selectionCounts field
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+
+      const templates = await storage.loadTemplates();
+
+      expect(templates[0].selectionCounts).toEqual({});
+    });
   });
 
   describe('saveTemplates', () => {
