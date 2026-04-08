@@ -12,6 +12,7 @@ import type { Command } from '../command';
 import { FacilitatorTemplateStorage } from '../utils/facilitatorTemplateStorage';
 import { safeReply } from '../utils/interactionHelpers';
 import { selectParticipants } from '../utils/rotateHelpers';
+import { logger } from '../utils/logger';
 
 const emojis = ['🎲', '🎯', '🎮', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎺', '🎸', '🎹', '🎻', '🎼'];
 
@@ -66,78 +67,83 @@ async function runRoulette(
     });
 
     collector.on('collect', async (i: ButtonInteraction) => {
-      if (i.customId === 'start_selection') {
-        const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-          new ButtonBuilder()
-            .setCustomId('start_selection')
-            .setLabel('Selection in progress...')
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('🎲')
-            .setDisabled(true),
-          new ButtonBuilder()
-            .setCustomId('cancel_selection')
-            .setLabel('Cancel')
-            .setStyle(ButtonStyle.Danger)
-            .setDisabled(true),
-        );
+      try {
+        if (i.customId === 'start_selection') {
+          const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+              .setCustomId('start_selection')
+              .setLabel('Selection in progress...')
+              .setStyle(ButtonStyle.Primary)
+              .setEmoji('🎲')
+              .setDisabled(true),
+            new ButtonBuilder()
+              .setCustomId('cancel_selection')
+              .setLabel('Cancel')
+              .setStyle(ButtonStyle.Danger)
+              .setDisabled(true),
+          );
 
-        await i.update({ embeds: [embed], components: [disabledRow] });
+          await i.update({ embeds: [embed], components: [disabledRow] });
 
-        const spinningTimes = 10;
-        const spinningInterval = 500;
+          const spinningTimes = 10;
+          const spinningInterval = 500;
 
-        for (let spin = 0; spin < spinningTimes; spin++) {
-          const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
-          const spinEmbed = new EmbedBuilder()
-            .setColor('#0099ff')
-            .setTitle('Rotation Selection')
-            .setDescription(`Selecting... ${emojis[spin % emojis.length]}`)
-            .addFields({
-              name: 'Participants',
-              value: shuffledParticipants.join('\n'),
-              inline: false,
-            })
+          for (let spin = 0; spin < spinningTimes; spin++) {
+            const shuffledParticipants = [...participants].sort(() => Math.random() - 0.5);
+            const spinEmbed = new EmbedBuilder()
+              .setColor('#0099ff')
+              .setTitle('Rotation Selection')
+              .setDescription(`Selecting... ${emojis[spin % emojis.length]}`)
+              .addFields({
+                name: 'Participants',
+                value: shuffledParticipants.join('\n'),
+                inline: false,
+              })
+              .setTimestamp()
+              .setFooter({ text: 'Selection in progress...' });
+
+            await interaction.editReply({ embeds: [spinEmbed], components: [disabledRow] });
+            await new Promise((res) => setTimeout(res, spinningInterval));
+          }
+
+          const selected = selectParticipants(participants, count, selectionCounts);
+
+          let resultTitle: string;
+          let resultDescription: string;
+          if (count === 1) {
+            resultTitle = '🎉 Selected! 🎉';
+            resultDescription = `**${selected[0]}** has been selected!`;
+          } else {
+            resultTitle = `🎉 Selected (${count})! 🎉`;
+            resultDescription = selected.map((name, idx) => `${idx + 1}. ${name}`).join('\n');
+          }
+
+          const resultEmbed = new EmbedBuilder()
+            .setColor('#00FF00')
+            .setTitle(resultTitle)
+            .setDescription(resultDescription)
+            .addFields({ name: 'All Participants', value: participants.join('\n'), inline: false })
             .setTimestamp()
-            .setFooter({ text: 'Selection in progress...' });
+            .setFooter({ text: 'Thanks for using the Rotation Selector!' });
 
-          await interaction.editReply({ embeds: [spinEmbed], components: [disabledRow] });
-          await new Promise((res) => setTimeout(res, spinningInterval));
+          await interaction.editReply({ embeds: [resultEmbed], components: [] });
+          selectionMade = true;
+          collector.stop();
+          resolve(selected);
+        } else if (i.customId === 'cancel_selection') {
+          const cancelEmbed = new EmbedBuilder()
+            .setColor('#FF0000')
+            .setTitle('Rotation Selection')
+            .setDescription('Selection cancelled.')
+            .setTimestamp();
+
+          await i.update({ embeds: [cancelEmbed], components: [] });
+          selectionMade = true;
+          collector.stop();
+          resolve(null);
         }
-
-        const selected = selectParticipants(participants, count, selectionCounts);
-
-        let resultTitle: string;
-        let resultDescription: string;
-        if (count === 1) {
-          resultTitle = '🎉 Selected! 🎉';
-          resultDescription = `**${selected[0]}** has been selected!`;
-        } else {
-          resultTitle = `🎉 Selected (${count})! 🎉`;
-          resultDescription = selected.map((name, idx) => `${idx + 1}. ${name}`).join('\n');
-        }
-
-        const resultEmbed = new EmbedBuilder()
-          .setColor('#00FF00')
-          .setTitle(resultTitle)
-          .setDescription(resultDescription)
-          .addFields({ name: 'All Participants', value: participants.join('\n'), inline: false })
-          .setTimestamp()
-          .setFooter({ text: 'Thanks for using the Rotation Selector!' });
-
-        await interaction.editReply({ embeds: [resultEmbed], components: [] });
-        selectionMade = true;
-        collector.stop();
-        resolve(selected);
-      } else if (i.customId === 'cancel_selection') {
-        const cancelEmbed = new EmbedBuilder()
-          .setColor('#FF0000')
-          .setTitle('Rotation Selection')
-          .setDescription('Selection cancelled.')
-          .setTimestamp();
-
-        await i.update({ embeds: [cancelEmbed], components: [] });
-        selectionMade = true;
-        collector.stop();
+      } catch (err) {
+        logger.error('Error during roulette selection:', err);
         resolve(null);
       }
     });
@@ -150,8 +156,13 @@ async function runRoulette(
           .setDescription('Selection timed out.')
           .setTimestamp();
 
-        await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
-        resolve(null);
+        try {
+          await interaction.editReply({ embeds: [timeoutEmbed], components: [] });
+        } catch (err) {
+          logger.error('Error updating message on roulette timeout:', err);
+        } finally {
+          resolve(null);
+        }
       }
     });
   });
@@ -274,6 +285,7 @@ async function handleRun(interaction: ChatInputCommandInteraction): Promise<void
     return;
   }
 
+  // no template to update for ad-hoc runs
   await runRoulette(interaction, participants, count);
 }
 
