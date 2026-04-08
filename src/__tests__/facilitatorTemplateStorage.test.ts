@@ -200,6 +200,26 @@ describe('FacilitatorTemplateStorage', () => {
       expect(writtenData[0].selectionCounts).not.toHaveProperty('Charlie');
       expect(writtenData[0].selectionCounts).not.toHaveProperty('Dave');
     });
+
+    it('should remove stale selectionCounts when inserting a new template', async () => {
+      mockReadFile.mockResolvedValue('[]');
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      const template: FacilitatorTemplate = {
+        ...mockTemplate,
+        participants: ['Alice', 'Bob'],
+        selectionCounts: { Alice: 1, Charlie: 5 }, // Charlie not in participants
+      };
+
+      await storage.upsertTemplate(template);
+
+      const writtenData = JSON.parse(
+        mockWriteFile.mock.calls[0][1] as string,
+      ) as StoredFacilitatorTemplate[];
+      expect(writtenData[0].selectionCounts).toEqual({ Alice: 1 });
+      expect(writtenData[0].selectionCounts).not.toHaveProperty('Charlie');
+    });
   });
 
   describe('getTemplatesByGuild', () => {
