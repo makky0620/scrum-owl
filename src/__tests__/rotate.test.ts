@@ -179,7 +179,8 @@ describe('Rotate Command', () => {
     const count = 3;
     const participantCount = 3;
     const message = `count must be less than the number of participants (got count=${count} with ${participantCount} participants).`;
-    expect(message).toBe('count must be less than the number of participants (got count=3 with 3 participants).');
+    expect(message).toBe(
+      'count must be less than the number of participants (got count=3 with 3 participants).',
+    );
   });
-
 });
