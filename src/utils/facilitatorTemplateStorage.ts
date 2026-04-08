@@ -42,17 +42,27 @@ export class FacilitatorTemplateStorage {
   }
 
   async upsertTemplate(template: FacilitatorTemplate): Promise<void> {
+    // Remove counts for participants no longer in the list
+    const validNames = new Set(template.participants);
+    const reconciledCounts: { [name: string]: number } = {};
+    for (const name of Object.keys(template.selectionCounts)) {
+      if (validNames.has(name)) {
+        reconciledCounts[name] = template.selectionCounts[name];
+      }
+    }
+    const reconciledTemplate = { ...template, selectionCounts: reconciledCounts };
+
     const templates = await this.loadTemplates();
     const existingIndex = templates.findIndex(
-      (t) => t.guildId === template.guildId && t.name === template.name,
+      (t) => t.guildId === reconciledTemplate.guildId && t.name === reconciledTemplate.name,
     );
 
     if (existingIndex === -1) {
-      templates.push(template);
+      templates.push(reconciledTemplate);
     } else {
       templates[existingIndex] = {
-        ...template,
-        id: templates[existingIndex].id,              // preserve original id
+        ...reconciledTemplate,
+        id: templates[existingIndex].id, // preserve original id
         createdAt: templates[existingIndex].createdAt, // preserve original createdAt
       };
     }

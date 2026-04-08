@@ -47,7 +47,11 @@ describe('FacilitatorTemplateStorage', () => {
 
     it('should load templates from existing file', async () => {
       const stored = [
-        { ...mockTemplate, createdAt: mockTemplate.createdAt.toISOString(), updatedAt: mockTemplate.updatedAt.toISOString() },
+        {
+          ...mockTemplate,
+          createdAt: mockTemplate.createdAt.toISOString(),
+          updatedAt: mockTemplate.updatedAt.toISOString(),
+        },
       ];
       mockReadFile.mockResolvedValue(JSON.stringify(stored));
 
@@ -60,7 +64,11 @@ describe('FacilitatorTemplateStorage', () => {
 
     it('should convert date strings to Date objects on load', async () => {
       const stored = [
-        { ...mockTemplate, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+        {
+          ...mockTemplate,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
       ];
       mockReadFile.mockResolvedValue(JSON.stringify(stored));
 
@@ -138,7 +146,9 @@ describe('FacilitatorTemplateStorage', () => {
 
     it('should overwrite existing template preserving createdAt and id', async () => {
       const originalCreatedAt = '2026-01-01T00:00:00.000Z';
-      const stored = [{ ...mockTemplate, createdAt: originalCreatedAt, updatedAt: originalCreatedAt }];
+      const stored = [
+        { ...mockTemplate, createdAt: originalCreatedAt, updatedAt: originalCreatedAt },
+      ];
       mockReadFile.mockResolvedValue(JSON.stringify(stored));
       mockMkdir.mockResolvedValue(undefined);
       mockWriteFile.mockResolvedValue(undefined);
@@ -152,20 +162,62 @@ describe('FacilitatorTemplateStorage', () => {
       await storage.upsertTemplate(updated);
 
       const writtenData = JSON.parse(
-        (mockWriteFile.mock.calls[0][1] as string)
+        mockWriteFile.mock.calls[0][1] as string,
       ) as StoredFacilitatorTemplate[];
       expect(writtenData).toHaveLength(1);
       expect(writtenData[0].participants).toEqual(['Alice', 'Bob', 'Dave']);
       expect(writtenData[0].createdAt).toBe(originalCreatedAt);
       expect(writtenData[0].id).toBe('test-id-1'); // original id preserved
     });
+
+    it('should remove selectionCounts for participants no longer in the list', async () => {
+      const stored = [
+        {
+          ...mockTemplate,
+          selectionCounts: { Alice: 3, Bob: 1, Charlie: 2 },
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      // Update template removing Charlie, adding Dave
+      const updated: FacilitatorTemplate = {
+        ...mockTemplate,
+        participants: ['Alice', 'Bob', 'Dave'],
+        selectionCounts: { Alice: 3, Bob: 1, Charlie: 2 },
+        updatedAt: new Date('2026-02-01T00:00:00.000Z'),
+      };
+
+      await storage.upsertTemplate(updated);
+
+      const writtenData = JSON.parse(
+        mockWriteFile.mock.calls[0][1] as string,
+      ) as StoredFacilitatorTemplate[];
+      expect(writtenData[0].selectionCounts).toEqual({ Alice: 3, Bob: 1 });
+      expect(writtenData[0].selectionCounts).not.toHaveProperty('Charlie');
+      expect(writtenData[0].selectionCounts).not.toHaveProperty('Dave');
+    });
   });
 
   describe('getTemplatesByGuild', () => {
     it('should return only templates for the given guild', async () => {
       const stored = [
-        { ...mockTemplate, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
-        { ...mockTemplate, id: 'test-id-2', guildId: 'guild456', name: 'other-team', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+        {
+          ...mockTemplate,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          ...mockTemplate,
+          id: 'test-id-2',
+          guildId: 'guild456',
+          name: 'other-team',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
       ];
       mockReadFile.mockResolvedValue(JSON.stringify(stored));
 
@@ -179,7 +231,11 @@ describe('FacilitatorTemplateStorage', () => {
   describe('getTemplateByName', () => {
     it('should return the template matching guildId and name', async () => {
       const stored = [
-        { ...mockTemplate, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+        {
+          ...mockTemplate,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
       ];
       mockReadFile.mockResolvedValue(JSON.stringify(stored));
 
@@ -199,7 +255,12 @@ describe('FacilitatorTemplateStorage', () => {
 
     it('should not return templates from other guilds with the same name', async () => {
       const stored = [
-        { ...mockTemplate, guildId: 'guild456', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+        {
+          ...mockTemplate,
+          guildId: 'guild456',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
       ];
       mockReadFile.mockResolvedValue(JSON.stringify(stored));
 
@@ -212,7 +273,11 @@ describe('FacilitatorTemplateStorage', () => {
   describe('deleteTemplate', () => {
     it('should remove the template matching guildId and name', async () => {
       const stored = [
-        { ...mockTemplate, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
+        {
+          ...mockTemplate,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
       ];
       mockReadFile.mockResolvedValue(JSON.stringify(stored));
       mockMkdir.mockResolvedValue(undefined);
