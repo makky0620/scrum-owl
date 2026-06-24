@@ -1,11 +1,12 @@
-// src/utils/facilitatorTemplateStorage.ts
 import type { FacilitatorTemplate, StoredFacilitatorTemplate } from '../models/facilitatorTemplate';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
+import { AsyncMutex } from './asyncMutex';
 
 export class FacilitatorTemplateStorage {
   private dataPath: string;
+  private mutex = new AsyncMutex();
 
   constructor(dataPath: string = path.join(__dirname, '../../data/facilitator-templates.json')) {
     this.dataPath = dataPath;
@@ -42,32 +43,33 @@ export class FacilitatorTemplateStorage {
   }
 
   async upsertTemplate(template: FacilitatorTemplate): Promise<void> {
-    // Remove counts for participants no longer in the list
-    const validNames = new Set(template.participants);
-    const reconciledCounts: { [name: string]: number } = {};
-    for (const name of Object.keys(template.selectionCounts)) {
-      if (validNames.has(name)) {
-        reconciledCounts[name] = template.selectionCounts[name];
+    return this.mutex.run(async () => {
+      const validNames = new Set(template.participants);
+      const reconciledCounts: { [name: string]: number } = {};
+      for (const name of Object.keys(template.selectionCounts)) {
+        if (validNames.has(name)) {
+          reconciledCounts[name] = template.selectionCounts[name];
+        }
       }
-    }
-    const reconciledTemplate = { ...template, selectionCounts: reconciledCounts };
+      const reconciledTemplate = { ...template, selectionCounts: reconciledCounts };
 
-    const templates = await this.loadTemplates();
-    const existingIndex = templates.findIndex(
-      (t) => t.guildId === reconciledTemplate.guildId && t.name === reconciledTemplate.name,
-    );
+      const templates = await this.loadTemplates();
+      const existingIndex = templates.findIndex(
+        (t) => t.guildId === reconciledTemplate.guildId && t.name === reconciledTemplate.name,
+      );
 
-    if (existingIndex === -1) {
-      templates.push(reconciledTemplate);
-    } else {
-      templates[existingIndex] = {
-        ...reconciledTemplate,
-        id: templates[existingIndex].id, // preserve original id
-        createdAt: templates[existingIndex].createdAt, // preserve original createdAt
-      };
-    }
+      if (existingIndex === -1) {
+        templates.push(reconciledTemplate);
+      } else {
+        templates[existingIndex] = {
+          ...reconciledTemplate,
+          id: templates[existingIndex].id,
+          createdAt: templates[existingIndex].createdAt,
+        };
+      }
 
-    await this.saveTemplates(templates);
+      await this.saveTemplates(templates);
+    });
   }
 
   async getTemplatesByGuild(guildId: string): Promise<FacilitatorTemplate[]> {
@@ -81,14 +83,16 @@ export class FacilitatorTemplateStorage {
   }
 
   async deleteTemplate(guildId: string, name: string): Promise<void> {
-    const templates = await this.loadTemplates();
-    const index = templates.findIndex((t) => t.guildId === guildId && t.name === name);
+    return this.mutex.run(async () => {
+      const templates = await this.loadTemplates();
+      const index = templates.findIndex((t) => t.guildId === guildId && t.name === name);
 
-    if (index === -1) {
-      throw new Error(`Template "${name}" not found in this server`);
-    }
+      if (index === -1) {
+        throw new Error(`Template "${name}" not found in this server`);
+      }
 
-    templates.splice(index, 1);
-    await this.saveTemplates(templates);
+      templates.splice(index, 1);
+      await this.saveTemplates(templates);
+    });
   }
 }

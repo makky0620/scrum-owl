@@ -316,4 +316,33 @@ describe('FacilitatorTemplateStorage', () => {
       );
     });
   });
+
+  describe('concurrency', () => {
+    it('serializes concurrent upsertTemplate calls — no data loss', async () => {
+      const template1: FacilitatorTemplate = {
+        ...mockTemplate,
+        id: 't1',
+        name: 'team-alpha',
+      };
+      const template2: FacilitatorTemplate = {
+        ...mockTemplate,
+        id: 't2',
+        name: 'team-beta',
+      };
+
+      let currentData = '[]';
+      mockReadFile.mockImplementation(() => Promise.resolve(currentData));
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockImplementation((_path, data) => {
+        currentData = data as string;
+        return Promise.resolve(undefined);
+      });
+
+      await Promise.all([storage.upsertTemplate(template1), storage.upsertTemplate(template2)]);
+
+      const saved = JSON.parse(currentData) as FacilitatorTemplate[];
+      expect(saved.map((t) => t.name)).toContain('team-alpha');
+      expect(saved.map((t) => t.name)).toContain('team-beta');
+    });
+  });
 });
