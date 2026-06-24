@@ -78,6 +78,8 @@ const command: Command = {
 
     rows.push(controlRow);
 
+    const originalControlRow = controlRow; // preserve for revote reset
+
     const message = (await interaction.reply({
       embeds: [embed],
       components: rows,
@@ -178,6 +180,38 @@ const command: Command = {
             inline: false,
           });
         }
+
+        const controlRowWithRevote = new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId('show_results')
+            .setLabel('Show Results')
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId('revote')
+            .setLabel('Revote')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId('end_session')
+            .setLabel('End Session')
+            .setStyle(ButtonStyle.Danger),
+        );
+        rows[rows.length - 1] = controlRowWithRevote;
+
+        await i.update({
+          embeds: [embed],
+          components: rows,
+        });
+      } else if (customId === 'revote') {
+        votes.clear();
+
+        embed
+          .setColor('#0099ff')
+          .spliceFields(0, embed.data.fields?.length ?? 0,
+            { name: 'Status', value: 'Voting in progress...', inline: false },
+            { name: 'Participants', value: 'No votes yet', inline: false },
+          );
+
+        rows[rows.length - 1] = originalControlRow;
 
         await i.update({
           embeds: [embed],
