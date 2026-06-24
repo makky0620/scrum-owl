@@ -252,4 +252,39 @@ describe('ReminderScheduler', () => {
       expect(typeField?.value).toContain('Daily reminder');
     });
   });
+
+  describe('triggerReminder double-fire prevention', () => {
+    it('does not send the message twice when triggerReminder is called concurrently for the same reminder', async () => {
+      const dueReminder: Reminder = {
+        ...mockReminder,
+        nextTriggerTime: dayjs().subtract(1, 'minute').toDate(),
+      };
+
+      mockStorage.updateReminder.mockResolvedValue();
+
+      // Both calls are initiated synchronously before any await resolves.
+      // The guard (triggeringIds) is checked synchronously at the top of triggerReminder,
+      // so the second call sees the ID already in the set and returns immediately.
+      await Promise.all([
+        scheduler.triggerReminder(dueReminder),
+        scheduler.triggerReminder(dueReminder),
+      ]);
+
+      expect(mockChannel.send).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows triggering the same reminder again after the first trigger completes', async () => {
+      const dueReminder: Reminder = {
+        ...mockReminder,
+        nextTriggerTime: dayjs().subtract(1, 'minute').toDate(),
+      };
+
+      mockStorage.updateReminder.mockResolvedValue();
+
+      await scheduler.triggerReminder(dueReminder);
+      await scheduler.triggerReminder(dueReminder);
+
+      expect(mockChannel.send).toHaveBeenCalledTimes(2);
+    });
+  });
 });

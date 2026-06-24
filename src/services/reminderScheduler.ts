@@ -11,6 +11,7 @@ export class ReminderScheduler {
   private intervalId: NodeJS.Timeout | null = null;
   private isSchedulerRunning = false;
   private readonly checkInterval = 60000; // 1 minute
+  private triggeringIds = new Set<string>();
 
   constructor(client: Client, storage?: ReminderStorage) {
     this.client = client;
@@ -128,6 +129,10 @@ export class ReminderScheduler {
   }
 
   async triggerReminder(reminder: Reminder): Promise<void> {
+    if (this.triggeringIds.has(reminder.id)) {
+      return;
+    }
+    this.triggeringIds.add(reminder.id);
     try {
       const channel = (await this.client.channels.fetch(reminder.channelId)) as TextChannel;
 
@@ -150,6 +155,8 @@ export class ReminderScheduler {
       }
     } catch (error) {
       logger.error(`[ReminderScheduler] Error triggering reminder ${reminder.id}:`, error);
+    } finally {
+      this.triggeringIds.delete(reminder.id);
     }
   }
 
