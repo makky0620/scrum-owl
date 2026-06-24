@@ -36,7 +36,7 @@ describe('ReminderStorage', () => {
 
   beforeEach(() => {
     storage = new ReminderStorage(testDataPath);
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   describe('loadReminders', () => {
@@ -88,31 +88,6 @@ describe('ReminderStorage', () => {
     });
   });
 
-  describe('saveReminders', () => {
-    it('should create directory and save reminders', async () => {
-      const reminders = [mockReminder];
-      mockMkdir.mockResolvedValue(undefined);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      await storage.saveReminders(reminders);
-
-      expect(mockMkdir).toHaveBeenCalledWith(path.dirname(testDataPath), { recursive: true });
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        testDataPath,
-        JSON.stringify(reminders, null, 2),
-        'utf8',
-      );
-    });
-
-    it('should handle write errors gracefully', async () => {
-      const reminders = [mockReminder];
-      mockMkdir.mockResolvedValue(undefined);
-      mockWriteFile.mockRejectedValue(new Error('Write failed'));
-
-      await expect(storage.saveReminders(reminders)).rejects.toThrow('Write failed');
-    });
-  });
-
   describe('addReminder', () => {
     it('should add a new reminder to existing reminders', async () => {
       const existingReminders = [mockReminder];
@@ -128,11 +103,20 @@ describe('ReminderStorage', () => {
 
       await storage.addReminder(newReminder);
 
+      expect(mockMkdir).toHaveBeenCalledWith(path.dirname(testDataPath), { recursive: true });
       expect(mockWriteFile).toHaveBeenCalledWith(
         testDataPath,
         expect.stringContaining('"id": "test-id-2"'),
         'utf8',
       );
+    });
+
+    it('should propagate write errors', async () => {
+      mockReadFile.mockResolvedValue('[]');
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockRejectedValue(new Error('Write failed'));
+
+      await expect(storage.addReminder(mockReminder)).rejects.toThrow('Write failed');
     });
   });
 

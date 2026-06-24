@@ -30,6 +30,8 @@ describe('ReminderScheduler', () => {
   };
 
   beforeEach(() => {
+    jest.resetAllMocks();
+
     mockStorage = new MockedReminderStorage() as jest.Mocked<ReminderStorage>;
 
     mockChannel = {
@@ -44,7 +46,6 @@ describe('ReminderScheduler', () => {
     } as unknown as jest.Mocked<Client>;
 
     scheduler = new ReminderScheduler(mockClient, mockStorage);
-    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -131,34 +132,26 @@ describe('ReminderScheduler', () => {
       const weekendReminder = {
         ...mockReminder,
         type: 'daily' as const,
-        dayFilter: {
-          skipWeekends: true,
-        },
+        dayFilter: { skipWeekends: true },
       };
 
-      // Mock Saturday (6) and Sunday (0)
-      jest
-        .spyOn(Date.prototype, 'getDay')
-        .mockReturnValueOnce(6) // Saturday
-        .mockReturnValueOnce(0); // Sunday
+      const saturday = new Date(2026, 5, 20); // June 20 2026 = Saturday
+      const sunday = new Date(2026, 5, 21);   // June 21 2026 = Sunday
 
-      expect(scheduler.shouldTriggerToday(weekendReminder)).toBe(false);
-      expect(scheduler.shouldTriggerToday(weekendReminder)).toBe(false);
+      expect(scheduler.shouldTriggerToday(weekendReminder, saturday)).toBe(false);
+      expect(scheduler.shouldTriggerToday(weekendReminder, sunday)).toBe(false);
     });
 
     it('should allow weekdays when skipWeekends is true', () => {
       const weekdayReminder = {
         ...mockReminder,
         type: 'daily' as const,
-        dayFilter: {
-          skipWeekends: true,
-        },
+        dayFilter: { skipWeekends: true },
       };
 
-      // Mock Monday (1)
-      jest.spyOn(Date.prototype, 'getDay').mockReturnValue(1);
+      const monday = new Date(2026, 5, 22); // June 22 2026 = Monday
 
-      expect(scheduler.shouldTriggerToday(weekdayReminder)).toBe(true);
+      expect(scheduler.shouldTriggerToday(weekdayReminder, monday)).toBe(true);
     });
   });
 

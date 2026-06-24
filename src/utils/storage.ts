@@ -51,7 +51,7 @@ export class ReminderStorage {
     }
   }
 
-  async saveReminders(reminders: Reminder[]): Promise<void> {
+  private async saveReminders(reminders: Reminder[]): Promise<void> {
     try {
       const dir = path.dirname(this.dataPath);
       await fs.promises.mkdir(dir, { recursive: true });

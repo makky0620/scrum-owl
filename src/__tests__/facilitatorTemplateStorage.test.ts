@@ -32,7 +32,7 @@ describe('FacilitatorTemplateStorage', () => {
 
   beforeEach(() => {
     storage = new FacilitatorTemplateStorage(testDataPath);
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   describe('loadTemplates', () => {
@@ -106,29 +106,6 @@ describe('FacilitatorTemplateStorage', () => {
     });
   });
 
-  describe('saveTemplates', () => {
-    it('should create directory and write JSON file', async () => {
-      mockMkdir.mockResolvedValue(undefined);
-      mockWriteFile.mockResolvedValue(undefined);
-
-      await storage.saveTemplates([mockTemplate]);
-
-      expect(mockMkdir).toHaveBeenCalledWith(path.dirname(testDataPath), { recursive: true });
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        testDataPath,
-        JSON.stringify([mockTemplate], null, 2),
-        'utf8',
-      );
-    });
-
-    it('should throw on write error', async () => {
-      mockMkdir.mockResolvedValue(undefined);
-      mockWriteFile.mockRejectedValue(new Error('Write failed'));
-
-      await expect(storage.saveTemplates([mockTemplate])).rejects.toThrow('Write failed');
-    });
-  });
-
   describe('upsertTemplate', () => {
     it('should add a new template when name does not exist', async () => {
       mockReadFile.mockResolvedValue('[]');
@@ -137,6 +114,7 @@ describe('FacilitatorTemplateStorage', () => {
 
       await storage.upsertTemplate(mockTemplate);
 
+      expect(mockMkdir).toHaveBeenCalledWith(path.dirname(testDataPath), { recursive: true });
       expect(mockWriteFile).toHaveBeenCalledWith(
         testDataPath,
         expect.stringContaining('"name": "sprint-team"'),
@@ -313,6 +291,23 @@ describe('FacilitatorTemplateStorage', () => {
 
       await expect(storage.deleteTemplate('guild123', 'nonexistent')).rejects.toThrow(
         'Template "nonexistent" not found in this server',
+      );
+    });
+
+    it('should propagate write errors', async () => {
+      const stored = [
+        {
+          ...mockTemplate,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockRejectedValue(new Error('Write failed'));
+
+      await expect(storage.deleteTemplate('guild123', 'sprint-team')).rejects.toThrow(
+        'Write failed',
       );
     });
   });

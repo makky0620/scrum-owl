@@ -31,7 +31,7 @@ export class FacilitatorTemplateStorage {
     }
   }
 
-  async saveTemplates(templates: FacilitatorTemplate[]): Promise<void> {
+  private async saveTemplates(templates: FacilitatorTemplate[]): Promise<void> {
     try {
       const dir = path.dirname(this.dataPath);
       await fs.promises.mkdir(dir, { recursive: true });

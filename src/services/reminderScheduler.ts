@@ -58,7 +58,7 @@ export class ReminderScheduler {
           dayjs(reminder.nextTriggerTime).isBefore(now) ||
           dayjs(reminder.nextTriggerTime).isSame(now, 'minute')
         ) {
-          if (!this.shouldTriggerToday(reminder)) {
+          if (!this.shouldTriggerToday(reminder, now)) {
             if (reminder.type === 'daily') {
               await this.processRecurringReminder(reminder);
             }
@@ -73,12 +73,11 @@ export class ReminderScheduler {
     }
   }
 
-  shouldTriggerToday(reminder: Reminder): boolean {
+  shouldTriggerToday(reminder: Reminder, now: Date = new Date()): boolean {
     if (!reminder.dayFilter) {
       return true;
     }
 
-    const now = new Date();
     const dayOfWeek = now.getDay(); // 0=Sunday, 6=Saturday
     const filter = reminder.dayFilter;
 
