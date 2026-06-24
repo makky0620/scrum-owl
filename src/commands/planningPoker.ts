@@ -78,8 +78,6 @@ const command: Command = {
 
     rows.push(controlRow);
 
-    const originalControlRow = controlRow; // preserve for revote reset
-
     const message = (await interaction.reply({
       embeds: [embed],
       components: rows,
@@ -185,7 +183,8 @@ const command: Command = {
           new ButtonBuilder()
             .setCustomId('show_results')
             .setLabel('Show Results')
-            .setStyle(ButtonStyle.Success),
+            .setStyle(ButtonStyle.Success)
+            .setDisabled(true),
           new ButtonBuilder()
             .setCustomId('revote')
             .setLabel('Revote')
@@ -211,7 +210,7 @@ const command: Command = {
             { name: 'Participants', value: 'No votes yet', inline: false },
           );
 
-        rows[rows.length - 1] = originalControlRow;
+        rows[rows.length - 1] = controlRow;
 
         await i.update({
           embeds: [embed],
