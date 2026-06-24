@@ -2,6 +2,7 @@ import type { Reminder } from '../models/reminder';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
+import { AsyncMutex } from './asyncMutex';
 
 interface StoredReminder {
   nextTriggerTime: string;
@@ -16,6 +17,7 @@ interface StoredReminder {
 
 export class ReminderStorage {
   private dataPath: string;
+  private mutex = new AsyncMutex();
 
   constructor(dataPath: string = path.join(__dirname, '../../data/reminders.json')) {
     this.dataPath = dataPath;
@@ -61,33 +63,39 @@ export class ReminderStorage {
   }
 
   async addReminder(reminder: Reminder): Promise<void> {
-    const reminders = await this.loadReminders();
-    reminders.push(reminder);
-    await this.saveReminders(reminders);
+    return this.mutex.run(async () => {
+      const reminders = await this.loadReminders();
+      reminders.push(reminder);
+      await this.saveReminders(reminders);
+    });
   }
 
   async updateReminder(updatedReminder: Reminder): Promise<void> {
-    const reminders = await this.loadReminders();
-    const index = reminders.findIndex((r) => r.id === updatedReminder.id);
+    return this.mutex.run(async () => {
+      const reminders = await this.loadReminders();
+      const index = reminders.findIndex((r) => r.id === updatedReminder.id);
 
-    if (index === -1) {
-      throw new Error(`Reminder with id ${updatedReminder.id} not found`);
-    }
+      if (index === -1) {
+        throw new Error(`Reminder with id ${updatedReminder.id} not found`);
+      }
 
-    reminders[index] = updatedReminder;
-    await this.saveReminders(reminders);
+      reminders[index] = updatedReminder;
+      await this.saveReminders(reminders);
+    });
   }
 
   async deleteReminder(id: string): Promise<void> {
-    const reminders = await this.loadReminders();
-    const index = reminders.findIndex((r) => r.id === id);
+    return this.mutex.run(async () => {
+      const reminders = await this.loadReminders();
+      const index = reminders.findIndex((r) => r.id === id);
 
-    if (index === -1) {
-      throw new Error(`Reminder with id ${id} not found`);
-    }
+      if (index === -1) {
+        throw new Error(`Reminder with id ${id} not found`);
+      }
 
-    reminders.splice(index, 1);
-    await this.saveReminders(reminders);
+      reminders.splice(index, 1);
+      await this.saveReminders(reminders);
+    });
   }
 
   async getRemindersByUser(userId: string): Promise<Reminder[]> {

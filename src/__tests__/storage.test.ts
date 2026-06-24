@@ -197,6 +197,27 @@ describe('ReminderStorage', () => {
     });
   });
 
+  describe('concurrency', () => {
+    it('serializes concurrent addReminder calls — no data loss', async () => {
+      const reminder1: Reminder = { ...mockReminder, id: 'r1', title: 'First' };
+      const reminder2: Reminder = { ...mockReminder, id: 'r2', title: 'Second' };
+
+      let currentData = '[]';
+      mockReadFile.mockImplementation(() => Promise.resolve(currentData));
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockImplementation((_path, data) => {
+        currentData = data as string;
+        return Promise.resolve(undefined);
+      });
+
+      await Promise.all([storage.addReminder(reminder1), storage.addReminder(reminder2)]);
+
+      const saved = JSON.parse(currentData) as Reminder[];
+      expect(saved.map((r) => r.id)).toContain('r1');
+      expect(saved.map((r) => r.id)).toContain('r2');
+    });
+  });
+
   describe('getRemindersByUser', () => {
     it('should return reminders for specific user', async () => {
       const reminders = [mockReminder, { ...mockReminder, id: 'test-id-2', userId: 'user456' }];
