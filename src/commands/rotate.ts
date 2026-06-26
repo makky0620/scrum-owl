@@ -1,4 +1,8 @@
-import type { ChatInputCommandInteraction, ButtonInteraction } from 'discord.js';
+import type {
+  ChatInputCommandInteraction,
+  ButtonInteraction,
+  AutocompleteInteraction,
+} from 'discord.js';
 import {
   SlashCommandBuilder,
   ActionRowBuilder,
@@ -217,7 +221,11 @@ const command: Command = {
             .setName('use')
             .setDescription('Run the roulette using a saved template')
             .addStringOption((option) =>
-              option.setName('name').setDescription('Template name').setRequired(true),
+              option
+                .setName('name')
+                .setDescription('Template name')
+                .setRequired(true)
+                .setAutocomplete(true),
             )
             .addIntegerOption((option) =>
               option
@@ -232,7 +240,11 @@ const command: Command = {
             .setName('delete')
             .setDescription('Delete a saved template')
             .addStringOption((option) =>
-              option.setName('name').setDescription('Template name').setRequired(true),
+              option
+                .setName('name')
+                .setDescription('Template name')
+                .setRequired(true)
+                .setAutocomplete(true),
             ),
         )
         .addSubcommand((subcommand) =>
@@ -264,6 +276,23 @@ const command: Command = {
       // subcommand === 'run'
       await handleRun(interaction);
     }
+  },
+
+  async handleAutocomplete(interaction: AutocompleteInteraction) {
+    if (!interaction.guildId) {
+      await interaction.respond([]);
+      return;
+    }
+
+    const focused = interaction.options.getFocused().toLowerCase();
+    const templates = await templateStorage.getTemplatesByGuild(interaction.guildId);
+
+    const choices = templates
+      .filter((t) => t.name.toLowerCase().includes(focused))
+      .slice(0, 25)
+      .map((t) => ({ name: t.name, value: t.name }));
+
+    await interaction.respond(choices);
   },
 };
 
