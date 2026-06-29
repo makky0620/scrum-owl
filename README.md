@@ -6,9 +6,9 @@ A Discord bot for agile teams. Built with TypeScript and discord.js.
 
 ## Features
 
-- Planning Poker: Estimate tasks with team voting
-- Facilitator Selection: Randomly select a facilitator
-- Reminders: Set one-time or recurring reminders
+- **Planning Poker**: Estimate tasks with team voting
+- **Rotate**: Randomly select participants, with templates and weighted selection
+- **Reminders**: Set one-time or recurring reminders
 
 ## Setup
 
@@ -34,10 +34,8 @@ A Discord bot for agile teams. Built with TypeScript and discord.js.
 3. Configure environment:
 
    ```
-   # .env file
-   DISCORD_TOKEN=your_discord_bot_token
-   CLIENT_ID=your_client_id
-   GUILD_ID=your_guild_id
+   cp .env.example .env
+   # Edit .env with your values
    ```
 
 4. Deploy and start:
@@ -59,15 +57,67 @@ docker-compose up -d
 
 ### Planning Poker
 
+Start an interactive voting session for estimating a task.
+
 ```
 /poker description: [item to estimate]
 ```
 
-### Facilitator Selection
+Team members vote using point values (0, 1, 2, 3, 5, 8, 13, 21, ?). After voting, use **Show Results** to reveal all votes and see the average. Use **Revote** to restart the vote, or **End Session** to close. Sessions time out after 15 minutes.
+
+---
+
+### Rotate
+
+Randomly select one or more participants from a list.
+
+#### Ad-hoc Selection
 
 ```
-/facilitator participants: [comma-separated names]
+/rotate run participants: [comma-separated names] count: [optional]
 ```
+
+- `participants`: Comma-separated list of names (e.g. `Alice, Bob, Carol`)
+- `count`: Number of participants to select (default: 1)
+
+#### Templates
+
+Save a reusable participant list as a named template. Templates track selection history and apply weighted selection so less-frequently-chosen participants are more likely to be picked.
+
+```
+/rotate template save name: [name] participants: [comma-separated names]
+```
+
+- Template names: max 50 characters
+- Participants per template: max 50
+
+```
+/rotate template use name: [name] count: [optional]
+```
+
+Runs the selection using a saved template and updates selection history.
+
+```
+/rotate template list
+```
+
+Lists all templates saved in the server.
+
+```
+/rotate template delete name: [name]
+```
+
+```
+/rotate template add-member name: [name] members: [comma-separated names]
+```
+
+```
+/rotate template remove-member name: [name] members: [comma-separated names]
+```
+
+Template names support autocomplete.
+
+---
 
 ### Reminders
 
@@ -76,36 +126,27 @@ Create, manage, and delete reminders.
 #### Creating Reminders
 
 ```
-/reminder create title: [title] message: [message] time: [time] type: [once|daily] [channel: #channel]
+/reminder create title: [title] message: [message] time: [time] type: [once|daily]
 ```
 
 **Required Parameters:**
 
 - `title`: Title of the reminder
 - `message`: Message content of the reminder
-- `time`: Execution time (e.g., "14:30", "2h", "2024-07-15 14:30")
-- `type`: Type of reminder (`once`: one-time, `daily`: daily repeating)
+- `time`: When to trigger (e.g., `14:30`, `2h`, `2024-07-15 14:30`)
+- `type`: `once` for one-time, `daily` for daily repeating
 
 **Optional Parameters:**
 
-- `channel`: Destination channel for the reminder (defaults to current channel)
-- `skip_weekends`: Skip weekends for daily reminders (true/false)
-- `end_date`: End date (YYYY-MM-DD format)
+- `channel`: Destination channel (defaults to current channel)
+- `skip_weekends`: Skip Saturdays and Sundays for daily reminders (`true`/`false`)
 
-**Usage Examples:**
+**Examples:**
 
 ```
-# One-time reminder in current channel
 /reminder create title: "Meeting" message: "Team meeting is starting" time: "14:30" type: once
 
-# Daily reminder in specific channel
-/reminder create title: "Daily Report" message: "Time to write daily report" time: "17:00" type: daily channel: #general
-
-# Skip weekends reminder in specific channel
-/reminder create title: "Stand-up" message: "Stand-up meeting time" time: "09:00" type: daily skip_weekends: true channel: #dev-team
-
-# One-time reminder in different channel
-/reminder create title: "Deployment" message: "Production deployment starting" time: "2h" type: once channel: #alerts
+/reminder create title: "Stand-up" message: "Stand-up time" time: "09:00" type: daily skip_weekends: true channel: #dev-team
 ```
 
 #### Listing Reminders
@@ -114,15 +155,11 @@ Create, manage, and delete reminders.
 /reminder list
 ```
 
-Displays a list of reminders you have created.
-
 #### Deleting Reminders
 
 ```
 /reminder delete id: [reminder_id]
 ```
-
-Deletes the reminder with the specified ID.
 
 #### Editing Reminders
 
@@ -132,6 +169,8 @@ Deletes the reminder with the specified ID.
 
 Opens a modal to edit the title, message, time, and active status of an existing reminder.
 
+---
+
 ## Development
 
 Source code is in the `src` directory. To add a new command:
@@ -139,6 +178,8 @@ Source code is in the `src` directory. To add a new command:
 1. Create a file in `src/commands/`
 2. Implement the `Command` interface
 3. Run `npm run deploy`
+
+See `CLAUDE.md` for the full development workflow.
 
 ## License
 
