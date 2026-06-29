@@ -58,6 +58,10 @@ build/Release
 *.swp
 *.swo
 
+# AI tool configs
+.claude/
+.superpowers/
+
 # Docker
 .docker/
 docker-compose.override.yml
