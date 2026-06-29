@@ -2,7 +2,7 @@
 
 # Scrum Owl Discord Bot
 
-A Discord bot that facilitates Planning Poker sessions for agile teams. Built with TypeScript and discord.js.
+A Discord bot for agile teams. Built with TypeScript and discord.js.
 
 ## Features
 
@@ -127,10 +127,10 @@ Deletes the reminder with the specified ID.
 #### Editing Reminders
 
 ```
-/reminder edit id: [reminder_id] [title: new_title] [message: new_message] [time: new_time] [active: true/false]
+/reminder edit id: [reminder_id]
 ```
 
-Edits an existing reminder. All parameters are optional.
+Opens a modal to edit the title, message, time, and active status of an existing reminder.
 
 ## Development
 
