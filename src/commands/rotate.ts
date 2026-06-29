@@ -496,6 +496,11 @@ async function handleTemplateAddMember(interaction: ChatInputCommandInteraction)
   const membersInput = interaction.options.getString('members', true);
   const newMembers = parseParticipants(membersInput);
 
+  if (newMembers.length === 0) {
+    await safeReply(interaction, 'Please provide at least one member name.');
+    return;
+  }
+
   const template = await templateStorage.getTemplateByName(interaction.guildId!, name);
   if (!template) {
     await safeReply(
@@ -507,6 +512,11 @@ async function handleTemplateAddMember(interaction: ChatInputCommandInteraction)
 
   const existing = new Set(template.participants);
   const toAdd = newMembers.filter((m) => !existing.has(m));
+
+  if (toAdd.length === 0) {
+    await safeReply(interaction, `All specified member(s) are already in **${name}**.`);
+    return;
+  }
 
   if (template.participants.length + toAdd.length > 50) {
     await safeReply(
@@ -528,6 +538,11 @@ async function handleTemplateRemoveMember(interaction: ChatInputCommandInteracti
   const name = interaction.options.getString('name', true).trim();
   const membersInput = interaction.options.getString('members', true);
   const toRemove = parseParticipants(membersInput);
+
+  if (toRemove.length === 0) {
+    await safeReply(interaction, 'Please provide at least one member name.');
+    return;
+  }
 
   const template = await templateStorage.getTemplateByName(interaction.guildId!, name);
   if (!template) {

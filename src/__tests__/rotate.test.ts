@@ -410,6 +410,49 @@ describe('Rotate Command', () => {
       );
       jest.restoreAllMocks();
     });
+
+    test('replies with error when members input is empty', async () => {
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeAddMemberInteraction('Team', ', , ,');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Please provide at least one member name.',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('replies with message when all specified members already exist', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice', 'Bob'],
+        selectionCounts: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+      const upsertSpy = jest.spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate');
+
+      const interaction = makeAddMemberInteraction('Team', 'Alice, Bob');
+      await command.execute(interaction);
+
+      expect(upsertSpy).not.toHaveBeenCalled();
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'All specified member(s) are already in **Team**.',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
   });
 
   describe('template remove-member subcommand', () => {
@@ -550,6 +593,22 @@ describe('Rotate Command', () => {
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: 'Removed 2 member(s) from **Team**. Now has 1 participant(s).',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('replies with error when members input is empty', async () => {
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeRemoveMemberInteraction('Team', ', , ,');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Please provide at least one member name.',
         }),
       );
       jest.restoreAllMocks();
