@@ -259,4 +259,359 @@ describe('Rotate Command', () => {
       expect(respond).toHaveBeenCalledWith([]);
     });
   });
+
+  describe('template add-member subcommand', () => {
+    function getAddMemberSubcommand() {
+      const commandData = command.data.toJSON();
+      const templateGroup = commandData.options?.find((o) => o.name === 'template') as
+        | { options?: { name: string; options?: { name: string; required?: boolean; autocomplete?: boolean }[] }[] }
+        | undefined;
+      return templateGroup?.options?.find((o) => o.name === 'add-member');
+    }
+
+    test('add-member subcommand exists in template group', () => {
+      expect(getAddMemberSubcommand()).toBeDefined();
+    });
+
+    test('add-member has required name option with autocomplete', () => {
+      const sub = getAddMemberSubcommand() as { options?: { name: string; required?: boolean; autocomplete?: boolean }[] } | undefined;
+      const nameOpt = sub?.options?.find((o) => o.name === 'name');
+      expect(nameOpt).toBeDefined();
+      expect(nameOpt?.required).toBe(true);
+      expect(nameOpt?.autocomplete).toBe(true);
+    });
+
+    test('add-member has required members option', () => {
+      const sub = getAddMemberSubcommand() as { options?: { name: string; required?: boolean }[] } | undefined;
+      const membersOpt = sub?.options?.find((o) => o.name === 'members');
+      expect(membersOpt).toBeDefined();
+      expect(membersOpt?.required).toBe(true);
+    });
+
+    function makeAddMemberInteraction(templateName: string, members: string) {
+      const reply = jest.fn().mockResolvedValue(undefined);
+      return {
+        guildId: 'guild-1',
+        replied: false,
+        deferred: false,
+        reply,
+        followUp: jest.fn(),
+        options: {
+          getSubcommandGroup: () => 'template',
+          getSubcommand: () => 'add-member',
+          getString: (name: string) => (name === 'name' ? templateName : members),
+        },
+      } as unknown as import('discord.js').ChatInputCommandInteraction;
+    }
+
+    test('replies with error when template not found', async () => {
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeAddMemberInteraction('NoSuchTemplate', 'Dave');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Template **NoSuchTemplate** not found. Use `/rotate template list` to see available templates.',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('adds members to existing template and replies with count', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice', 'Bob'],
+        selectionCounts: { Alice: 2 },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+      const upsertSpy = jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeAddMemberInteraction('Team', 'Charlie, Dave');
+      await command.execute(interaction);
+
+      expect(upsertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          participants: ['Alice', 'Bob', 'Charlie', 'Dave'],
+        }),
+      );
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Added 2 member(s) to **Team**. Now has 4 participant(s).',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('deduplicates members already in template', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice', 'Bob'],
+        selectionCounts: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+      const upsertSpy = jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeAddMemberInteraction('Team', 'Alice, Charlie');
+      await command.execute(interaction);
+
+      expect(upsertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          participants: ['Alice', 'Bob', 'Charlie'],
+        }),
+      );
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Added 1 member(s) to **Team**. Now has 3 participant(s).',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('replies with error when adding would exceed 50 participants', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'BigTeam',
+        participants: Array.from({ length: 49 }, (_, i) => `Person${i}`),
+        selectionCounts: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+
+      const interaction = makeAddMemberInteraction('BigTeam', 'NewA, NewB, NewC');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Cannot add: would exceed the 50-participant limit (currently 49, adding 3).',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('replies with error when members input is empty', async () => {
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeAddMemberInteraction('Team', ', , ,');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Please provide at least one member name.',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('replies with message when all specified members already exist', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice', 'Bob'],
+        selectionCounts: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+      const upsertSpy = jest.spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate');
+
+      const interaction = makeAddMemberInteraction('Team', 'Alice, Bob');
+      await command.execute(interaction);
+
+      expect(upsertSpy).not.toHaveBeenCalled();
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'All specified member(s) are already in **Team**.',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+  });
+
+  describe('template remove-member subcommand', () => {
+    function getRemoveMemberSubcommand() {
+      const commandData = command.data.toJSON();
+      const templateGroup = commandData.options?.find((o) => o.name === 'template') as
+        | { options?: { name: string; options?: { name: string; required?: boolean; autocomplete?: boolean }[] }[] }
+        | undefined;
+      return templateGroup?.options?.find((o) => o.name === 'remove-member');
+    }
+
+    test('remove-member subcommand exists in template group', () => {
+      expect(getRemoveMemberSubcommand()).toBeDefined();
+    });
+
+    test('remove-member has required name option with autocomplete', () => {
+      const sub = getRemoveMemberSubcommand() as { options?: { name: string; required?: boolean; autocomplete?: boolean }[] } | undefined;
+      const nameOpt = sub?.options?.find((o) => o.name === 'name');
+      expect(nameOpt).toBeDefined();
+      expect(nameOpt?.required).toBe(true);
+      expect(nameOpt?.autocomplete).toBe(true);
+    });
+
+    test('remove-member has required members option', () => {
+      const sub = getRemoveMemberSubcommand() as { options?: { name: string; required?: boolean }[] } | undefined;
+      const membersOpt = sub?.options?.find((o) => o.name === 'members');
+      expect(membersOpt).toBeDefined();
+      expect(membersOpt?.required).toBe(true);
+    });
+
+    function makeRemoveMemberInteraction(templateName: string, members: string) {
+      const reply = jest.fn().mockResolvedValue(undefined);
+      return {
+        guildId: 'guild-1',
+        replied: false,
+        deferred: false,
+        reply,
+        followUp: jest.fn(),
+        options: {
+          getSubcommandGroup: () => 'template',
+          getSubcommand: () => 'remove-member',
+          getString: (name: string) => (name === 'name' ? templateName : members),
+        },
+      } as unknown as import('discord.js').ChatInputCommandInteraction;
+    }
+
+    test('replies with error when template not found', async () => {
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeRemoveMemberInteraction('NoSuchTemplate', 'Alice');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Template **NoSuchTemplate** not found. Use `/rotate template list` to see available templates.',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('replies with error listing members not found in template', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice', 'Bob'],
+        selectionCounts: {},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+
+      const interaction = makeRemoveMemberInteraction('Team', 'Charlie, Dave');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'The following member(s) are not in template **Team**: Charlie, Dave',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('replies with error when removal would leave 0 participants', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice'],
+        selectionCounts: { Alice: 3 },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+
+      const interaction = makeRemoveMemberInteraction('Team', 'Alice');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Cannot remove: template must have at least 1 participant.',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('removes members from template and replies with count', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice', 'Bob', 'Charlie'],
+        selectionCounts: { Alice: 1, Bob: 2, Charlie: 3 },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+      const upsertSpy = jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeRemoveMemberInteraction('Team', 'Bob, Charlie');
+      await command.execute(interaction);
+
+      expect(upsertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          participants: ['Alice'],
+        }),
+      );
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Removed 2 member(s) from **Team**. Now has 1 participant(s).',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('replies with error when members input is empty', async () => {
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeRemoveMemberInteraction('Team', ', , ,');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Please provide at least one member name.',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+  });
 });

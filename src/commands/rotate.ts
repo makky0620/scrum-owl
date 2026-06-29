@@ -249,6 +249,42 @@ const command: Command = {
         )
         .addSubcommand((subcommand) =>
           subcommand.setName('list').setDescription('List all templates for this server'),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName('add-member')
+            .setDescription('Add one or more members to an existing template')
+            .addStringOption((option) =>
+              option
+                .setName('name')
+                .setDescription('Template name')
+                .setRequired(true)
+                .setAutocomplete(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName('members')
+                .setDescription('Comma-separated names to add')
+                .setRequired(true),
+            ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName('remove-member')
+            .setDescription('Remove one or more members from an existing template')
+            .addStringOption((option) =>
+              option
+                .setName('name')
+                .setDescription('Template name')
+                .setRequired(true)
+                .setAutocomplete(true),
+            )
+            .addStringOption((option) =>
+              option
+                .setName('members')
+                .setDescription('Comma-separated names to remove')
+                .setRequired(true),
+            ),
         ),
     ) as SlashCommandBuilder,
 
@@ -270,6 +306,10 @@ const command: Command = {
         await handleTemplateDelete(interaction);
       } else if (subcommand === 'list') {
         await handleTemplateList(interaction);
+      } else if (subcommand === 'add-member') {
+        await handleTemplateAddMember(interaction);
+      } else if (subcommand === 'remove-member') {
+        await handleTemplateRemoveMember(interaction);
       }
       // No else needed: Discord enforces valid subcommand values via the builder
     } else {
@@ -449,6 +489,92 @@ async function handleTemplateList(interaction: ChatInputCommandInteraction): Pro
   }
 
   await interaction.reply({ embeds: [embed] });
+}
+
+async function handleTemplateAddMember(interaction: ChatInputCommandInteraction): Promise<void> {
+  const name = interaction.options.getString('name', true).trim();
+  const membersInput = interaction.options.getString('members', true);
+  const newMembers = parseParticipants(membersInput);
+
+  if (newMembers.length === 0) {
+    await safeReply(interaction, 'Please provide at least one member name.');
+    return;
+  }
+
+  const template = await templateStorage.getTemplateByName(interaction.guildId!, name);
+  if (!template) {
+    await safeReply(
+      interaction,
+      `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
+    );
+    return;
+  }
+
+  const existing = new Set(template.participants);
+  const toAdd = newMembers.filter((m) => !existing.has(m));
+
+  if (toAdd.length === 0) {
+    await safeReply(interaction, `All specified member(s) are already in **${name}**.`);
+    return;
+  }
+
+  if (template.participants.length + toAdd.length > 50) {
+    await safeReply(
+      interaction,
+      `Cannot add: would exceed the 50-participant limit (currently ${template.participants.length}, adding ${toAdd.length}).`,
+    );
+    return;
+  }
+
+  const updated = [...template.participants, ...toAdd];
+  await templateStorage.upsertTemplate({ ...template, participants: updated, updatedAt: new Date() });
+  await safeReply(
+    interaction,
+    `Added ${toAdd.length} member(s) to **${name}**. Now has ${updated.length} participant(s).`,
+  );
+}
+
+async function handleTemplateRemoveMember(interaction: ChatInputCommandInteraction): Promise<void> {
+  const name = interaction.options.getString('name', true).trim();
+  const membersInput = interaction.options.getString('members', true);
+  const toRemove = parseParticipants(membersInput);
+
+  if (toRemove.length === 0) {
+    await safeReply(interaction, 'Please provide at least one member name.');
+    return;
+  }
+
+  const template = await templateStorage.getTemplateByName(interaction.guildId!, name);
+  if (!template) {
+    await safeReply(
+      interaction,
+      `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
+    );
+    return;
+  }
+
+  const existing = new Set(template.participants);
+  const missing = toRemove.filter((m) => !existing.has(m));
+  if (missing.length > 0) {
+    await safeReply(
+      interaction,
+      `The following member(s) are not in template **${name}**: ${missing.join(', ')}`,
+    );
+    return;
+  }
+
+  const removeSet = new Set(toRemove);
+  const updated = template.participants.filter((p) => !removeSet.has(p));
+  if (updated.length === 0) {
+    await safeReply(interaction, 'Cannot remove: template must have at least 1 participant.');
+    return;
+  }
+
+  await templateStorage.upsertTemplate({ ...template, participants: updated, updatedAt: new Date() });
+  await safeReply(
+    interaction,
+    `Removed ${toRemove.length} member(s) from **${name}**. Now has ${updated.length} participant(s).`,
+  );
 }
 
 module.exports = command;
