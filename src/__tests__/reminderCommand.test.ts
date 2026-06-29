@@ -1,5 +1,5 @@
 import type { ChatInputCommandInteraction, ModalSubmitInteraction } from 'discord.js';
-import { ChannelType } from 'discord.js';
+import { ChannelType, MessageFlags } from 'discord.js';
 
 // Mock the ReminderService BEFORE importing the command
 const mockGetUserReminders = jest.fn();
@@ -291,6 +291,75 @@ describe('Reminder Command', () => {
           flags: expect.any(Number),
         }),
       );
+    });
+  });
+
+  describe('Security: Create Reply', () => {
+    let mockInteraction: Partial<ChatInputCommandInteraction>;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+
+      mockCreateReminder.mockResolvedValue({
+        id: 'reminder-id-123',
+        userId: 'test-user-123',
+        title: 'Test Reminder',
+        message: 'Test message',
+        nextTriggerTime: new Date('2024-01-01T14:30:00'),
+        type: 'once',
+        isActive: true,
+      });
+
+      mockInteraction = {
+        options: {
+          getSubcommand: jest.fn().mockReturnValue('create'),
+          getString: jest.fn((name: string) => {
+            switch (name) {
+              case 'title':
+                return 'Test Reminder';
+              case 'message':
+                return 'Test message';
+              case 'time':
+                return '14:30';
+              case 'type':
+                return 'once';
+              default:
+                return null;
+            }
+          }),
+          getChannel: jest.fn().mockReturnValue(null),
+          getBoolean: jest.fn().mockReturnValue(null),
+        },
+        user: { id: 'test-user-123' },
+        channelId: 'current-channel-123',
+        guildId: 'test-guild-123',
+        reply: jest.fn(),
+      } as unknown as Partial<ChatInputCommandInteraction>;
+    });
+
+    it('should reply with ephemeral flag on successful create', async () => {
+      await command.execute(mockInteraction as ChatInputCommandInteraction);
+
+      expect(mockInteraction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          flags: MessageFlags.Ephemeral,
+        }),
+      );
+    });
+
+    it('should not expose internal error details to users when create fails', async () => {
+      const internalPath = '/home/bot/data/reminders.json';
+      mockCreateReminder.mockRejectedValue(
+        new Error(`EACCES: permission denied, open '${internalPath}'`),
+      );
+
+      await command.execute(mockInteraction as ChatInputCommandInteraction);
+
+      const replyArg = (mockInteraction.reply as jest.Mock).mock.calls[0][0];
+      const content: string = replyArg.content ?? '';
+      expect(content).not.toContain(internalPath);
+      expect(content).not.toContain('EACCES');
+      expect(content).not.toContain('permission denied');
     });
   });
 });

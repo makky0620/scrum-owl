@@ -104,8 +104,7 @@ const command: Command = {
       }
     } catch (error) {
       logger.error('[Reminder Command] Error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      await safeReply(interaction, `Error: ${errorMessage}`);
+      await safeReply(interaction, 'An internal error occurred. Please try again later.');
     }
   },
 
@@ -114,8 +113,7 @@ const command: Command = {
       await processModalSubmit(interaction);
     } catch (error) {
       logger.error('[Reminder Command] Modal Submit Error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      await safeReply(interaction, `Error: ${errorMessage}`);
+      await safeReply(interaction, 'An internal error occurred. Please try again later.');
     }
   },
 };
@@ -180,7 +178,7 @@ async function handleCreate(interaction: ChatInputCommandInteraction): Promise<v
     embed.addFields({ name: 'Skip Weekends', value: 'Yes', inline: false });
   }
 
-  await interaction.reply({ embeds: [embed] });
+  await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 }
 
 async function handleList(interaction: ChatInputCommandInteraction): Promise<void> {
