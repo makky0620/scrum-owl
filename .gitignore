@@ -61,6 +61,7 @@ build/Release
 # AI tool configs
 .claude/
 .superpowers/
+.junie/
 
 # Docker
 .docker/
