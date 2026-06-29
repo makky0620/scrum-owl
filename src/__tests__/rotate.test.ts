@@ -1,5 +1,7 @@
+import type { AutocompleteInteraction } from 'discord.js';
 import type { Command } from '../command';
 import { selectParticipants } from '../utils/rotateHelpers';
+import { FacilitatorTemplateStorage } from '../utils/facilitatorTemplateStorage';
 
 describe('Rotate Command', () => {
   let command: Command;
@@ -182,5 +184,79 @@ describe('Rotate Command', () => {
     expect(message).toBe(
       'count must be less than the number of participants (got count=3 with 3 participants).',
     );
+  });
+
+  describe('template name autocomplete', () => {
+    function nameOptionOf(subcommandName: 'use' | 'delete'): { autocomplete?: boolean } {
+      const commandData = command.data.toJSON();
+      const templateGroup = commandData.options?.find((o) => o.name === 'template') as
+        | { options?: { name: string; options?: { name: string; autocomplete?: boolean }[] }[] }
+        | undefined;
+      const subcommand = templateGroup?.options?.find((o) => o.name === subcommandName);
+      const nameOption = subcommand?.options?.find((o) => o.name === 'name');
+      return nameOption as { autocomplete?: boolean };
+    }
+
+    test('template use name option has autocomplete enabled', () => {
+      expect(nameOptionOf('use')?.autocomplete).toBe(true);
+    });
+
+    test('template delete name option has autocomplete enabled', () => {
+      expect(nameOptionOf('delete')?.autocomplete).toBe(true);
+    });
+
+    test('handleAutocomplete is defined', () => {
+      expect(typeof command.handleAutocomplete).toBe('function');
+    });
+
+    test('responds with matching template names filtered by focused value', async () => {
+      const spy = jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplatesByGuild')
+        .mockResolvedValue([
+          {
+            id: '1',
+            guildId: 'guild-1',
+            name: 'Backend Team',
+            participants: ['Alice'],
+            selectionCounts: {},
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: '2',
+            guildId: 'guild-1',
+            name: 'Frontend Team',
+            participants: ['Bob'],
+            selectionCounts: {},
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ]);
+
+      const respond = jest.fn();
+      const interaction = {
+        guildId: 'guild-1',
+        options: { getFocused: () => 'back' },
+        respond,
+      } as unknown as AutocompleteInteraction;
+
+      await command.handleAutocomplete!(interaction);
+
+      expect(respond).toHaveBeenCalledWith([{ name: 'Backend Team', value: 'Backend Team' }]);
+      spy.mockRestore();
+    });
+
+    test('responds with empty array when used outside a guild', async () => {
+      const respond = jest.fn();
+      const interaction = {
+        guildId: null,
+        options: { getFocused: () => '' },
+        respond,
+      } as unknown as AutocompleteInteraction;
+
+      await command.handleAutocomplete!(interaction);
+
+      expect(respond).toHaveBeenCalledWith([]);
+    });
   });
 });

@@ -70,6 +70,22 @@ async function main(): Promise<void> {
       return;
     }
 
+    // Handle autocomplete interactions
+    if (interaction.isAutocomplete()) {
+      const command = client.commands.get(interaction.commandName);
+
+      if (!command || !command.handleAutocomplete) {
+        return;
+      }
+
+      try {
+        await command.handleAutocomplete(interaction);
+      } catch (error) {
+        logger.error(`[ERROR] Error handling autocomplete for ${interaction.commandName}:`, error);
+      }
+      return;
+    }
+
     // Handle modal submit interactions
     if (interaction.isModalSubmit()) {
       const customId = interaction.customId;
