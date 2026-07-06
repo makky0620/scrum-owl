@@ -82,7 +82,7 @@ Randomly select one or more participants from a list.
 
 #### Templates
 
-Save a reusable participant list as a named template. Templates track selection history and apply weighted selection so less-frequently-chosen participants are more likely to be picked.
+Save a reusable participant list as a named template. Templates use shuffle-bag selection: everyone is drawn exactly once per cycle (like a deck of cards), and the deck is reshuffled when it runs out. Members added mid-cycle join the current deck at a random position. Selection history is also tracked per participant.
 
 ```
 /rotate template save name: [name] participants: [comma-separated names]
