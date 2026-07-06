@@ -15,7 +15,7 @@ import { randomUUID } from 'crypto';
 import type { Command } from '../command';
 import { FacilitatorTemplateStorage } from '../utils/facilitatorTemplateStorage';
 import { safeReply } from '../utils/interactionHelpers';
-import { selectParticipants } from '../utils/rotateHelpers';
+import { selectParticipants, drawFromBag, insertIntoBag } from '../utils/rotateHelpers';
 import { logger } from '../utils/logger';
 
 const emojis = ['🎲', '🎯', '🎮', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎺', '🎸', '🎹', '🎻', '🎼'];
@@ -33,8 +33,8 @@ function parseParticipants(input: string): string[] {
 async function runRoulette(
   interaction: ChatInputCommandInteraction,
   participants: string[],
-  count: number = 1,
-  selectionCounts: { [name: string]: number } = {},
+  count: number,
+  selectFn: () => string[],
 ): Promise<string[] | null> {
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
@@ -110,7 +110,7 @@ async function runRoulette(
             await new Promise((res) => setTimeout(res, spinningInterval));
           }
 
-          const selected = selectParticipants(participants, count, selectionCounts);
+          const selected = selectFn();
 
           let resultTitle: string;
           let resultDescription: string;
@@ -355,7 +355,9 @@ async function handleRun(interaction: ChatInputCommandInteraction): Promise<void
   }
 
   // no template to update for ad-hoc runs
-  await runRoulette(interaction, participants, count);
+  await runRoulette(interaction, participants, count, () =>
+    selectParticipants(participants, count),
+  );
 }
 
 async function handleTemplateSave(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -385,6 +387,7 @@ async function handleTemplateSave(interaction: ChatInputCommandInteraction): Pro
     name,
     participants,
     selectionCounts: {},
+    bag: [],
     createdAt: now,
     updatedAt: now,
   });
@@ -421,18 +424,18 @@ async function handleTemplateUse(interaction: ChatInputCommandInteraction): Prom
     return;
   }
 
-  const selected = await runRoulette(
-    interaction,
-    template.participants,
-    count,
-    template.selectionCounts,
-  );
+  let updatedBag: string[] = template.bag;
+  const selected = await runRoulette(interaction, template.participants, count, () => {
+    const draw = drawFromBag(template.participants, template.bag, count);
+    updatedBag = draw.bag;
+    return draw.selected;
+  });
 
   if (selected) {
     for (const participant of selected) {
       template.selectionCounts[participant] = (template.selectionCounts[participant] ?? 0) + 1;
     }
-    await templateStorage.upsertTemplate(template);
+    await templateStorage.upsertTemplate({ ...template, bag: updatedBag });
   }
 }
 
@@ -527,7 +530,12 @@ async function handleTemplateAddMember(interaction: ChatInputCommandInteraction)
   }
 
   const updated = [...template.participants, ...toAdd];
-  await templateStorage.upsertTemplate({ ...template, participants: updated, updatedAt: new Date() });
+  await templateStorage.upsertTemplate({
+    ...template,
+    participants: updated,
+    bag: insertIntoBag(template.bag, toAdd),
+    updatedAt: new Date(),
+  });
   await safeReply(
     interaction,
     `Added ${toAdd.length} member(s) to **${name}**. Now has ${updated.length} participant(s).`,
@@ -570,7 +578,11 @@ async function handleTemplateRemoveMember(interaction: ChatInputCommandInteracti
     return;
   }
 
-  await templateStorage.upsertTemplate({ ...template, participants: updated, updatedAt: new Date() });
+  await templateStorage.upsertTemplate({
+    ...template,
+    participants: updated,
+    updatedAt: new Date(),
+  });
   await safeReply(
     interaction,
     `Removed ${toRemove.length} member(s) from **${name}**. Now has ${updated.length} participant(s).`,

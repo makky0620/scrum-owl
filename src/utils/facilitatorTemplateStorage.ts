@@ -19,6 +19,7 @@ export class FacilitatorTemplateStorage {
       return stored.map((t) => ({
         ...t,
         selectionCounts: t.selectionCounts ?? {},
+        bag: t.bag ?? [],
         createdAt: new Date(t.createdAt),
         updatedAt: new Date(t.updatedAt),
       }));
@@ -51,7 +52,12 @@ export class FacilitatorTemplateStorage {
           reconciledCounts[name] = template.selectionCounts[name];
         }
       }
-      const reconciledTemplate = { ...template, selectionCounts: reconciledCounts };
+      const reconciledBag = template.bag.filter((name) => validNames.has(name));
+      const reconciledTemplate = {
+        ...template,
+        selectionCounts: reconciledCounts,
+        bag: reconciledBag,
+      };
 
       const templates = await this.loadTemplates();
       const existingIndex = templates.findIndex(

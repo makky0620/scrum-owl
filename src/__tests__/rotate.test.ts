@@ -1,4 +1,4 @@
-import type { AutocompleteInteraction } from 'discord.js';
+import type { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js';
 import type { Command } from '../command';
 import { selectParticipants } from '../utils/rotateHelpers';
 import { FacilitatorTemplateStorage } from '../utils/facilitatorTemplateStorage';
@@ -219,6 +219,7 @@ describe('Rotate Command', () => {
             name: 'Backend Team',
             participants: ['Alice'],
             selectionCounts: {},
+            bag: [],
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -228,6 +229,7 @@ describe('Rotate Command', () => {
             name: 'Frontend Team',
             participants: ['Bob'],
             selectionCounts: {},
+            bag: [],
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -264,7 +266,12 @@ describe('Rotate Command', () => {
     function getAddMemberSubcommand() {
       const commandData = command.data.toJSON();
       const templateGroup = commandData.options?.find((o) => o.name === 'template') as
-        | { options?: { name: string; options?: { name: string; required?: boolean; autocomplete?: boolean }[] }[] }
+        | {
+            options?: {
+              name: string;
+              options?: { name: string; required?: boolean; autocomplete?: boolean }[];
+            }[];
+          }
         | undefined;
       return templateGroup?.options?.find((o) => o.name === 'add-member');
     }
@@ -274,7 +281,9 @@ describe('Rotate Command', () => {
     });
 
     test('add-member has required name option with autocomplete', () => {
-      const sub = getAddMemberSubcommand() as { options?: { name: string; required?: boolean; autocomplete?: boolean }[] } | undefined;
+      const sub = getAddMemberSubcommand() as
+        | { options?: { name: string; required?: boolean; autocomplete?: boolean }[] }
+        | undefined;
       const nameOpt = sub?.options?.find((o) => o.name === 'name');
       expect(nameOpt).toBeDefined();
       expect(nameOpt?.required).toBe(true);
@@ -282,7 +291,9 @@ describe('Rotate Command', () => {
     });
 
     test('add-member has required members option', () => {
-      const sub = getAddMemberSubcommand() as { options?: { name: string; required?: boolean }[] } | undefined;
+      const sub = getAddMemberSubcommand() as
+        | { options?: { name: string; required?: boolean }[] }
+        | undefined;
       const membersOpt = sub?.options?.find((o) => o.name === 'members');
       expect(membersOpt).toBeDefined();
       expect(membersOpt?.required).toBe(true);
@@ -314,7 +325,8 @@ describe('Rotate Command', () => {
 
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: 'Template **NoSuchTemplate** not found. Use `/rotate template list` to see available templates.',
+          content:
+            'Template **NoSuchTemplate** not found. Use `/rotate template list` to see available templates.',
         }),
       );
       jest.restoreAllMocks();
@@ -327,6 +339,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice', 'Bob'],
         selectionCounts: { Alice: 2 },
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -360,6 +373,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice', 'Bob'],
         selectionCounts: {},
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -393,6 +407,7 @@ describe('Rotate Command', () => {
         name: 'BigTeam',
         participants: Array.from({ length: 49 }, (_, i) => `Person${i}`),
         selectionCounts: {},
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -434,6 +449,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice', 'Bob'],
         selectionCounts: {},
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -453,13 +469,79 @@ describe('Rotate Command', () => {
       );
       jest.restoreAllMocks();
     });
+
+    test('add-member inserts new members into a non-empty bag', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice', 'Bob'],
+        selectionCounts: {},
+        bag: ['Bob'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+      const upsertSpy = jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeAddMemberInteraction('Team', 'Charlie');
+      await command.execute(interaction);
+
+      const upserted = upsertSpy.mock.calls[0][0];
+      expect(upserted.bag).toHaveLength(2);
+      expect(upserted.bag).toContain('Bob');
+      expect(upserted.bag).toContain('Charlie');
+      jest.restoreAllMocks();
+    });
+  });
+
+  describe('template save bag reset', () => {
+    function makeSaveInteraction(
+      templateName: string,
+      participants: string,
+    ): ChatInputCommandInteraction {
+      const reply = jest.fn().mockResolvedValue(undefined);
+      return {
+        guildId: 'guild-1',
+        replied: false,
+        deferred: false,
+        reply,
+        followUp: jest.fn(),
+        options: {
+          getSubcommandGroup: () => 'template',
+          getSubcommand: () => 'save',
+          getString: (name: string) => (name === 'name' ? templateName : participants),
+        },
+      } as unknown as ChatInputCommandInteraction;
+    }
+
+    test('template save starts with an empty bag', async () => {
+      const upsertSpy = jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeSaveInteraction('Team', 'Alice, Bob');
+      await command.execute(interaction);
+
+      expect(upsertSpy).toHaveBeenCalledWith(expect.objectContaining({ bag: [] }));
+      jest.restoreAllMocks();
+    });
   });
 
   describe('template remove-member subcommand', () => {
     function getRemoveMemberSubcommand() {
       const commandData = command.data.toJSON();
       const templateGroup = commandData.options?.find((o) => o.name === 'template') as
-        | { options?: { name: string; options?: { name: string; required?: boolean; autocomplete?: boolean }[] }[] }
+        | {
+            options?: {
+              name: string;
+              options?: { name: string; required?: boolean; autocomplete?: boolean }[];
+            }[];
+          }
         | undefined;
       return templateGroup?.options?.find((o) => o.name === 'remove-member');
     }
@@ -469,7 +551,9 @@ describe('Rotate Command', () => {
     });
 
     test('remove-member has required name option with autocomplete', () => {
-      const sub = getRemoveMemberSubcommand() as { options?: { name: string; required?: boolean; autocomplete?: boolean }[] } | undefined;
+      const sub = getRemoveMemberSubcommand() as
+        | { options?: { name: string; required?: boolean; autocomplete?: boolean }[] }
+        | undefined;
       const nameOpt = sub?.options?.find((o) => o.name === 'name');
       expect(nameOpt).toBeDefined();
       expect(nameOpt?.required).toBe(true);
@@ -477,7 +561,9 @@ describe('Rotate Command', () => {
     });
 
     test('remove-member has required members option', () => {
-      const sub = getRemoveMemberSubcommand() as { options?: { name: string; required?: boolean }[] } | undefined;
+      const sub = getRemoveMemberSubcommand() as
+        | { options?: { name: string; required?: boolean }[] }
+        | undefined;
       const membersOpt = sub?.options?.find((o) => o.name === 'members');
       expect(membersOpt).toBeDefined();
       expect(membersOpt?.required).toBe(true);
@@ -509,7 +595,8 @@ describe('Rotate Command', () => {
 
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: 'Template **NoSuchTemplate** not found. Use `/rotate template list` to see available templates.',
+          content:
+            'Template **NoSuchTemplate** not found. Use `/rotate template list` to see available templates.',
         }),
       );
       jest.restoreAllMocks();
@@ -522,6 +609,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice', 'Bob'],
         selectionCounts: {},
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -547,6 +635,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice'],
         selectionCounts: { Alice: 3 },
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -572,6 +661,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice', 'Bob', 'Charlie'],
         selectionCounts: { Alice: 1, Bob: 2, Charlie: 3 },
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
