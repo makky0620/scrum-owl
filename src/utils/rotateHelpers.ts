@@ -106,3 +106,28 @@ export function insertIntoBag(
   }
   return result;
 }
+
+export interface TemplateStatsEntry {
+  name: string;
+  count: number;
+  inBag: boolean;
+}
+
+export function buildTemplateStats(
+  participants: string[],
+  selectionCounts: { [name: string]: number },
+  bag: string[],
+): TemplateStatsEntry[] {
+  const validNames = new Set(participants);
+  const validBag = new Set(bag.filter((name) => validNames.has(name)));
+  // no valid names in the bag means a fresh cycle: everyone is drawable
+  const everyoneRemains = validBag.size === 0;
+
+  const entries = participants.map((name) => ({
+    name,
+    count: selectionCounts[name] ?? 0,
+    inBag: everyoneRemains || validBag.has(name),
+  }));
+
+  return entries.sort((a, b) => b.count - a.count);
+}

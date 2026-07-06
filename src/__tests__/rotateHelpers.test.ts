@@ -1,4 +1,4 @@
-import { shuffle, drawFromBag, insertIntoBag } from '../utils/rotateHelpers';
+import { shuffle, drawFromBag, insertIntoBag, buildTemplateStats } from '../utils/rotateHelpers';
 
 describe('shuffle', () => {
   test('returns a permutation of the input without mutating it', () => {
@@ -108,5 +108,40 @@ describe('insertIntoBag', () => {
 
   test('empty bag stays empty so the next use reshuffles everyone', () => {
     expect(insertIntoBag([], ['X'])).toEqual([]);
+  });
+});
+
+describe('buildTemplateStats', () => {
+  test('participants missing from selectionCounts default to count 0', () => {
+    const result = buildTemplateStats(['Alice', 'Bob'], { Alice: 2 }, []);
+    expect(result.find((e) => e.name === 'Bob')?.count).toBe(0);
+  });
+
+  test('sorts by count descending, ties keep participants order', () => {
+    const result = buildTemplateStats(
+      ['Alice', 'Bob', 'Carol', 'Dave'],
+      { Bob: 3, Alice: 1, Dave: 1 },
+      [],
+    );
+    expect(result.map((e) => e.name)).toEqual(['Bob', 'Alice', 'Dave', 'Carol']);
+    expect(result.map((e) => e.count)).toEqual([3, 1, 1, 0]);
+  });
+
+  test('empty bag marks everyone as inBag', () => {
+    const result = buildTemplateStats(['Alice', 'Bob'], {}, []);
+    expect(result.every((e) => e.inBag)).toBe(true);
+  });
+
+  test('non-empty bag marks only bag members as inBag', () => {
+    const result = buildTemplateStats(['Alice', 'Bob', 'Carol'], {}, ['Bob', 'Carol']);
+    expect(result.find((e) => e.name === 'Alice')?.inBag).toBe(false);
+    expect(result.find((e) => e.name === 'Bob')?.inBag).toBe(true);
+    expect(result.find((e) => e.name === 'Carol')?.inBag).toBe(true);
+  });
+
+  test('bag names not in participants are ignored', () => {
+    // bag contains only a ghost → no valid names → treated as a fresh cycle
+    const result = buildTemplateStats(['Alice', 'Bob'], {}, ['Ghost']);
+    expect(result.every((e) => e.inBag)).toBe(true);
   });
 });
