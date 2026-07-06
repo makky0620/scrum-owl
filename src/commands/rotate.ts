@@ -15,7 +15,12 @@ import { randomUUID } from 'crypto';
 import type { Command } from '../command';
 import { FacilitatorTemplateStorage } from '../utils/facilitatorTemplateStorage';
 import { safeReply } from '../utils/interactionHelpers';
-import { selectParticipants, drawFromBag, insertIntoBag } from '../utils/rotateHelpers';
+import {
+  selectParticipants,
+  drawFromBag,
+  insertIntoBag,
+  buildTemplateStats,
+} from '../utils/rotateHelpers';
 import { logger } from '../utils/logger';
 
 const emojis = ['🎲', '🎯', '🎮', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎺', '🎸', '🎹', '🎻', '🎼'];
@@ -285,6 +290,18 @@ const command: Command = {
                 .setDescription('Comma-separated names to remove')
                 .setRequired(true),
             ),
+        )
+        .addSubcommand((subcommand) =>
+          subcommand
+            .setName('stats')
+            .setDescription('Show selection counts and remaining members for a template')
+            .addStringOption((option) =>
+              option
+                .setName('name')
+                .setDescription('Template name')
+                .setRequired(true)
+                .setAutocomplete(true),
+            ),
         ),
     ) as SlashCommandBuilder,
 
@@ -310,6 +327,8 @@ const command: Command = {
         await handleTemplateAddMember(interaction);
       } else if (subcommand === 'remove-member') {
         await handleTemplateRemoveMember(interaction);
+      } else if (subcommand === 'stats') {
+        await handleTemplateStats(interaction);
       }
       // No else needed: Discord enforces valid subcommand values via the builder
     } else {
@@ -587,6 +606,39 @@ async function handleTemplateRemoveMember(interaction: ChatInputCommandInteracti
     interaction,
     `Removed ${toRemove.length} member(s) from **${name}**. Now has ${updated.length} participant(s).`,
   );
+}
+
+async function handleTemplateStats(interaction: ChatInputCommandInteraction): Promise<void> {
+  const name = interaction.options.getString('name', true).trim();
+  const template = await templateStorage.getTemplateByName(interaction.guildId!, name);
+
+  if (!template) {
+    await safeReply(
+      interaction,
+      `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
+    );
+    return;
+  }
+
+  const stats = buildTemplateStats(template.participants, template.selectionCounts, template.bag);
+  const countLines = stats.map((s) => `${s.name}: ${s.count}`).join('\n');
+  const remaining = stats
+    .filter((s) => s.inBag)
+    .map((s) => s.name)
+    .join(', ');
+  const participantCount = template.participants.length;
+
+  const embed = new EmbedBuilder()
+    .setColor('#0099ff')
+    .setTitle(`Template Stats: ${template.name}`)
+    .setDescription(countLines)
+    .addFields({ name: 'Remaining in current cycle', value: remaining, inline: false })
+    .setTimestamp()
+    .setFooter({
+      text: `${participantCount} ${participantCount === 1 ? 'participant' : 'participants'}`,
+    });
+
+  await interaction.reply({ embeds: [embed] });
 }
 
 module.exports = command;
