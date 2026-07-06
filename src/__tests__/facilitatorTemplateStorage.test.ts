@@ -26,6 +26,7 @@ describe('FacilitatorTemplateStorage', () => {
     name: 'sprint-team',
     participants: ['Alice', 'Bob', 'Charlie'],
     selectionCounts: {},
+    bag: [],
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   };
@@ -103,6 +104,38 @@ describe('FacilitatorTemplateStorage', () => {
       const templates = await storage.loadTemplates();
 
       expect(templates[0].selectionCounts).toEqual({});
+    });
+
+    it('should default bag to empty array when stored template has no bag', async () => {
+      const stored = [
+        {
+          ...mockTemplate,
+          bag: undefined,
+          createdAt: mockTemplate.createdAt.toISOString(),
+          updatedAt: mockTemplate.updatedAt.toISOString(),
+        },
+      ];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+
+      const templates = await storage.loadTemplates();
+
+      expect(templates[0].bag).toEqual([]);
+    });
+
+    it('should preserve bag when stored template has one', async () => {
+      const stored = [
+        {
+          ...mockTemplate,
+          bag: ['Bob', 'Alice'],
+          createdAt: mockTemplate.createdAt.toISOString(),
+          updatedAt: mockTemplate.updatedAt.toISOString(),
+        },
+      ];
+      mockReadFile.mockResolvedValue(JSON.stringify(stored));
+
+      const templates = await storage.loadTemplates();
+
+      expect(templates[0].bag).toEqual(['Bob', 'Alice']);
     });
   });
 
@@ -197,6 +230,20 @@ describe('FacilitatorTemplateStorage', () => {
       ) as StoredFacilitatorTemplate[];
       expect(writtenData[0].selectionCounts).toEqual({ Alice: 1 });
       expect(writtenData[0].selectionCounts).not.toHaveProperty('Charlie');
+    });
+
+    it('should remove names not in participants from bag on upsert', async () => {
+      const enoentError = Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+      mockReadFile.mockRejectedValue(enoentError);
+
+      await storage.upsertTemplate({
+        ...mockTemplate,
+        participants: ['Alice', 'Bob'],
+        bag: ['Bob', 'Ghost', 'Alice'],
+      });
+
+      const written = JSON.parse(mockWriteFile.mock.calls[0][1] as string);
+      expect(written[0].bag).toEqual(['Bob', 'Alice']);
     });
   });
 

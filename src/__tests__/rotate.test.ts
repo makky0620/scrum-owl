@@ -219,6 +219,7 @@ describe('Rotate Command', () => {
             name: 'Backend Team',
             participants: ['Alice'],
             selectionCounts: {},
+            bag: [],
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -228,6 +229,7 @@ describe('Rotate Command', () => {
             name: 'Frontend Team',
             participants: ['Bob'],
             selectionCounts: {},
+            bag: [],
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -327,6 +329,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice', 'Bob'],
         selectionCounts: { Alice: 2 },
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -360,6 +363,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice', 'Bob'],
         selectionCounts: {},
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -393,6 +397,7 @@ describe('Rotate Command', () => {
         name: 'BigTeam',
         participants: Array.from({ length: 49 }, (_, i) => `Person${i}`),
         selectionCounts: {},
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -522,6 +527,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice', 'Bob'],
         selectionCounts: {},
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -547,6 +553,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice'],
         selectionCounts: { Alice: 3 },
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -572,6 +579,7 @@ describe('Rotate Command', () => {
         name: 'Team',
         participants: ['Alice', 'Bob', 'Charlie'],
         selectionCounts: { Alice: 1, Bob: 2, Charlie: 3 },
+        bag: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };

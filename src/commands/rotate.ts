@@ -385,6 +385,7 @@ async function handleTemplateSave(interaction: ChatInputCommandInteraction): Pro
     name,
     participants,
     selectionCounts: {},
+    bag: [],
     createdAt: now,
     updatedAt: now,
   });
