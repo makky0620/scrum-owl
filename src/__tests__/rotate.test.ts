@@ -720,4 +720,131 @@ describe('Rotate Command', () => {
       jest.restoreAllMocks();
     });
   });
+
+  describe('template stats subcommand', () => {
+    function getStatsSubcommand():
+      | {
+          name: string;
+          options?: { name: string; required?: boolean; autocomplete?: boolean }[];
+        }
+      | undefined {
+      const commandData = command.data.toJSON();
+      const templateGroup = commandData.options?.find((o) => o.name === 'template') as
+        | {
+            options?: {
+              name: string;
+              options?: { name: string; required?: boolean; autocomplete?: boolean }[];
+            }[];
+          }
+        | undefined;
+      return templateGroup?.options?.find((o) => o.name === 'stats');
+    }
+
+    test('stats subcommand exists in template group', () => {
+      expect(getStatsSubcommand()).toBeDefined();
+    });
+
+    test('stats has required name option with autocomplete', () => {
+      const nameOpt = getStatsSubcommand()?.options?.find((o) => o.name === 'name');
+      expect(nameOpt).toBeDefined();
+      expect(nameOpt?.required).toBe(true);
+      expect(nameOpt?.autocomplete).toBe(true);
+    });
+
+    function makeStatsInteraction(templateName: string): ChatInputCommandInteraction {
+      const reply = jest.fn().mockResolvedValue(undefined);
+      return {
+        guildId: 'guild-1',
+        replied: false,
+        deferred: false,
+        reply,
+        followUp: jest.fn(),
+        options: {
+          getSubcommandGroup: () => 'template',
+          getSubcommand: () => 'stats',
+          getString: () => templateName,
+        },
+      } as unknown as ChatInputCommandInteraction;
+    }
+
+    test('replies with error when template not found', async () => {
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(undefined);
+
+      const interaction = makeStatsInteraction('NoSuchTemplate');
+      await command.execute(interaction);
+
+      expect(interaction.reply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content:
+            'Template **NoSuchTemplate** not found. Use `/rotate template list` to see available templates.',
+        }),
+      );
+      jest.restoreAllMocks();
+    });
+
+    test('replies with embed showing counts sorted desc and remaining members', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice', 'Bob', 'Carol'],
+        selectionCounts: { Alice: 1, Bob: 3 },
+        bag: ['Alice', 'Carol'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+
+      const interaction = makeStatsInteraction('Team');
+      await command.execute(interaction);
+
+      const replyArg = (interaction.reply as jest.Mock).mock.calls[0][0] as {
+        embeds: {
+          toJSON: () => {
+            title?: string;
+            description?: string;
+            fields?: { name: string; value: string }[];
+            footer?: { text: string };
+          };
+        }[];
+      };
+      const embed = replyArg.embeds[0].toJSON();
+      expect(embed.title).toBe('Template Stats: Team');
+      expect(embed.description).toBe('Bob: 3\nAlice: 1\nCarol: 0');
+      expect(embed.fields?.[0].name).toBe('Remaining in current cycle');
+      expect(embed.fields?.[0].value).toBe('Alice, Carol');
+      expect(embed.footer?.text).toBe('3 participants');
+      jest.restoreAllMocks();
+    });
+
+    test('empty bag lists everyone as remaining', async () => {
+      const template = {
+        id: 'uuid-1',
+        guildId: 'guild-1',
+        name: 'Team',
+        participants: ['Alice', 'Bob'],
+        selectionCounts: {},
+        bag: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+        .mockResolvedValue(template);
+
+      const interaction = makeStatsInteraction('Team');
+      await command.execute(interaction);
+
+      const replyArg = (interaction.reply as jest.Mock).mock.calls[0][0] as {
+        embeds: { toJSON: () => { fields?: { name: string; value: string }[] } }[];
+      };
+      const embed = replyArg.embeds[0].toJSON();
+      expect(embed.fields?.[0].value).toBe('Alice, Bob');
+      jest.restoreAllMocks();
+    });
+  });
 });
