@@ -1,4 +1,4 @@
-import { shuffle, drawFromBag } from '../utils/rotateHelpers';
+import { shuffle, drawFromBag, insertIntoBag } from '../utils/rotateHelpers';
 
 describe('shuffle', () => {
   test('returns a permutation of the input without mutating it', () => {
@@ -83,5 +83,30 @@ describe('drawFromBag', () => {
     const result = drawFromBag(['A'], [], 1);
     expect(result.selected).toEqual(['A']);
     expect(result.bag).toEqual(['A']);
+  });
+});
+
+describe('insertIntoBag', () => {
+  test('inserted members are present and existing order is preserved', () => {
+    const result = insertIntoBag(['A', 'B', 'C'], ['X', 'Y']);
+    expect(result).toHaveLength(5);
+    expect(result).toEqual(expect.arrayContaining(['A', 'B', 'C', 'X', 'Y']));
+    const existing = result.filter((n: string) => ['A', 'B', 'C'].includes(n));
+    expect(existing).toEqual(['A', 'B', 'C']);
+  });
+
+  test('inserts at the position chosen by rng', () => {
+    const result = insertIntoBag(['A', 'B'], ['X'], () => 0);
+    expect(result).toEqual(['X', 'A', 'B']);
+  });
+
+  test('does not mutate the input bag', () => {
+    const bag = ['A', 'B'];
+    insertIntoBag(bag, ['X']);
+    expect(bag).toEqual(['A', 'B']);
+  });
+
+  test('empty bag stays empty so the next use reshuffles everyone', () => {
+    expect(insertIntoBag([], ['X'])).toEqual([]);
   });
 });

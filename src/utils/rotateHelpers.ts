@@ -90,3 +90,19 @@ export function drawFromBag(
 
   return { selected, bag: currentBag };
 }
+
+export function insertIntoBag(
+  bag: string[],
+  newMembers: string[],
+  rng: () => number = Math.random,
+): string[] {
+  if (bag.length === 0) {
+    return [];
+  }
+  const result = [...bag];
+  for (const member of newMembers) {
+    const position = Math.floor(rng() * (result.length + 1));
+    result.splice(position, 0, member);
+  }
+  return result;
+}
