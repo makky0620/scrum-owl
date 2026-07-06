@@ -53,7 +53,11 @@ export class FacilitatorTemplateStorage {
         }
       }
       const reconciledBag = template.bag.filter((name) => validNames.has(name));
-      const reconciledTemplate = { ...template, selectionCounts: reconciledCounts, bag: reconciledBag };
+      const reconciledTemplate = {
+        ...template,
+        selectionCounts: reconciledCounts,
+        bag: reconciledBag,
+      };
 
       const templates = await this.loadTemplates();
       const existingIndex = templates.findIndex(

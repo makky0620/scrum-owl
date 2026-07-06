@@ -25,6 +25,7 @@
 ### Task 1: Add `bag` field to model and storage
 
 **Files:**
+
 - Modify: `src/models/facilitatorTemplate.ts`
 - Modify: `src/utils/facilitatorTemplateStorage.ts:19-24` (loadTemplates), `:45-54` (upsertTemplate)
 - Modify: `src/commands/rotate.ts:381-390` (handleTemplateSave — compile fix)
@@ -32,6 +33,7 @@
 - Modify: `src/__tests__/rotate.test.ts` (fixture compile fixes)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: `FacilitatorTemplate.bag: string[]` (required), `StoredFacilitatorTemplate.bag?: string[]` (optional). `loadTemplates()` defaults missing `bag` to `[]`. `upsertTemplate()` removes names not in `participants` from `bag`.
 
@@ -180,10 +182,12 @@ no longer participants. Template save starts with an empty bag."
 ### Task 2: `shuffle` and `drawFromBag` pure functions
 
 **Files:**
+
 - Modify: `src/utils/rotateHelpers.ts`
 - Create: `src/__tests__/rotateHelpers.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing (pure functions).
 - Produces:
 
@@ -392,19 +396,17 @@ for deterministic tests."
 ### Task 3: `insertIntoBag` pure function
 
 **Files:**
+
 - Modify: `src/utils/rotateHelpers.ts`
 - Test: `src/__tests__/rotateHelpers.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
 
 ```typescript
-export function insertIntoBag(
-  bag: string[],
-  newMembers: string[],
-  rng?: () => number,
-): string[];
+export function insertIntoBag(bag: string[], newMembers: string[], rng?: () => number): string[];
 ```
 
 Returns a new array; inserting into an empty bag returns an empty bag (the next `use` reshuffles everyone, new members included).
@@ -487,11 +489,13 @@ empty because the next draw reshuffles all participants anyway."
 ### Task 4: Wire shuffle bag into the rotate command
 
 **Files:**
+
 - Modify: `src/commands/rotate.ts` (`runRoulette`, `handleRun`, `handleTemplateUse`, `handleTemplateAddMember`)
 - Test: `src/__tests__/rotate.test.ts`
 - Modify: `README.md` (template feature description)
 
 **Interfaces:**
+
 - Consumes: `drawFromBag`, `insertIntoBag` from Task 2/3; `bag` field from Task 1.
 - Produces: `runRoulette(interaction, participants, count, selectFn: () => string[])` — the 4th parameter replaces the old `selectionCounts` parameter and is called once when the user clicks Start Selection.
 
@@ -511,9 +515,7 @@ test('add-member inserts new members into a non-empty bag', async () => {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  jest
-    .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-    .mockResolvedValue(template);
+  jest.spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName').mockResolvedValue(template);
   const upsertSpy = jest
     .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
     .mockResolvedValue(undefined);
@@ -596,9 +598,7 @@ const selected = selectFn();
 In `handleRun`, the call becomes:
 
 ```typescript
-await runRoulette(interaction, participants, count, () =>
-  selectParticipants(participants, count),
-);
+await runRoulette(interaction, participants, count, () => selectParticipants(participants, count));
 ```
 
 In `handleTemplateUse`, replace the `runRoulette` call and the persistence block:
