@@ -16,7 +16,10 @@
 - Commit messages: subject ≤50 chars, blank line, body wrapped at 72 chars. No Claude footer.
 - TDD: write the failing test first, verify it fails, then implement.
 - All bot-facing copy is English, matching existing output tone.
-- Run `npm run lint` and `npm run format:check` before each commit.
+- Run `npm run lint` before each commit (must be clean), and
+  `npx prettier --check <changed files>` on the files you touched.
+  Repo-wide `npm run format:check` fails on ~17 pre-existing files from main
+  (known backlog item) — do not fix those.
 - After the feature ships, `npm run deploy` must be run once to register the new subcommand with Discord (manual, not part of this plan's tasks).
 
 ---
@@ -24,10 +27,12 @@
 ### Task 1: `buildTemplateStats` pure function
 
 **Files:**
+
 - Modify: `src/utils/rotateHelpers.ts` (append at end of file)
 - Test: `src/__tests__/rotateHelpers.test.ts` (append at end of file)
 
 **Interfaces:**
+
 - Consumes: nothing new (standalone pure function).
 - Produces (Task 2 relies on these exact names):
 
@@ -135,8 +140,8 @@ Expected: PASS (all tests, including pre-existing ones).
 
 - [ ] **Step 5: Lint, format check, commit**
 
-Run: `npm run lint && npm run format:check`
-Expected: no errors. If format:check fails, run `npm run format` and re-check.
+Run: `npm run lint && npx prettier --check src/utils/rotateHelpers.ts src/__tests__/rotateHelpers.test.ts`
+Expected: no errors. If prettier fails, run `npx prettier --write` on those files and re-check.
 
 ```bash
 git add src/utils/rotateHelpers.ts src/__tests__/rotateHelpers.test.ts
@@ -148,10 +153,12 @@ git commit -m "feat: add buildTemplateStats helper"
 ### Task 2: `stats` subcommand and handler
 
 **Files:**
+
 - Modify: `src/commands/rotate.ts` (builder chain, execute dispatch, new handler)
 - Test: `src/__tests__/rotate.test.ts` (append at end of the top-level describe)
 
 **Interfaces:**
+
 - Consumes: `buildTemplateStats` and `TemplateStatsEntry` from `../utils/rotateHelpers` (Task 1), existing `templateStorage.getTemplateByName`, existing `safeReply`.
 - Produces: user-facing `/rotate template stats` subcommand. No downstream task consumes this.
 
@@ -161,7 +168,12 @@ Append inside `describe('Rotate Command', ...)` in `src/__tests__/rotate.test.ts
 
 ```ts
 describe('template stats subcommand', () => {
-  function getStatsSubcommand() {
+  function getStatsSubcommand():
+    | {
+        name: string;
+        options?: { name: string; required?: boolean; autocomplete?: boolean }[];
+      }
+    | undefined {
     const commandData = command.data.toJSON();
     const templateGroup = commandData.options?.find((o) => o.name === 'template') as
       | {
@@ -179,16 +191,13 @@ describe('template stats subcommand', () => {
   });
 
   test('stats has required name option with autocomplete', () => {
-    const sub = getStatsSubcommand() as
-      | { options?: { name: string; required?: boolean; autocomplete?: boolean }[] }
-      | undefined;
-    const nameOpt = sub?.options?.find((o) => o.name === 'name');
+    const nameOpt = getStatsSubcommand()?.options?.find((o) => o.name === 'name');
     expect(nameOpt).toBeDefined();
     expect(nameOpt?.required).toBe(true);
     expect(nameOpt?.autocomplete).toBe(true);
   });
 
-  function makeStatsInteraction(templateName: string) {
+  function makeStatsInteraction(templateName: string): ChatInputCommandInteraction {
     const reply = jest.fn().mockResolvedValue(undefined);
     return {
       guildId: 'guild-1',
@@ -201,8 +210,17 @@ describe('template stats subcommand', () => {
         getSubcommand: () => 'stats',
         getString: () => templateName,
       },
-    } as unknown as import('discord.js').ChatInputCommandInteraction;
+    } as unknown as ChatInputCommandInteraction;
   }
+```
+
+Note: `ChatInputCommandInteraction` is already imported as a type at the top of
+the test file. Do not use inline `import('discord.js').…` type annotations —
+the repo's lint config forbids them (`@typescript-eslint/consistent-type-imports`),
+and all test helper functions need explicit return types
+(`@typescript-eslint/explicit-function-return-type`).
+
+```ts
 
   test('replies with error when template not found', async () => {
     jest
@@ -240,7 +258,14 @@ describe('template stats subcommand', () => {
     await command.execute(interaction);
 
     const replyArg = (interaction.reply as jest.Mock).mock.calls[0][0] as {
-      embeds: { toJSON: () => { title?: string; description?: string; fields?: { name: string; value: string }[]; footer?: { text: string } } }[];
+      embeds: {
+        toJSON: () => {
+          title?: string;
+          description?: string;
+          fields?: { name: string; value: string }[];
+          footer?: { text: string };
+        };
+      }[];
     };
     const embed = replyArg.embeds[0].toJSON();
     expect(embed.title).toBe('Template Stats: Team');
@@ -372,8 +397,8 @@ Expected: PASS (all suites).
 
 - [ ] **Step 5: Lint, format check, commit**
 
-Run: `npm run lint && npm run format:check`
-Expected: no errors. If format:check fails, run `npm run format` and re-check.
+Run: `npm run lint && npx prettier --check src/commands/rotate.ts src/__tests__/rotate.test.ts`
+Expected: no errors. If prettier fails, run `npx prettier --write` on those files and re-check.
 
 ```bash
 git add src/commands/rotate.ts src/__tests__/rotate.test.ts

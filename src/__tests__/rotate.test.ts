@@ -263,7 +263,12 @@ describe('Rotate Command', () => {
   });
 
   describe('template add-member subcommand', () => {
-    function getAddMemberSubcommand() {
+    function getAddMemberSubcommand():
+      | {
+          name: string;
+          options?: { name: string; required?: boolean; autocomplete?: boolean }[];
+        }
+      | undefined {
       const commandData = command.data.toJSON();
       const templateGroup = commandData.options?.find((o) => o.name === 'template') as
         | {
@@ -299,7 +304,10 @@ describe('Rotate Command', () => {
       expect(membersOpt?.required).toBe(true);
     });
 
-    function makeAddMemberInteraction(templateName: string, members: string) {
+    function makeAddMemberInteraction(
+      templateName: string,
+      members: string,
+    ): ChatInputCommandInteraction {
       const reply = jest.fn().mockResolvedValue(undefined);
       return {
         guildId: 'guild-1',
@@ -312,7 +320,7 @@ describe('Rotate Command', () => {
           getSubcommand: () => 'add-member',
           getString: (name: string) => (name === 'name' ? templateName : members),
         },
-      } as unknown as import('discord.js').ChatInputCommandInteraction;
+      } as unknown as ChatInputCommandInteraction;
     }
 
     test('replies with error when template not found', async () => {
@@ -533,7 +541,12 @@ describe('Rotate Command', () => {
   });
 
   describe('template remove-member subcommand', () => {
-    function getRemoveMemberSubcommand() {
+    function getRemoveMemberSubcommand():
+      | {
+          name: string;
+          options?: { name: string; required?: boolean; autocomplete?: boolean }[];
+        }
+      | undefined {
       const commandData = command.data.toJSON();
       const templateGroup = commandData.options?.find((o) => o.name === 'template') as
         | {
@@ -569,7 +582,10 @@ describe('Rotate Command', () => {
       expect(membersOpt?.required).toBe(true);
     });
 
-    function makeRemoveMemberInteraction(templateName: string, members: string) {
+    function makeRemoveMemberInteraction(
+      templateName: string,
+      members: string,
+    ): ChatInputCommandInteraction {
       const reply = jest.fn().mockResolvedValue(undefined);
       return {
         guildId: 'guild-1',
@@ -582,7 +598,7 @@ describe('Rotate Command', () => {
           getSubcommand: () => 'remove-member',
           getString: (name: string) => (name === 'name' ? templateName : members),
         },
-      } as unknown as import('discord.js').ChatInputCommandInteraction;
+      } as unknown as ChatInputCommandInteraction;
     }
 
     test('replies with error when template not found', async () => {
