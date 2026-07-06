@@ -1,0 +1,87 @@
+import { shuffle, drawFromBag } from '../utils/rotateHelpers';
+
+describe('shuffle', () => {
+  test('returns a permutation of the input without mutating it', () => {
+    const input = ['A', 'B', 'C', 'D', 'E'];
+    const result = shuffle(input);
+    expect([...result].sort()).toEqual([...input].sort());
+    expect(input).toEqual(['A', 'B', 'C', 'D', 'E']);
+  });
+
+  test('is deterministic with an injected rng', () => {
+    const rng = (): number => 0;
+    expect(shuffle(['A', 'B', 'C'], rng)).toEqual(shuffle(['A', 'B', 'C'], rng));
+  });
+});
+
+describe('drawFromBag', () => {
+  test('draws from the front of the bag in order', () => {
+    const result = drawFromBag(['A', 'B', 'C'], ['B', 'C'], 1);
+    expect(result.selected).toEqual(['B']);
+    expect(result.bag).toEqual(['C']);
+  });
+
+  test('filters names no longer in participants from the bag', () => {
+    const result = drawFromBag(['A', 'B', 'C'], ['Ghost', 'B', 'C'], 1);
+    expect(result.selected).toEqual(['B']);
+    expect(result.bag).toEqual(['C']);
+  });
+
+  test('reshuffles all participants when the bag is empty', () => {
+    const result = drawFromBag(['A', 'B', 'C'], [], 1);
+    expect(['A', 'B', 'C']).toContain(result.selected[0]);
+    expect(result.bag).toHaveLength(2);
+  });
+
+  test('draws everyone exactly once per cycle', () => {
+    const participants = ['A', 'B', 'C', 'D'];
+    let bag: string[] = [];
+    const drawn: string[] = [];
+    for (let i = 0; i < participants.length; i++) {
+      const result = drawFromBag(participants, bag, 1);
+      drawn.push(result.selected[0]);
+      bag = result.bag;
+    }
+    expect([...drawn].sort()).toEqual(['A', 'B', 'C', 'D']);
+  });
+
+  test('never returns an empty bag', () => {
+    for (let trial = 0; trial < 50; trial++) {
+      const result = drawFromBag(['A', 'B'], ['A'], 1);
+      expect(result.bag.length).toBeGreaterThan(0);
+    }
+  });
+
+  test('reshuffled bag does not start with the person just drawn', () => {
+    for (let trial = 0; trial < 100; trial++) {
+      // C is drawn, the bag is exhausted, so a fresh 3-person bag is created
+      const result = drawFromBag(['A', 'B', 'C'], ['C'], 1);
+      expect(result.bag).toHaveLength(3);
+      expect(result.bag[0]).not.toBe('C');
+    }
+  });
+
+  test('count>1 crossing a cycle boundary yields no duplicates', () => {
+    for (let trial = 0; trial < 100; trial++) {
+      const result = drawFromBag(['A', 'B', 'C'], ['C'], 2);
+      expect(result.selected[0]).toBe('C');
+      expect(new Set(result.selected).size).toBe(2);
+    }
+  });
+
+  test('a member skipped at a cycle boundary stays in the new bag', () => {
+    for (let trial = 0; trial < 100; trial++) {
+      // C is selected from the old cycle, then the new cycle's bag must
+      // still contain C (it was skipped, not consumed)
+      const result = drawFromBag(['A', 'B', 'C'], ['C'], 2);
+      expect(result.bag).toHaveLength(2);
+      expect(result.bag).toContain('C');
+    }
+  });
+
+  test('single participant is always selected', () => {
+    const result = drawFromBag(['A'], [], 1);
+    expect(result.selected).toEqual(['A']);
+    expect(result.bag).toEqual(['A']);
+  });
+});
