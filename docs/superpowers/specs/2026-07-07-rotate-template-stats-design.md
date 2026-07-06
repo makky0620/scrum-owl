@@ -17,7 +17,8 @@
 - 既存の `template` サブコマンドグループに `stats` サブコマンドを追加
 - `name` オプション: required + autocomplete(既存 `use` / `delete` と同じ)
 - テンプレート未存在時は既存と同文言の not found メッセージを返す
-- 返信は公開(既存コマンド同様 ephemeral なし)
+  (既存ハンドラ同様 `safeReply` 経由の ephemeral)
+- 成功時の stats embed は公開返信(既存コマンドの結果表示と同様)
 - DM 実行は既存の guild ガードで拒否
 
 ## ヘルパー(純関数)
