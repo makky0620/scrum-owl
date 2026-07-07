@@ -20,6 +20,7 @@ import {
   drawFromBag,
   insertIntoBag,
   buildTemplateStats,
+  applySelectionToTemplate,
 } from '../utils/rotateHelpers';
 import { logger } from '../utils/logger';
 
@@ -34,6 +35,8 @@ function parseParticipants(input: string): string[] {
     .filter((name) => name.length > 0)
     .filter((name, index, array) => array.indexOf(name) === index);
 }
+
+class TemplateUpdateRejected extends Error {}
 
 async function runRoulette(
   interaction: ChatInputCommandInteraction,
@@ -451,10 +454,14 @@ async function handleTemplateUse(interaction: ChatInputCommandInteraction): Prom
   });
 
   if (selected) {
-    for (const participant of selected) {
-      template.selectionCounts[participant] = (template.selectionCounts[participant] ?? 0) + 1;
+    try {
+      await templateStorage.updateTemplate(interaction.guildId!, name, (fresh) =>
+        applySelectionToTemplate(fresh, selected, updatedBag),
+      );
+    } catch (error) {
+      // template was deleted mid-roulette; the result is already displayed
+      logger.error('Failed to persist selection results:', error);
     }
-    await templateStorage.upsertTemplate({ ...template, bag: updatedBag });
   }
 }
 
@@ -523,42 +530,38 @@ async function handleTemplateAddMember(interaction: ChatInputCommandInteraction)
     return;
   }
 
-  const template = await templateStorage.getTemplateByName(interaction.guildId!, name);
-  if (!template) {
+  let addedCount = 0;
+  try {
+    const updated = await templateStorage.updateTemplate(interaction.guildId!, name, (fresh) => {
+      const existing = new Set(fresh.participants);
+      const toAdd = newMembers.filter((m) => !existing.has(m));
+
+      if (toAdd.length === 0) {
+        throw new TemplateUpdateRejected(`All specified member(s) are already in **${name}**.`);
+      }
+
+      if (fresh.participants.length + toAdd.length > 50) {
+        throw new TemplateUpdateRejected(
+          `Cannot add: would exceed the 50-participant limit (currently ${fresh.participants.length}, adding ${toAdd.length}).`,
+        );
+      }
+
+      addedCount = toAdd.length;
+      return {
+        ...fresh,
+        participants: [...fresh.participants, ...toAdd],
+        bag: insertIntoBag(fresh.bag, toAdd),
+        updatedAt: new Date(),
+      };
+    });
+
     await safeReply(
       interaction,
-      `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
+      `Added ${addedCount} member(s) to **${name}**. Now has ${updated.participants.length} participant(s).`,
     );
-    return;
+  } catch (error) {
+    await replyTemplateUpdateError(interaction, name, error);
   }
-
-  const existing = new Set(template.participants);
-  const toAdd = newMembers.filter((m) => !existing.has(m));
-
-  if (toAdd.length === 0) {
-    await safeReply(interaction, `All specified member(s) are already in **${name}**.`);
-    return;
-  }
-
-  if (template.participants.length + toAdd.length > 50) {
-    await safeReply(
-      interaction,
-      `Cannot add: would exceed the 50-participant limit (currently ${template.participants.length}, adding ${toAdd.length}).`,
-    );
-    return;
-  }
-
-  const updated = [...template.participants, ...toAdd];
-  await templateStorage.upsertTemplate({
-    ...template,
-    participants: updated,
-    bag: insertIntoBag(template.bag, toAdd),
-    updatedAt: new Date(),
-  });
-  await safeReply(
-    interaction,
-    `Added ${toAdd.length} member(s) to **${name}**. Now has ${updated.length} participant(s).`,
-  );
 }
 
 async function handleTemplateRemoveMember(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -571,41 +574,53 @@ async function handleTemplateRemoveMember(interaction: ChatInputCommandInteracti
     return;
   }
 
-  const template = await templateStorage.getTemplateByName(interaction.guildId!, name);
-  if (!template) {
+  try {
+    const updated = await templateStorage.updateTemplate(interaction.guildId!, name, (fresh) => {
+      const existing = new Set(fresh.participants);
+      const missing = toRemove.filter((m) => !existing.has(m));
+      if (missing.length > 0) {
+        throw new TemplateUpdateRejected(
+          `The following member(s) are not in template **${name}**: ${missing.join(', ')}`,
+        );
+      }
+
+      const removeSet = new Set(toRemove);
+      const remaining = fresh.participants.filter((p) => !removeSet.has(p));
+      if (remaining.length === 0) {
+        throw new TemplateUpdateRejected(
+          'Cannot remove: template must have at least 1 participant.',
+        );
+      }
+
+      return { ...fresh, participants: remaining, updatedAt: new Date() };
+    });
+
+    await safeReply(
+      interaction,
+      `Removed ${toRemove.length} member(s) from **${name}**. Now has ${updated.participants.length} participant(s).`,
+    );
+  } catch (error) {
+    await replyTemplateUpdateError(interaction, name, error);
+  }
+}
+
+async function replyTemplateUpdateError(
+  interaction: ChatInputCommandInteraction,
+  name: string,
+  error: unknown,
+): Promise<void> {
+  if (error instanceof TemplateUpdateRejected) {
+    await safeReply(interaction, error.message);
+    return;
+  }
+  if (error instanceof Error && error.message === `Template "${name}" not found in this server`) {
     await safeReply(
       interaction,
       `Template **${name}** not found. Use \`/rotate template list\` to see available templates.`,
     );
     return;
   }
-
-  const existing = new Set(template.participants);
-  const missing = toRemove.filter((m) => !existing.has(m));
-  if (missing.length > 0) {
-    await safeReply(
-      interaction,
-      `The following member(s) are not in template **${name}**: ${missing.join(', ')}`,
-    );
-    return;
-  }
-
-  const removeSet = new Set(toRemove);
-  const updated = template.participants.filter((p) => !removeSet.has(p));
-  if (updated.length === 0) {
-    await safeReply(interaction, 'Cannot remove: template must have at least 1 participant.');
-    return;
-  }
-
-  await templateStorage.upsertTemplate({
-    ...template,
-    participants: updated,
-    updatedAt: new Date(),
-  });
-  await safeReply(
-    interaction,
-    `Removed ${toRemove.length} member(s) from **${name}**. Now has ${updated.length} participant(s).`,
-  );
+  throw error;
 }
 
 async function handleTemplateStats(interaction: ChatInputCommandInteraction): Promise<void> {
