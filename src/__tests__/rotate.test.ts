@@ -747,6 +747,108 @@ describe('Rotate Command', () => {
     });
   });
 
+  describe('template use write-back', () => {
+    test('persists selection atomically against the fresh template', async () => {
+      jest.useFakeTimers();
+      try {
+        const staleTemplate: FacilitatorTemplate = {
+          id: 'uuid-1',
+          guildId: 'guild-1',
+          name: 'Team',
+          participants: ['Alice', 'Bob'],
+          selectionCounts: {},
+          bag: ['Alice', 'Bob'],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        const freshTemplate: FacilitatorTemplate = {
+          id: 'uuid-1',
+          guildId: 'guild-1',
+          name: 'Team',
+          participants: ['Alice', 'Bob', 'Charlie'],
+          selectionCounts: {},
+          bag: ['Alice', 'Bob', 'Charlie'],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        jest
+          .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+          .mockResolvedValue(staleTemplate);
+
+        const updateSpy = jest
+          .spyOn(FacilitatorTemplateStorage.prototype, 'updateTemplate')
+          .mockImplementation(
+            async (
+              _guildId: string,
+              _name: string,
+              fn: (t: FacilitatorTemplate) => FacilitatorTemplate,
+            ) => fn(freshTemplate),
+          );
+
+        const handlers: { [event: string]: (arg: unknown) => Promise<void> } = {};
+        const collector = {
+          on: jest.fn((event: string, cb: (arg: unknown) => Promise<void>) => {
+            handlers[event] = cb;
+          }),
+          stop: jest.fn(),
+        };
+        const message = { createMessageComponentCollector: jest.fn(() => collector) };
+        const interaction = {
+          guildId: 'guild-1',
+          replied: false,
+          deferred: false,
+          reply: jest.fn().mockResolvedValue(message),
+          editReply: jest.fn().mockResolvedValue(undefined),
+          followUp: jest.fn(),
+          options: {
+            getSubcommandGroup: (): string => 'template',
+            getSubcommand: (): string => 'use',
+            getString: (): string => 'Team',
+            getInteger: (): number => 1,
+          },
+        } as unknown as ChatInputCommandInteraction;
+
+        const executePromise = command.execute(interaction);
+        await jest.advanceTimersByTimeAsync(0);
+        expect(handlers.collect).toBeDefined();
+
+        const click = {
+          customId: 'start_selection',
+          update: jest.fn().mockResolvedValue(undefined),
+          deferUpdate: jest.fn().mockResolvedValue(undefined),
+        };
+
+        const p1 = handlers.collect(click);
+        await jest.advanceTimersByTimeAsync(10000);
+        await p1;
+        await executePromise;
+
+        // updateTemplate must have been called once with the correct guild + name
+        expect(updateSpy).toHaveBeenCalledTimes(1);
+        expect(updateSpy).toHaveBeenCalledWith('guild-1', 'Team', expect.any(Function));
+
+        // The callback result is the Promise returned by the mock (fn(freshTemplate))
+        const result = await updateSpy.mock.results[0].value;
+
+        // Fresh participants (Charlie included) must survive the write-back
+        expect(result.participants).toEqual(['Alice', 'Bob', 'Charlie']);
+
+        // Exactly one name should have count 1, and it must be Alice or Bob
+        // (the draw happened on the stale bag which contained only Alice and Bob)
+        const countedNames = Object.entries(result.selectionCounts as Record<string, number>)
+          .filter(([, v]) => v === 1)
+          .map(([k]) => k);
+        expect(countedNames).toHaveLength(1);
+        expect(['Alice', 'Bob']).toContain(countedNames[0]);
+      } finally {
+        jest.useRealTimers();
+        jest.restoreAllMocks();
+      }
+    });
+  });
+
   describe('template stats subcommand', () => {
     function getStatsSubcommand():
       | {
