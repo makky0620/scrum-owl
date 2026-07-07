@@ -43,21 +43,24 @@ export class FacilitatorTemplateStorage {
     }
   }
 
+  private reconcile(template: FacilitatorTemplate): FacilitatorTemplate {
+    const validNames = new Set(template.participants);
+    const reconciledCounts: { [name: string]: number } = {};
+    for (const name of Object.keys(template.selectionCounts)) {
+      if (validNames.has(name)) {
+        reconciledCounts[name] = template.selectionCounts[name];
+      }
+    }
+    return {
+      ...template,
+      selectionCounts: reconciledCounts,
+      bag: template.bag.filter((name) => validNames.has(name)),
+    };
+  }
+
   async upsertTemplate(template: FacilitatorTemplate): Promise<void> {
     return this.mutex.run(async () => {
-      const validNames = new Set(template.participants);
-      const reconciledCounts: { [name: string]: number } = {};
-      for (const name of Object.keys(template.selectionCounts)) {
-        if (validNames.has(name)) {
-          reconciledCounts[name] = template.selectionCounts[name];
-        }
-      }
-      const reconciledBag = template.bag.filter((name) => validNames.has(name));
-      const reconciledTemplate = {
-        ...template,
-        selectionCounts: reconciledCounts,
-        bag: reconciledBag,
-      };
+      const reconciledTemplate = this.reconcile(template);
 
       const templates = await this.loadTemplates();
       const existingIndex = templates.findIndex(
@@ -75,6 +78,31 @@ export class FacilitatorTemplateStorage {
       }
 
       await this.saveTemplates(templates);
+    });
+  }
+
+  async updateTemplate(
+    guildId: string,
+    name: string,
+    updateFn: (template: FacilitatorTemplate) => FacilitatorTemplate,
+  ): Promise<FacilitatorTemplate> {
+    return this.mutex.run(async () => {
+      const templates = await this.loadTemplates();
+      const index = templates.findIndex((t) => t.guildId === guildId && t.name === name);
+
+      if (index === -1) {
+        throw new Error(`Template "${name}" not found in this server`);
+      }
+
+      const updated = this.reconcile({
+        ...updateFn(templates[index]),
+        id: templates[index].id,
+        createdAt: templates[index].createdAt,
+      });
+
+      templates[index] = updated;
+      await this.saveTemplates(templates);
+      return updated;
     });
   }
 
