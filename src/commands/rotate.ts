@@ -72,6 +72,7 @@ async function runRoulette(
 
   return new Promise<string[] | null>((resolve) => {
     let selectionMade = false;
+    let selectionStarted = false;
 
     const collector = message.createMessageComponentCollector({
       componentType: ComponentType.Button,
@@ -81,6 +82,11 @@ async function runRoulette(
     collector.on('collect', async (i: ButtonInteraction) => {
       try {
         if (i.customId === 'start_selection') {
+          if (selectionStarted) {
+            await i.deferUpdate();
+            return;
+          }
+          selectionStarted = true;
           const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
               .setCustomId('start_selection')

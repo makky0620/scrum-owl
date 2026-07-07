@@ -689,6 +689,64 @@ describe('Rotate Command', () => {
     });
   });
 
+  describe('roulette double-click guard', () => {
+    test('second start_selection click is ignored', async () => {
+      jest.useFakeTimers();
+      try {
+        const handlers: { [event: string]: (arg: unknown) => Promise<void> } = {};
+        const collector = {
+          on: jest.fn((event: string, cb: (arg: unknown) => Promise<void>) => {
+            handlers[event] = cb;
+          }),
+          stop: jest.fn(),
+        };
+        const message = { createMessageComponentCollector: jest.fn(() => collector) };
+        const interaction = {
+          guildId: 'guild-1',
+          replied: false,
+          deferred: false,
+          reply: jest.fn().mockResolvedValue(message),
+          editReply: jest.fn().mockResolvedValue(undefined),
+          followUp: jest.fn(),
+          options: {
+            getSubcommandGroup: () => null,
+            getSubcommand: () => 'run',
+            getString: () => 'Alice, Bob, Charlie',
+            getInteger: () => 1,
+          },
+        } as unknown as ChatInputCommandInteraction;
+
+        const executePromise = command.execute(interaction);
+        await jest.advanceTimersByTimeAsync(0);
+        expect(handlers.collect).toBeDefined();
+
+        const makeClick = (): { customId: string; update: jest.Mock; deferUpdate: jest.Mock } => ({
+          customId: 'start_selection',
+          update: jest.fn().mockResolvedValue(undefined),
+          deferUpdate: jest.fn().mockResolvedValue(undefined),
+        });
+        const first = makeClick();
+        const second = makeClick();
+
+        const p1 = handlers.collect(first);
+        const p2 = handlers.collect(second);
+        await jest.advanceTimersByTimeAsync(0);
+
+        expect(first.update).toHaveBeenCalledTimes(1);
+        expect(second.update).not.toHaveBeenCalled();
+        expect(second.deferUpdate).toHaveBeenCalledTimes(1);
+
+        // drain the 10 × 500ms spin so the roulette promise resolves
+        await jest.advanceTimersByTimeAsync(10000);
+        await p1;
+        await p2;
+        await executePromise;
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
+
   describe('template stats subcommand', () => {
     function getStatsSubcommand():
       | {
