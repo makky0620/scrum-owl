@@ -1,3 +1,5 @@
+import type { FacilitatorTemplate } from '../models/facilitatorTemplate';
+
 function weightedRandomPick(pool: string[], selectionCounts: { [name: string]: number }): string {
   const weights = pool.map((name) => 1 / ((selectionCounts[name] ?? 0) + 1));
   const totalWeight = weights.reduce((sum, w) => sum + w, 0);
@@ -130,4 +132,16 @@ export function buildTemplateStats(
   }));
 
   return entries.sort((a, b) => b.count - a.count);
+}
+
+export function applySelectionToTemplate(
+  template: FacilitatorTemplate,
+  selected: string[],
+  bag: string[],
+): FacilitatorTemplate {
+  const selectionCounts = { ...template.selectionCounts };
+  for (const participant of selected) {
+    selectionCounts[participant] = (selectionCounts[participant] ?? 0) + 1;
+  }
+  return { ...template, selectionCounts, bag, updatedAt: new Date() };
 }

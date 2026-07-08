@@ -2,6 +2,7 @@ import type { AutocompleteInteraction, ChatInputCommandInteraction } from 'disco
 import type { Command } from '../command';
 import { selectParticipants } from '../utils/rotateHelpers';
 import { FacilitatorTemplateStorage } from '../utils/facilitatorTemplateStorage';
+import type { FacilitatorTemplate } from '../models/facilitatorTemplate';
 
 describe('Rotate Command', () => {
   let command: Command;
@@ -32,8 +33,7 @@ describe('Rotate Command', () => {
   test('run subcommand should have required participants option', () => {
     const commandData = command.data.toJSON();
     const runSubcommand = commandData.options?.find((o) => o.name === 'run') as
-      | { options?: { name: string; required?: boolean }[] }
-      | undefined;
+      { options?: { name: string; required?: boolean }[] } | undefined;
     const participantsOption = runSubcommand?.options?.find((o) => o.name === 'participants');
     expect(participantsOption).toBeDefined();
     expect(participantsOption?.required).toBe(true);
@@ -262,6 +262,23 @@ describe('Rotate Command', () => {
     });
   });
 
+  function mockUpdateTemplateWith(template: FacilitatorTemplate | undefined): jest.SpyInstance {
+    return jest
+      .spyOn(FacilitatorTemplateStorage.prototype, 'updateTemplate')
+      .mockImplementation(
+        async (
+          _guildId: string,
+          name: string,
+          fn: (t: FacilitatorTemplate) => FacilitatorTemplate,
+        ) => {
+          if (!template) {
+            throw new Error(`Template "${name}" not found in this server`);
+          }
+          return fn(template);
+        },
+      );
+  }
+
   describe('template add-member subcommand', () => {
     function getAddMemberSubcommand():
       | {
@@ -287,8 +304,7 @@ describe('Rotate Command', () => {
 
     test('add-member has required name option with autocomplete', () => {
       const sub = getAddMemberSubcommand() as
-        | { options?: { name: string; required?: boolean; autocomplete?: boolean }[] }
-        | undefined;
+        { options?: { name: string; required?: boolean; autocomplete?: boolean }[] } | undefined;
       const nameOpt = sub?.options?.find((o) => o.name === 'name');
       expect(nameOpt).toBeDefined();
       expect(nameOpt?.required).toBe(true);
@@ -297,8 +313,7 @@ describe('Rotate Command', () => {
 
     test('add-member has required members option', () => {
       const sub = getAddMemberSubcommand() as
-        | { options?: { name: string; required?: boolean }[] }
-        | undefined;
+        { options?: { name: string; required?: boolean }[] } | undefined;
       const membersOpt = sub?.options?.find((o) => o.name === 'members');
       expect(membersOpt).toBeDefined();
       expect(membersOpt?.required).toBe(true);
@@ -324,9 +339,7 @@ describe('Rotate Command', () => {
     }
 
     test('replies with error when template not found', async () => {
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(undefined);
+      mockUpdateTemplateWith(undefined);
 
       const interaction = makeAddMemberInteraction('NoSuchTemplate', 'Dave');
       await command.execute(interaction);
@@ -341,7 +354,7 @@ describe('Rotate Command', () => {
     });
 
     test('adds members to existing template and replies with count', async () => {
-      const template = {
+      const template: FacilitatorTemplate = {
         id: 'uuid-1',
         guildId: 'guild-1',
         name: 'Team',
@@ -351,21 +364,13 @@ describe('Rotate Command', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(template);
-      const upsertSpy = jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
-        .mockResolvedValue(undefined);
+      const updateSpy = mockUpdateTemplateWith(template);
 
       const interaction = makeAddMemberInteraction('Team', 'Charlie, Dave');
       await command.execute(interaction);
 
-      expect(upsertSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          participants: ['Alice', 'Bob', 'Charlie', 'Dave'],
-        }),
-      );
+      const result = await updateSpy.mock.results[0].value;
+      expect(result.participants).toEqual(['Alice', 'Bob', 'Charlie', 'Dave']);
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: 'Added 2 member(s) to **Team**. Now has 4 participant(s).',
@@ -375,7 +380,7 @@ describe('Rotate Command', () => {
     });
 
     test('deduplicates members already in template', async () => {
-      const template = {
+      const template: FacilitatorTemplate = {
         id: 'uuid-1',
         guildId: 'guild-1',
         name: 'Team',
@@ -385,21 +390,13 @@ describe('Rotate Command', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(template);
-      const upsertSpy = jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
-        .mockResolvedValue(undefined);
+      const updateSpy = mockUpdateTemplateWith(template);
 
       const interaction = makeAddMemberInteraction('Team', 'Alice, Charlie');
       await command.execute(interaction);
 
-      expect(upsertSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          participants: ['Alice', 'Bob', 'Charlie'],
-        }),
-      );
+      const result = await updateSpy.mock.results[0].value;
+      expect(result.participants).toEqual(['Alice', 'Bob', 'Charlie']);
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: 'Added 1 member(s) to **Team**. Now has 3 participant(s).',
@@ -409,7 +406,7 @@ describe('Rotate Command', () => {
     });
 
     test('replies with error when adding would exceed 50 participants', async () => {
-      const template = {
+      const template: FacilitatorTemplate = {
         id: 'uuid-1',
         guildId: 'guild-1',
         name: 'BigTeam',
@@ -419,9 +416,7 @@ describe('Rotate Command', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(template);
+      mockUpdateTemplateWith(template);
 
       const interaction = makeAddMemberInteraction('BigTeam', 'NewA, NewB, NewC');
       await command.execute(interaction);
@@ -435,13 +430,12 @@ describe('Rotate Command', () => {
     });
 
     test('replies with error when members input is empty', async () => {
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(undefined);
+      const updateSpy = mockUpdateTemplateWith(undefined);
 
       const interaction = makeAddMemberInteraction('Team', ', , ,');
       await command.execute(interaction);
 
+      expect(updateSpy).not.toHaveBeenCalled();
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: 'Please provide at least one member name.',
@@ -451,7 +445,7 @@ describe('Rotate Command', () => {
     });
 
     test('replies with message when all specified members already exist', async () => {
-      const template = {
+      const template: FacilitatorTemplate = {
         id: 'uuid-1',
         guildId: 'guild-1',
         name: 'Team',
@@ -461,15 +455,11 @@ describe('Rotate Command', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(template);
-      const upsertSpy = jest.spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate');
+      mockUpdateTemplateWith(template);
 
       const interaction = makeAddMemberInteraction('Team', 'Alice, Bob');
       await command.execute(interaction);
 
-      expect(upsertSpy).not.toHaveBeenCalled();
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: 'All specified member(s) are already in **Team**.',
@@ -479,7 +469,7 @@ describe('Rotate Command', () => {
     });
 
     test('add-member inserts new members into a non-empty bag', async () => {
-      const template = {
+      const template: FacilitatorTemplate = {
         id: 'uuid-1',
         guildId: 'guild-1',
         name: 'Team',
@@ -489,20 +479,15 @@ describe('Rotate Command', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(template);
-      const upsertSpy = jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
-        .mockResolvedValue(undefined);
+      const updateSpy = mockUpdateTemplateWith(template);
 
       const interaction = makeAddMemberInteraction('Team', 'Charlie');
       await command.execute(interaction);
 
-      const upserted = upsertSpy.mock.calls[0][0];
-      expect(upserted.bag).toHaveLength(2);
-      expect(upserted.bag).toContain('Bob');
-      expect(upserted.bag).toContain('Charlie');
+      const result = await updateSpy.mock.results[0].value;
+      expect(result.bag).toHaveLength(2);
+      expect(result.bag).toContain('Bob');
+      expect(result.bag).toContain('Charlie');
       jest.restoreAllMocks();
     });
   });
@@ -565,8 +550,7 @@ describe('Rotate Command', () => {
 
     test('remove-member has required name option with autocomplete', () => {
       const sub = getRemoveMemberSubcommand() as
-        | { options?: { name: string; required?: boolean; autocomplete?: boolean }[] }
-        | undefined;
+        { options?: { name: string; required?: boolean; autocomplete?: boolean }[] } | undefined;
       const nameOpt = sub?.options?.find((o) => o.name === 'name');
       expect(nameOpt).toBeDefined();
       expect(nameOpt?.required).toBe(true);
@@ -575,8 +559,7 @@ describe('Rotate Command', () => {
 
     test('remove-member has required members option', () => {
       const sub = getRemoveMemberSubcommand() as
-        | { options?: { name: string; required?: boolean }[] }
-        | undefined;
+        { options?: { name: string; required?: boolean }[] } | undefined;
       const membersOpt = sub?.options?.find((o) => o.name === 'members');
       expect(membersOpt).toBeDefined();
       expect(membersOpt?.required).toBe(true);
@@ -602,9 +585,7 @@ describe('Rotate Command', () => {
     }
 
     test('replies with error when template not found', async () => {
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(undefined);
+      mockUpdateTemplateWith(undefined);
 
       const interaction = makeRemoveMemberInteraction('NoSuchTemplate', 'Alice');
       await command.execute(interaction);
@@ -619,7 +600,7 @@ describe('Rotate Command', () => {
     });
 
     test('replies with error listing members not found in template', async () => {
-      const template = {
+      const template: FacilitatorTemplate = {
         id: 'uuid-1',
         guildId: 'guild-1',
         name: 'Team',
@@ -629,9 +610,7 @@ describe('Rotate Command', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(template);
+      mockUpdateTemplateWith(template);
 
       const interaction = makeRemoveMemberInteraction('Team', 'Charlie, Dave');
       await command.execute(interaction);
@@ -645,7 +624,7 @@ describe('Rotate Command', () => {
     });
 
     test('replies with error when removal would leave 0 participants', async () => {
-      const template = {
+      const template: FacilitatorTemplate = {
         id: 'uuid-1',
         guildId: 'guild-1',
         name: 'Team',
@@ -655,9 +634,7 @@ describe('Rotate Command', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(template);
+      mockUpdateTemplateWith(template);
 
       const interaction = makeRemoveMemberInteraction('Team', 'Alice');
       await command.execute(interaction);
@@ -671,7 +648,7 @@ describe('Rotate Command', () => {
     });
 
     test('removes members from template and replies with count', async () => {
-      const template = {
+      const template: FacilitatorTemplate = {
         id: 'uuid-1',
         guildId: 'guild-1',
         name: 'Team',
@@ -681,21 +658,13 @@ describe('Rotate Command', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(template);
-      const upsertSpy = jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'upsertTemplate')
-        .mockResolvedValue(undefined);
+      const updateSpy = mockUpdateTemplateWith(template);
 
       const interaction = makeRemoveMemberInteraction('Team', 'Bob, Charlie');
       await command.execute(interaction);
 
-      expect(upsertSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          participants: ['Alice'],
-        }),
-      );
+      const result = await updateSpy.mock.results[0].value;
+      expect(result.participants).toEqual(['Alice']);
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: 'Removed 2 member(s) from **Team**. Now has 1 participant(s).',
@@ -705,19 +674,178 @@ describe('Rotate Command', () => {
     });
 
     test('replies with error when members input is empty', async () => {
-      jest
-        .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
-        .mockResolvedValue(undefined);
+      const updateSpy = mockUpdateTemplateWith(undefined);
 
       const interaction = makeRemoveMemberInteraction('Team', ', , ,');
       await command.execute(interaction);
 
+      expect(updateSpy).not.toHaveBeenCalled();
       expect(interaction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: 'Please provide at least one member name.',
         }),
       );
       jest.restoreAllMocks();
+    });
+  });
+
+  describe('roulette double-click guard', () => {
+    test('second start_selection click is ignored', async () => {
+      jest.useFakeTimers();
+      try {
+        const handlers: { [event: string]: (arg: unknown) => Promise<void> } = {};
+        const collector = {
+          on: jest.fn((event: string, cb: (arg: unknown) => Promise<void>) => {
+            handlers[event] = cb;
+          }),
+          stop: jest.fn(),
+        };
+        const message = { createMessageComponentCollector: jest.fn(() => collector) };
+        const interaction = {
+          guildId: 'guild-1',
+          replied: false,
+          deferred: false,
+          reply: jest.fn().mockResolvedValue(message),
+          editReply: jest.fn().mockResolvedValue(undefined),
+          followUp: jest.fn(),
+          options: {
+            getSubcommandGroup: () => null,
+            getSubcommand: () => 'run',
+            getString: () => 'Alice, Bob, Charlie',
+            getInteger: () => 1,
+          },
+        } as unknown as ChatInputCommandInteraction;
+
+        const executePromise = command.execute(interaction);
+        await jest.advanceTimersByTimeAsync(0);
+        expect(handlers.collect).toBeDefined();
+
+        const makeClick = (): { customId: string; update: jest.Mock; deferUpdate: jest.Mock } => ({
+          customId: 'start_selection',
+          update: jest.fn().mockResolvedValue(undefined),
+          deferUpdate: jest.fn().mockResolvedValue(undefined),
+        });
+        const first = makeClick();
+        const second = makeClick();
+
+        const p1 = handlers.collect(first);
+        const p2 = handlers.collect(second);
+        await jest.advanceTimersByTimeAsync(0);
+
+        expect(first.update).toHaveBeenCalledTimes(1);
+        expect(second.update).not.toHaveBeenCalled();
+        expect(second.deferUpdate).toHaveBeenCalledTimes(1);
+
+        // drain the 10 × 500ms spin so the roulette promise resolves
+        await jest.advanceTimersByTimeAsync(10000);
+        await p1;
+        await p2;
+        await executePromise;
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
+
+  describe('template use write-back', () => {
+    test('persists selection atomically against the fresh template', async () => {
+      jest.useFakeTimers();
+      try {
+        const staleTemplate: FacilitatorTemplate = {
+          id: 'uuid-1',
+          guildId: 'guild-1',
+          name: 'Team',
+          participants: ['Alice', 'Bob'],
+          selectionCounts: {},
+          bag: ['Alice', 'Bob'],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        const freshTemplate: FacilitatorTemplate = {
+          id: 'uuid-1',
+          guildId: 'guild-1',
+          name: 'Team',
+          participants: ['Alice', 'Bob', 'Charlie'],
+          selectionCounts: {},
+          bag: ['Alice', 'Bob', 'Charlie'],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        jest
+          .spyOn(FacilitatorTemplateStorage.prototype, 'getTemplateByName')
+          .mockResolvedValue(staleTemplate);
+
+        const updateSpy = jest
+          .spyOn(FacilitatorTemplateStorage.prototype, 'updateTemplate')
+          .mockImplementation(
+            async (
+              _guildId: string,
+              _name: string,
+              fn: (t: FacilitatorTemplate) => FacilitatorTemplate,
+            ) => fn(freshTemplate),
+          );
+
+        const handlers: { [event: string]: (arg: unknown) => Promise<void> } = {};
+        const collector = {
+          on: jest.fn((event: string, cb: (arg: unknown) => Promise<void>) => {
+            handlers[event] = cb;
+          }),
+          stop: jest.fn(),
+        };
+        const message = { createMessageComponentCollector: jest.fn(() => collector) };
+        const interaction = {
+          guildId: 'guild-1',
+          replied: false,
+          deferred: false,
+          reply: jest.fn().mockResolvedValue(message),
+          editReply: jest.fn().mockResolvedValue(undefined),
+          followUp: jest.fn(),
+          options: {
+            getSubcommandGroup: (): string => 'template',
+            getSubcommand: (): string => 'use',
+            getString: (): string => 'Team',
+            getInteger: (): number => 1,
+          },
+        } as unknown as ChatInputCommandInteraction;
+
+        const executePromise = command.execute(interaction);
+        await jest.advanceTimersByTimeAsync(0);
+        expect(handlers.collect).toBeDefined();
+
+        const click = {
+          customId: 'start_selection',
+          update: jest.fn().mockResolvedValue(undefined),
+          deferUpdate: jest.fn().mockResolvedValue(undefined),
+        };
+
+        const p1 = handlers.collect(click);
+        await jest.advanceTimersByTimeAsync(10000);
+        await p1;
+        await executePromise;
+
+        // updateTemplate must have been called once with the correct guild + name
+        expect(updateSpy).toHaveBeenCalledTimes(1);
+        expect(updateSpy).toHaveBeenCalledWith('guild-1', 'Team', expect.any(Function));
+
+        // The callback result is the Promise returned by the mock (fn(freshTemplate))
+        const result = await updateSpy.mock.results[0].value;
+
+        // Fresh participants (Charlie included) must survive the write-back
+        expect(result.participants).toEqual(['Alice', 'Bob', 'Charlie']);
+
+        // Exactly one name should have count 1, and it must be Alice or Bob
+        // (the draw happened on the stale bag which contained only Alice and Bob)
+        const countedNames = Object.entries(result.selectionCounts as Record<string, number>)
+          .filter(([, v]) => v === 1)
+          .map(([k]) => k);
+        expect(countedNames).toHaveLength(1);
+        expect(['Alice', 'Bob']).toContain(countedNames[0]);
+      } finally {
+        jest.useRealTimers();
+        jest.restoreAllMocks();
+      }
     });
   });
 

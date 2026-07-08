@@ -387,4 +387,104 @@ describe('FacilitatorTemplateStorage', () => {
       expect(saved.map((t) => t.name)).toContain('team-beta');
     });
   });
+
+  describe('updateTemplate', () => {
+    function statefulFs(initial: FacilitatorTemplate[]): void {
+      let fileContent = JSON.stringify(
+        initial.map((t) => ({
+          ...t,
+          createdAt: t.createdAt.toISOString(),
+          updatedAt: t.updatedAt.toISOString(),
+        })),
+      );
+      mockReadFile.mockImplementation(async () => fileContent);
+      mockWriteFile.mockImplementation(async (_path, data) => {
+        fileContent = data as string;
+      });
+      mockMkdir.mockResolvedValue(undefined);
+    }
+
+    it('applies updateFn changes and persists them', async () => {
+      statefulFs([mockTemplate]);
+
+      const result = await storage.updateTemplate('guild123', 'sprint-team', (t) => ({
+        ...t,
+        selectionCounts: { ...t.selectionCounts, Alice: 1 },
+      }));
+
+      expect(result.selectionCounts).toEqual({ Alice: 1 });
+      const reloaded = await storage.loadTemplates();
+      expect(reloaded[0].selectionCounts).toEqual({ Alice: 1 });
+    });
+
+    it('throws when the template does not exist', async () => {
+      statefulFs([mockTemplate]);
+
+      await expect(storage.updateTemplate('guild123', 'no-such', (t) => t)).rejects.toThrow(
+        'Template "no-such" not found in this server',
+      );
+      expect(mockWriteFile).not.toHaveBeenCalled();
+    });
+
+    it('does not save when updateFn throws', async () => {
+      statefulFs([mockTemplate]);
+
+      await expect(
+        storage.updateTemplate('guild123', 'sprint-team', () => {
+          throw new Error('rejected');
+        }),
+      ).rejects.toThrow('rejected');
+      expect(mockWriteFile).not.toHaveBeenCalled();
+    });
+
+    it('reconciles counts and bag against updated participants', async () => {
+      statefulFs([
+        {
+          ...mockTemplate,
+          selectionCounts: { Alice: 2, Bob: 1 },
+          bag: ['Bob', 'Charlie'],
+        },
+      ]);
+
+      const result = await storage.updateTemplate('guild123', 'sprint-team', (t) => ({
+        ...t,
+        participants: t.participants.filter((p) => p !== 'Bob'),
+      }));
+
+      expect(result.participants).toEqual(['Alice', 'Charlie']);
+      expect(result.selectionCounts).toEqual({ Alice: 2 });
+      expect(result.bag).toEqual(['Charlie']);
+    });
+
+    it('preserves id and createdAt even if updateFn changes them', async () => {
+      statefulFs([mockTemplate]);
+
+      const result = await storage.updateTemplate('guild123', 'sprint-team', (t) => ({
+        ...t,
+        id: 'forged-id',
+        createdAt: new Date('2030-01-01T00:00:00.000Z'),
+      }));
+
+      expect(result.id).toBe('test-id-1');
+      expect(result.createdAt).toEqual(mockTemplate.createdAt);
+    });
+
+    it('serializes concurrent updates so both changes land', async () => {
+      statefulFs([mockTemplate]);
+
+      await Promise.all([
+        storage.updateTemplate('guild123', 'sprint-team', (t) => ({
+          ...t,
+          selectionCounts: { ...t.selectionCounts, Alice: (t.selectionCounts.Alice ?? 0) + 1 },
+        })),
+        storage.updateTemplate('guild123', 'sprint-team', (t) => ({
+          ...t,
+          selectionCounts: { ...t.selectionCounts, Bob: (t.selectionCounts.Bob ?? 0) + 1 },
+        })),
+      ]);
+
+      const reloaded = await storage.loadTemplates();
+      expect(reloaded[0].selectionCounts).toEqual({ Alice: 1, Bob: 1 });
+    });
+  });
 });

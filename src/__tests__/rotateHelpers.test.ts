@@ -1,4 +1,11 @@
-import { shuffle, drawFromBag, insertIntoBag, buildTemplateStats } from '../utils/rotateHelpers';
+import {
+  shuffle,
+  drawFromBag,
+  insertIntoBag,
+  buildTemplateStats,
+  applySelectionToTemplate,
+} from '../utils/rotateHelpers';
+import type { FacilitatorTemplate } from '../models/facilitatorTemplate';
 
 describe('shuffle', () => {
   test('returns a permutation of the input without mutating it', () => {
@@ -143,5 +150,38 @@ describe('buildTemplateStats', () => {
     // bag contains only a ghost → no valid names → treated as a fresh cycle
     const result = buildTemplateStats(['Alice', 'Bob'], {}, ['Ghost']);
     expect(result.every((e) => e.inBag)).toBe(true);
+  });
+});
+
+describe('applySelectionToTemplate', () => {
+  const base: FacilitatorTemplate = {
+    id: 'id-1',
+    guildId: 'guild-1',
+    name: 'Team',
+    participants: ['Alice', 'Bob', 'Charlie'],
+    selectionCounts: { Alice: 2 },
+    bag: ['Bob', 'Charlie'],
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+  };
+
+  test('increments counts for selected and replaces the bag', () => {
+    const result = applySelectionToTemplate(base, ['Alice', 'Bob'], ['Charlie']);
+    expect(result.selectionCounts).toEqual({ Alice: 3, Bob: 1 });
+    expect(result.bag).toEqual(['Charlie']);
+  });
+
+  test('keeps fresh participants untouched (mid-roulette add survives)', () => {
+    const fresh = { ...base, participants: ['Alice', 'Bob', 'Charlie', 'Dave'] };
+    const result = applySelectionToTemplate(fresh, ['Alice'], ['Bob']);
+    expect(result.participants).toEqual(['Alice', 'Bob', 'Charlie', 'Dave']);
+  });
+
+  test('bumps updatedAt and does not mutate the input', () => {
+    const before = base.updatedAt.getTime();
+    const result = applySelectionToTemplate(base, ['Bob'], []);
+    expect(result.updatedAt.getTime()).toBeGreaterThan(before);
+    expect(base.selectionCounts).toEqual({ Alice: 2 });
+    expect(base.bag).toEqual(['Bob', 'Charlie']);
   });
 });
